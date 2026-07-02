@@ -1,0 +1,49 @@
+# Production overlay — adds a Caddy reverse proxy with automatic HTTPS in front
+# of web + api, and stops exposing the app ports directly to the host.
+#
+# Usage:
+#   cp .env.production.example .env.production && ./scripts/gen-secrets.sh
+#   docker compose --env-file .env.production -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Requires DOMAIN to point (DNS A/AAAA record) at this server for Let's Encrypt.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - web
+      - api
+    environment:
+      DOMAIN: ${DOMAIN:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  # The browser now talks to the API through the proxy on the public domain,
+  # so bake that origin into the client bundle at build time.
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_BASE_URL}
+    # No longer published directly — only Caddy is public.
+    ports: !reset []
+
+  api:
+    # Internal only behind Caddy.
+    ports: !reset []
+
+  # Datastores stay on the internal network only — never exposed to the host.
+  db:
+    ports: !reset []
+  redis:
+    ports: !reset []
+
+volumes:
+  caddy_data:
+  caddy_config:

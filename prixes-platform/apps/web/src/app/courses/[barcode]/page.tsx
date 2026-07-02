@@ -1,0 +1,403 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Image from "next/image";
+import { use, useEffect, useRef, useState } from "react";
+
+import { Icon } from "@/components/Icon";
+import { PageHeader } from "@/components/PageHeader";
+import { PriceChart } from "@/components/PriceChart";
+import { ProductCard } from "@/components/ProductCard";
+import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
+import { api } from "@/lib/api";
+import { eur } from "@/lib/format";
+import { useApp } from "@/lib/store";
+import { useA11y } from "@/lib/useA11y";
+import { speak, vibrate } from "@/lib/voice";
+
+function parseAllergens(s: string | null): string[] {
+  return (s ?? "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+export default function ProductDetailPage({ params }: { params: Promise<{ barcode: string }> }) {
+  const { barcode } = use(params);
+  const qc = useQueryClient();
+  const { user, openLogin } = useApp();
+  const { allergens: profile, diets: dietProfile, autoRead } = useA11y();
+  const [store, setStore] = useState("");
+  const [price, setPrice] = useState("");
+  const [listMsg, setListMsg] = useState<string | null>(null);
+  const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const announcedRef = useRef<string | null>(null);
+
+  const addToList = useMutation({
+    mutationFn: () => api.addToList({ barcode }),
+    onSuccess: () => {
+      setListMsg("Ajouté à votre liste ✓");
+      qc.invalidateQueries({ queryKey: ["shopping"] });
+    },
+    onError: () => setListMsg("Erreur — réessayez."),
+  });
+
+  const createAlert = useMutation({
+    mutationFn: (target: number | null) => api.createAlert({ barcode, target_price: target }),
+    onSuccess: () => {
+      setAlertMsg("Alerte activée ✓");
+      qc.invalidateQueries({ queryKey: ["alerts"] });
+    },
+    onError: () => setAlertMsg("Erreur — réessayez."),
+  });
+
+  function onAddToList() {
+    if (!user) return openLogin(true);
+    addToList.mutate();
+  }
+
+  function onCreateAlert() {
+    if (!user) return openLogin(true);
+    const input = window.prompt(
+      "Prix cible en € (laisser vide pour être alerté à toute baisse) :",
+      data?.best_price != null ? String(data.best_price) : "",
+    );
+    if (input === null) return; // cancelled
+    const target = input.trim() === "" ? null : Number(input.replace(",", "."));
+    if (target !== null && (Number.isNaN(target) || target <= 0)) {
+      setAlertMsg("Prix invalide.");
+      return;
+    }
+    createAlert.mutate(target);
+  }
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["product", barcode],
+    queryFn: () => api.getProduct(barcode),
+  });
+
+  const { data: history } = useQuery({
+    queryKey: ["product-history", barcode],
+    queryFn: () => api.getPriceHistory(barcode),
+    enabled: !!data,
+  });
+
+  const { data: alternatives } = useQuery({
+    queryKey: ["product-alternatives", barcode],
+    queryFn: () => api.getAlternatives(barcode),
+    enabled: !!data,
+  });
+
+  const dietList = parseAllergens(data?.diets ?? null);
+  const allergenList = parseAllergens(data?.allergens ?? null);
+  const allergenMatches = allergenList.filter((a) =>
+    profile.some(
+      (p) => a.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(a.toLowerCase()),
+    ),
+  );
+
+  // Spoken announcement on open: always warn about matching allergens (safety);
+  // read the full summary when "lecture automatique" is enabled.
+  useEffect(() => {
+    if (!data || announcedRef.current === barcode) return;
+    const warn = allergenMatches.length
+      ? ` Attention, ce produit contient ${allergenMatches.join(", ")}.`
+      : "";
+    if (autoRead) {
+      announcedRef.current = barcode;
+      const best = data.best_price != null ? ` Meilleur prix ${eur(data.best_price)}.` : "";
+      speak(`${data.name ?? "Produit"}.${best}${warn}`);
+      if (allergenMatches.length) vibrate([200, 80, 200]);
+    } else if (allergenMatches.length) {
+      announcedRef.current = barcode;
+      speak(`Attention, ce produit contient ${allergenMatches.join(", ")}.`);
+      vibrate([200, 80, 200]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data, autoRead, barcode, allergenMatches.length]);
+
+  async function contribute(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user) return openLogin(true);
+    await api.contributePrice(barcode, { store, price: Number(price) });
+    setStore("");
+    setPrice("");
+    await qc.invalidateQueries({ queryKey: ["product", barcode] });
+  }
+
+  if (isLoading) {
+    return (
+      <div>
+        <PageHeader title="Produit" back />
+        <p className="py-10 text-center text-on-surface-variant">Chargement…</p>
+      </div>
+    );
+  }
+  if (!data) {
+    return (
+      <div>
+        <PageHeader title="Produit" back />
+        <p className="py-10 text-center text-error">Produit introuvable.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageHeader title="Produit" back />
+
+      {/* Hero */}
+      <section className="mb-6 flex flex-col items-center">
+        <div className="relative mb-4 flex h-44 w-44 items-center justify-center overflow-hidden rounded-xl border border-outline-variant/20 bg-white shadow-float">
+          {data.image_url ? (
+            <Image src={data.image_url} alt={data.name ?? ""} fill className="object-contain p-4" sizes="176px" />
+          ) : (
+            <Icon name="grocery" className="text-[48px] text-outline-variant" />
+          )}
+          {data.quantity && (
+            <span className="absolute right-3 top-3 rounded-full bg-primary px-2 py-1 text-micro text-on-primary">
+              {data.quantity}
+            </span>
+          )}
+        </div>
+        <h2 className="text-center text-headline-lg text-on-surface">{data.name}</h2>
+        {data.brand && <p className="text-body-md text-on-surface-variant">{data.brand}</p>}
+        <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+          <ScoreBadge kind="Nutri" grade={data.nutriscore} />
+          <ScoreBadge kind="Eco" grade={data.ecoscore} />
+          <NovaBadge group={data.nova_group} />
+        </div>
+      </section>
+
+      {/* Quick actions */}
+      <section className="mb-6 grid grid-cols-2 gap-gutter">
+        <button
+          onClick={onAddToList}
+          disabled={addToList.isPending}
+          className="btn-outline flex-col gap-1 py-3"
+        >
+          <Icon name="add_shopping_cart" className="text-[22px]" />
+          <span className="text-label-md">{listMsg ?? "Ajouter à ma liste"}</span>
+        </button>
+        <button
+          onClick={onCreateAlert}
+          disabled={createAlert.isPending}
+          className="btn-outline flex-col gap-1 py-3"
+        >
+          <Icon name="notifications_active" className="text-[22px]" />
+          <span className="text-label-md">{alertMsg ?? "M'alerter si baisse"}</span>
+        </button>
+      </section>
+
+      {/* Allergens — safety-critical, shown prominently */}
+      <section className="mb-6" aria-label="Allergènes" data-speak>
+        {allergenMatches.length > 0 && (
+          <div
+            role="alert"
+            className="mb-3 flex items-start gap-3 rounded-xl border-2 border-error bg-error-container p-4 text-on-error-container"
+          >
+            <Icon name="warning" fill className="mt-0.5 text-[28px] text-error" />
+            <div>
+              <p className="text-label-lg font-bold">Attention — vos allergènes</p>
+              <p className="text-body-md">
+                Ce produit contient&nbsp;: <strong>{allergenMatches.join(", ")}</strong>.
+              </p>
+            </div>
+          </div>
+        )}
+        <div className="card p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <Icon name="health_and_safety" className="text-primary" />
+            <h3 className="text-headline-md text-on-surface">Allergènes</h3>
+          </div>
+          {data.allergens == null ? (
+            <p className="text-body-md text-on-surface-variant">Information en cours de chargement…</p>
+          ) : allergenList.length === 0 ? (
+            <p className="text-body-md text-on-surface-variant">Aucun allergène déclaré.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {allergenList.map((a) => {
+                const danger = allergenMatches.includes(a);
+                return (
+                  <span
+                    key={a}
+                    className={`chip text-label-md ${
+                      danger
+                        ? "border-2 border-error bg-error-container font-bold text-on-error-container"
+                        : "bg-surface-container-high text-on-surface"
+                    }`}
+                  >
+                    {danger && <Icon name="warning" className="mr-1 text-[16px] text-error" />}
+                    {a}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+          <p className="mt-3 text-micro text-on-surface-variant">
+            Source OpenFoodFacts. En cas de doute, vérifiez l&apos;emballage.
+          </p>
+        </div>
+      </section>
+
+      {/* Dietary regime */}
+      {(dietList.length > 0 || dietProfile.length > 0) && (
+        <section className="card mb-6 p-4" aria-label="Régime alimentaire" data-speak>
+          <div className="mb-2 flex items-center gap-2">
+            <Icon name="restaurant" className="text-primary" />
+            <h3 className="text-headline-md text-on-surface">Régime alimentaire</h3>
+          </div>
+
+          {dietList.length > 0 ? (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {dietList.map((d) => (
+                <span
+                  key={d}
+                  className="chip flex items-center gap-1 bg-primary/10 text-label-md font-bold text-primary"
+                >
+                  <Icon name="check_circle" fill className="text-[16px]" />
+                  {d}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-body-md text-on-surface-variant">
+              Aucune information de régime déclarée pour ce produit.
+            </p>
+          )}
+
+          {/* Compatibility with the user's chosen regimes */}
+          {dietProfile.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {dietProfile.map((d) => {
+                const ok = dietList.includes(d);
+                return (
+                  <li key={d} className="flex items-center gap-2 text-body-md">
+                    <Icon
+                      name={ok ? "check_circle" : "help"}
+                      fill={ok}
+                      className={ok ? "text-primary" : "text-outline"}
+                    />
+                    <span className={ok ? "text-on-surface" : "text-on-surface-variant"}>
+                      {ok ? `Compatible : ${d}` : `${d} : non confirmé`}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
+
+      {/* Best price banner */}
+      {data.best_price != null && (
+        <section className="relative mb-6 flex items-center justify-between overflow-hidden rounded-xl bg-primary-container p-6 text-on-primary-container shadow-float">
+          <div className="absolute -bottom-4 -right-4 opacity-10">
+            <Icon name="local_offer" className="text-[110px]" />
+          </div>
+          <div className="relative z-10">
+            <p className="mb-1 text-micro uppercase tracking-widest opacity-90">Meilleur prix</p>
+            <span className="text-headline-xl">{eur(data.best_price)}</span>
+            {data.best_unit_price != null && (
+              <p className="mt-1 text-label-md opacity-90">
+                {eur(data.best_unit_price)} {data.unit_label}
+              </p>
+            )}
+          </div>
+          <div className="relative z-10 rounded-xl border border-white/30 bg-white/20 px-4 py-2 text-center backdrop-blur-sm">
+            <p className="text-micro uppercase">Vérifié</p>
+            <p className="text-label-md">communauté</p>
+          </div>
+        </section>
+      )}
+
+      {/* Price history */}
+      {history && history.points.length >= 2 && (
+        <section className="card mb-6 p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Icon name="show_chart" className="text-primary" />
+            <h3 className="text-headline-md text-on-surface">Historique des prix</h3>
+          </div>
+          <PriceChart points={history.points} lowest={history.lowest} highest={history.highest} />
+        </section>
+      )}
+
+      {/* Store comparison */}
+      <section className="mb-6">
+        <h3 className="mb-3 text-headline-md text-on-surface">Comparatif magasins</h3>
+        <div className="space-y-3">
+          {data.prices.length === 0 && (
+            <p className="text-body-md text-on-surface-variant">Aucun prix relevé. Ajoutez le vôtre 👇</p>
+          )}
+          {data.prices.map((p, i) => (
+            <div key={i} className="card flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-headline-md text-primary">
+                  {(p.store ?? "?").charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-label-lg text-on-surface">{p.store ?? "Magasin"}</p>
+                  <p className="text-micro uppercase text-on-surface-variant">{p.source}</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-headline-md text-on-surface">{eur(p.price)}</p>
+                {p.unit_price != null && (
+                  <p className="text-micro text-on-surface-variant">
+                    {eur(p.unit_price)} {p.unit_label}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Healthier alternatives */}
+      {alternatives && alternatives.items.length > 0 && (
+        <section className="mb-6">
+          <div className="mb-3 flex items-center gap-2">
+            <Icon name="eco" fill className="text-primary" />
+            <h3 className="text-headline-md text-on-surface">Alternatives plus saines</h3>
+          </div>
+          <p className="mb-3 text-body-md text-on-surface-variant">
+            Mêmes rayons, meilleur Nutri-Score.
+          </p>
+          <div className="space-y-3">
+            {alternatives.items.map((p) => (
+              <ProductCard key={p.barcode} product={p} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Community add price */}
+      <section className="card p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-headline-md text-on-surface">Prix communautaires</h3>
+        </div>
+        <form onSubmit={contribute} className="flex flex-col gap-3 sm:flex-row">
+          <input
+            className="input flex-1"
+            placeholder="Magasin"
+            value={store}
+            onChange={(e) => setStore(e.target.value)}
+            required
+          />
+          <input
+            className="input sm:w-32"
+            type="number"
+            step="0.01"
+            placeholder="Prix €"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            required
+          />
+          <button className="btn-primary">
+            <Icon name="add" className="text-[18px]" /> Ajouter
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+}

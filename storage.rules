@@ -1,0 +1,21 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ── Photos des deals ─────────────────────────────────────────────
+    match /deals/{userId}/{filename} {
+      // Lecture publique (affichage dans l'app)
+      allow read: if true;
+
+      // Upload : utilisateur connecté, fichier max 5 Mo, image seulement
+      allow write: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      // Suppression : seulement par l'auteur
+      allow delete: if request.auth != null
+        && request.auth.uid == userId;
+    }
+  }
+}

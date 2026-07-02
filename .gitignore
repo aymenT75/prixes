@@ -1,0 +1,41 @@
+# ── Secrets & env (NEVER commit real values) ──
+.env
+.env.*
+!.env.example
+!.env.production.example
+!.env.local.example
+*.local
+sa.json
+serviceAccount*.json
+dump.json
+
+# ── Dependencies / build output ──
+node_modules/
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+
+# ── Tooling / local ──
+.claude/
+.DS_Store
+Thumbs.db
+*.log
+
+# ── Deploy artifacts ──
+*.tar.gz
+*.tar
+caddy_data/
+pgdata/

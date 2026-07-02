@@ -1,0 +1,28 @@
+# Prixes reverse proxy — automatic HTTPS via Let's Encrypt.
+# {$DOMAIN} comes from the environment (set it in .env.production).
+# For a quick local TLS test you can set DOMAIN=localhost (Caddy issues a
+# local cert) or DOMAIN=:80 (plain HTTP, no cert).
+
+{$DOMAIN} {
+	encode zstd gzip
+
+	# API + health go to FastAPI; everything else to the Next.js server.
+	handle /api/* {
+		reverse_proxy api:8000
+	}
+	handle /health {
+		reverse_proxy api:8000
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+
+	# Sensible security headers.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}

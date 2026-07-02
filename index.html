@@ -1,0 +1,2244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>Prixes — Comparez & Partagez</title>
+<meta name="description" content="Comparez les prix des courses et carburants, partagez les meilleures offres. Accessible à tous, y compris les personnes handicapées.">
+<meta name="theme-color" content="#005c3c">
+
+<!-- PWA / iOS -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Prixes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="application-name" content="Prixes">
+
+<!-- Open Graph -->
+<meta property="og:title" content="Prixes — Comparez & Partagez">
+<meta property="og:description" content="Comparez les prix des courses et carburants, partagez les meilleures offres.">
+<meta property="og:type" content="website">
+
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.ico">
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --gr:#00875a;--grd:#005c3c;--grl:#e6f5ef;
+  --or:#e84d14;--orl:#fff0eb;
+  --bg:#f5f4f0;--sf:#fff;--bd:#e0ddd5;
+  --t:#111;--t2:#555;--t3:#999;
+  --rd:#dc2626;--yw:#ca8a04;
+  --r:14px;--sh:0 2px 12px rgba(0,0,0,.08);
+}
+body.dark{
+  --bg:#0d1117;--sf:#161b22;--bd:#30363d;
+  --t:#e6edf3;--t2:#8b949e;--t3:#484f58;
+  --grl:#0d2818;--orl:#2a1200;
+  --sh:0 2px 12px rgba(0,0,0,.4);
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--t);font-size:16px;line-height:1.6;transition:background .25s,color .25s;}
+
+/* DARK MODE TOGGLE */
+.dark-toggle{background:transparent;border:2px solid rgba(255,255,255,.4);border-radius:50%;width:36px;height:36px;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s;flex-shrink:0;}
+.dark-toggle:hover{background:rgba(255,255,255,.15);}
+
+/* INSTALL BANNER */
+.install-banner{display:none;position:fixed;bottom:80px;left:12px;right:12px;z-index:200;background:var(--grd);color:#fff;border-radius:var(--r);padding:14px 16px;box-shadow:0 8px 24px rgba(0,0,0,.25);align-items:center;gap:12px;animation:slideUp .3s ease;}
+.install-banner.show{display:flex;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.install-banner-text{flex:1;}
+.install-banner-text strong{display:block;font-size:15px;font-weight:700;margin-bottom:2px;}
+.install-banner-text span{font-size:13px;opacity:.85;}
+.install-btn{background:#fff;color:var(--grd);border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;}
+.install-close{background:none;border:none;color:rgba(255,255,255,.7);font-size:22px;cursor:pointer;padding:0;line-height:1;flex-shrink:0;}
+
+/* SKELETON LOADING */
+@keyframes shimmer{0%{background-position:-400px 0;}100%{background-position:400px 0;}}
+.skeleton{border-radius:8px;background:linear-gradient(90deg,var(--bd) 25%,var(--bg) 50%,var(--bd) 75%);background-size:800px 100%;animation:shimmer 1.4s infinite;}
+
+/* TOAST */
+.toast{display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:300;background:#111;color:#fff;padding:13px 22px;border-radius:50px;font-size:15px;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,.25);white-space:nowrap;animation:fadeUp .25s;}
+.toast.show{display:block;}
+body.dark .toast{background:#e6edf3;color:#111;}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+
+/* ── PHASE 3: PAGE SLIDE ── */
+.page{padding:16px 16px 100px;max-width:960px;margin:0 auto;}
+.page-hidden{display:none;}
+.page-enter{animation:pgIn .22s ease both;}
+@keyframes pgIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+
+/* ── PULL-TO-REFRESH ── */
+.ptr{display:flex;align-items:center;justify-content:center;height:0;overflow:hidden;transition:height .2s ease;}
+.ptr.active{height:52px;}
+.ptr-spin{display:inline-block;width:24px;height:24px;border:3px solid var(--bd);border-top-color:var(--gr);border-radius:50%;}
+.ptr.spin .ptr-spin{animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ptr-txt{font-size:13px;font-weight:700;color:var(--t2);margin-left:10px;}
+
+/* ── CARD TAP ── */
+.pc:active{transform:scale(.97);}
+.deal-card:active{transform:scale(.99);}
+
+/* ── VOTE ANIMATION ── */
+@keyframes voteYes{0%{transform:scale(1);}40%{transform:scale(1.18);}70%{transform:scale(.94);}100%{transform:scale(1);}}
+@keyframes voteNo{0%,100%{transform:translateX(0);}30%{transform:translateX(-5px);}60%{transform:translateX(5px);}}
+.vbtn.pop-yes{animation:voteYes .3s ease;}
+.vbtn.pop-no{animation:voteNo .3s ease;}
+
+/* ── NAV INDICATOR ── */
+.bnav-btn.on .ico{transform:scale(1.15);}
+.bnav-btn .ico{transition:transform .15s;}
+.bnav-btn::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%) scaleX(0);width:20px;height:3px;background:var(--gr);border-radius:2px;transition:transform .2s ease;}
+.bnav-btn.on::after{transform:translateX(-50%) scaleX(1);}
+.bnav-btn{position:relative;}
+
+/* ── PHOTO UPLOAD ── */
+.photo-zone{border:2px dashed var(--bd);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;position:relative;overflow:hidden;margin-bottom:0;}
+.photo-zone:hover{border-color:var(--gr);background:var(--grl);}
+.photo-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0;width:100%;height:100%;}
+.photo-zone .ph-ico{font-size:32px;display:block;margin-bottom:6px;}
+.photo-zone .ph-lbl{font-size:14px;font-weight:700;color:var(--t2);}
+.photo-zone .ph-sub{font-size:12px;color:var(--t3);margin-top:2px;}
+#photoPreview{width:100%;max-height:180px;object-fit:cover;border-radius:10px;display:none;margin-top:8px;}
+#photoPreview.show{display:block;}
+.hdr{background:var(--grd);position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.2);}
+.hdr-top{display:flex;align-items:center;gap:10px;padding:12px 16px;max-width:960px;margin:0 auto;}
+.logo{font-size:22px;font-weight:800;color:#fff;text-decoration:none;flex-shrink:0;}
+.logo em{color:#5eead4;font-style:normal;}
+.srch{flex:1;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.15);border:2px solid rgba(255,255,255,.3);border-radius:50px;padding:9px 16px;cursor:text;transition:.2s;}
+.srch:focus-within{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.6);}
+.srch input{background:none;border:none;outline:none;color:#fff;font-size:15px;font-family:inherit;width:100%;}
+.srch input::placeholder{color:rgba(255,255,255,.6);}
+.srch-ico{opacity:.7;flex-shrink:0;}
+.mic-btn{background:rgba(255,255,255,.2);border:none;border-radius:50%;width:36px;height:36px;color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;transition:.2s;}
+.mic-btn:hover{background:rgba(255,255,255,.35);}
+.mic-btn.listening{background:var(--rd);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.5);}50%{box-shadow:0 0 0 8px rgba(220,38,38,0);}}
+.hdr-btns{display:flex;gap:8px;flex-shrink:0;}
+.btn-login{background:transparent;border:2px solid rgba(255,255,255,.5);color:#fff;padding:8px 14px;border-radius:50px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:.2s;white-space:nowrap;}
+.btn-login:hover{border-color:#fff;background:rgba(255,255,255,.15);}
+.btn-poster{background:var(--or);border:none;color:#fff;padding:9px 18px;border-radius:50px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:0 4px 12px rgba(232,77,20,.35);transition:.2s;white-space:nowrap;}
+.btn-poster:hover{background:#c43c0a;}
+
+/* TAB NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--sf);border-top:2px solid var(--bd);display:flex;padding:8px 4px calc(8px + env(safe-area-inset-bottom));box-shadow:0 -2px 8px rgba(0,0,0,.06);}
+.bnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:10px;cursor:pointer;border:none;background:transparent;color:var(--t2);font-family:inherit;transition:.15s;min-height:56px;}
+.bnav-btn .ico{font-size:24px;}
+.bnav-btn .lbl{font-size:10px;font-weight:700;}
+.bnav-btn.on{color:var(--gr);}
+
+/* PAGE */
+.page{padding:16px 16px 100px;max-width:960px;margin:0 auto;}
+.page-hidden{display:none;}
+
+/* SECTIONS */
+.sec-title{font-size:18px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+
+/* PRODUCT GRID */
+.prod-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:12px;margin-bottom:24px;}
+.pc{background:var(--sf);border:2px solid var(--bd);border-radius:var(--r);padding:14px;cursor:pointer;transition:.2s;position:relative;box-shadow:var(--sh);}
+.pc:hover{border-color:var(--gr);transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,135,90,.15);}
+.pc-em{font-size:28px;margin-bottom:8px;}
+.pc-name{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:2px;}
+.pc-unit{font-size:11px;color:var(--t3);margin-bottom:10px;}
+.pc-best{font-size:20px;font-weight:800;color:var(--gr);}
+.pc-store{font-size:11px;color:var(--t2);margin-top:2px;}
+.pc-trend{position:absolute;top:10px;right:10px;font-size:13px;font-weight:700;}
+.halal-badge{position:absolute;top:8px;left:8px;background:rgba(0,135,90,.15);color:var(--grd);border:1px solid rgba(0,135,90,.3);border-radius:6px;font-size:10px;font-weight:700;padding:2px 6px;}
+.speak-pill{position:absolute;bottom:8px;right:8px;background:var(--gr);border:none;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:#fff;}
+
+/* CATS */
+.cats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;margin-bottom:16px;}
+.cats::-webkit-scrollbar{display:none;}
+.cat-btn{padding:9px 16px;border-radius:50px;border:2px solid var(--bd);background:var(--sf);color:var(--t2);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;transition:.15s;min-height:44px;}
+.cat-btn:hover{border-color:var(--gr);color:var(--gr);}
+.cat-btn.on{background:var(--gr);border-color:var(--gr);color:#fff;}
+
+/* PRODUCT DETAIL */
+.det{padding:0;}
+.back-btn{background:var(--sf);border:2px solid var(--bd);color:var(--t2);border-radius:10px;padding:10px 16px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;min-height:48px;}
+.det-head{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.det-em{font-size:44px;width:64px;height:64px;display:flex;align-items:center;justify-content:center;background:var(--bg);border-radius:14px;border:2px solid var(--bd);flex-shrink:0;}
+.det-name{font-size:22px;font-weight:800;line-height:1.2;}
+.det-unit{font-size:13px;color:var(--t2);margin-top:4px;}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0;}
+.dstat{background:var(--sf);border:2px solid var(--bd);border-radius:12px;padding:14px;text-align:center;box-shadow:var(--sh);}
+.dsv{font-size:22px;font-weight:800;margin-bottom:4px;}
+.dsl{font-size:10px;color:var(--t2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.scomp{background:var(--sf);border:2px solid var(--bd);border-radius:var(--r);overflow:hidden;margin:16px 0;box-shadow:var(--sh);}
+.scomp-h{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:10px 16px;background:var(--bg);border-bottom:2px solid var(--bd);font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--t2);font-weight:700;}
+.srow{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:14px 16px;border-bottom:1px solid var(--bd);align-items:center;}
+.srow:last-child{border-bottom:none;}
+.srow.best{background:rgba(0,135,90,.07);}
+.sdot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.sname{font-size:14px;font-weight:700;}
+.sprice{font-size:20px;font-weight:800;}
+.nbtn{background:var(--gr);border:none;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;color:#fff;font-family:inherit;min-height:44px;display:flex;align-items:center;gap:4px;}
+.nbtn.gps{background:var(--or);}
+
+/* CARBURANTS */
+.fuel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;}
+.fuel-card{background:var(--sf);border:2px solid var(--bd);border-radius:var(--r);padding:16px;text-align:center;box-shadow:var(--sh);}
+.fuel-card.best{border-color:var(--gr);}
+.fuel-name{font-size:12px;color:var(--t2);font-weight:700;margin-bottom:6px;}
+.fuel-price{font-size:22px;font-weight:800;color:var(--gr);}
+.fuel-star{font-size:10px;color:var(--gr);font-weight:700;}
+.fuel-type-wrap{background:var(--sf);border:2px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:14px;box-shadow:var(--sh);}
+.fuel-type-title{font-size:14px;font-weight:800;color:var(--t2);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+
+/* DEALS */
+.deals-list{display:flex;flex-direction:column;gap:14px;}
+.deal-card{background:var(--sf);border:2px solid var(--bd);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);transition:.2s;}
+.deal-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.1);}
+.deal-card.hot{border-color:#fca5a5;}
+.deal-body{padding:18px;}
+.deal-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:12px;}
+.d-author{display:flex;align-items:center;gap:10px;}
+.d-avatar{width:42px;height:42px;border-radius:50%;background:var(--gr);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.d-aname{font-size:14px;font-weight:700;}
+.d-arep{font-size:12px;color:var(--t2);}
+.d-tag{padding:5px 12px;border-radius:50px;font-size:12px;font-weight:700;flex-shrink:0;}
+.tag-hot{background:#fee2e2;color:var(--rd);}
+.tag-new{background:var(--grl);color:var(--grd);}
+.deal-title{font-size:17px;font-weight:800;line-height:1.3;margin-bottom:8px;}
+.deal-meta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.store-pill{background:var(--bg);border:1px solid var(--bd);padding:4px 12px;border-radius:20px;font-size:13px;font-weight:700;}
+.deal-price{display:flex;align-items:center;gap:12px;background:var(--bg);padding:12px 14px;border-radius:10px;margin-bottom:12px;}
+.dprice-now{font-size:30px;font-weight:800;color:var(--gr);line-height:1;}
+.dprice-before{font-size:13px;color:var(--t2);text-decoration:line-through;}
+.dprice-save{font-size:15px;font-weight:700;color:var(--or);}
+.deal-expiry{font-size:13px;margin-bottom:14px;}
+.ok{color:var(--grd);font-weight:700;}
+.urgent{color:var(--or);font-weight:700;}
+.vote-lbl{font-size:14px;font-weight:700;margin-bottom:10px;}
+.vote-btns{display:flex;gap:10px;flex-wrap:wrap;}
+.vbtn{display:flex;align-items:center;gap:6px;padding:12px 18px;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:2px solid;min-height:48px;transition:.15s;}
+.vbtn-oui{background:var(--grl);border-color:var(--gr);color:var(--grd);}
+.vbtn-oui:hover,.vbtn-oui.voted{background:var(--gr);color:#fff;}
+.vbtn-non{background:#fff0f0;border-color:#fca5a5;color:var(--rd);}
+.vbtn-non:hover,.vbtn-non.voted{background:var(--rd);color:#fff;border-color:var(--rd);}
+.vote-result{font-size:13px;color:var(--t2);margin-top:8px;font-weight:600;}
+.deal-foot{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.df-btn{background:none;border:2px solid var(--bd);color:var(--t2);padding:10px 16px;border-radius:10px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;min-height:44px;display:flex;align-items:center;gap:5px;transition:.15s;}
+.df-btn:hover{border-color:var(--gr);color:var(--gr);}
+.df-buy{background:var(--gr);border-color:var(--gr);color:#fff;}
+.df-buy:hover{background:var(--grd);border-color:var(--grd);color:#fff;}
+
+/* SORT / FILTER */
+.sort-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.sort-btn{background:var(--sf);border:2px solid var(--bd);color:var(--t2);padding:10px 16px;border-radius:50px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;min-height:44px;transition:.15s;}
+.sort-btn:hover{border-color:var(--gr);color:var(--gr);}
+.sort-btn.on{background:var(--gr);border-color:var(--gr);color:#fff;}
+
+/* BANNER */
+.banner{background:linear-gradient(135deg,var(--grd),var(--gr));color:#fff;border-radius:var(--r);padding:20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;}
+.banner-ico{font-size:44px;flex-shrink:0;}
+.banner h2{font-size:18px;font-weight:800;margin-bottom:4px;}
+.banner p{font-size:14px;opacity:.85;}
+
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px;}
+.overlay.open{display:flex;}
+.modal{background:var(--sf);border-radius:var(--r);padding:24px;width:100%;max-width:520px;max-height:92vh;overflow-y:auto;}
+.modal h2{font-size:22px;font-weight:800;margin-bottom:6px;}
+.modal-sub{font-size:15px;color:var(--t2);margin-bottom:20px;}
+.fld{margin-bottom:16px;}
+.fld label{display:block;font-size:14px;font-weight:700;margin-bottom:7px;}
+.fld input,.fld select,.fld textarea{width:100%;padding:13px 15px;border:2px solid var(--bd);border-radius:10px;font-size:16px;font-family:inherit;outline:none;background:var(--bg);color:var(--t);min-height:52px;transition:border-color .15s;}
+.fld input:focus,.fld select:focus,.fld textarea:focus{border-color:var(--gr);background:#fff;}
+.fld textarea{resize:vertical;min-height:80px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.sav-prev{background:var(--grl);border:2px solid var(--gr);border-radius:10px;padding:12px 14px;font-size:15px;font-weight:700;color:var(--grd);margin-bottom:16px;}
+.mod-btns{display:flex;gap:10px;}
+.btn-pub{flex:1;background:var(--gr);border:none;color:#fff;padding:15px;border-radius:10px;font-size:16px;font-weight:700;font-family:inherit;cursor:pointer;min-height:54px;}
+.btn-pub:hover{background:var(--grd);}
+.btn-ann{background:none;border:2px solid var(--bd);color:var(--t2);padding:15px 18px;border-radius:10px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;min-height:54px;}
+.btn-ann:hover{border-color:var(--t);color:var(--t);}
+.login-tabs{display:flex;border:2px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:20px;}
+.ltab{flex:1;background:none;border:none;padding:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;color:var(--t2);}
+.ltab.on{background:var(--gr);color:#fff;}
+
+/* TOAST AMÉLIORÉ */
+.toast{display:none;position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:300;background:#111;color:#fff;padding:13px 22px;border-radius:50px;font-size:15px;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,.25);white-space:nowrap;animation:fadeUp .25s;}
+.toast.show{display:block;}
+body.dark .toast{background:#e6edf3;color:#111;}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(8px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+
+/* SEARCH INPUT VISIBLE ON FILTER */
+.filter-search{padding:0 0 14px;display:flex;gap:8px;}
+.filter-input{flex:1;padding:13px 16px;border:2px solid var(--bd);border-radius:10px;font-size:16px;font-family:inherit;outline:none;background:var(--sf);min-height:52px;}
+.filter-input:focus{border-color:var(--gr);}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .hdr-top{padding:10px 12px;gap:8px;}
+  .btn-login{display:none;}
+  .frow{grid-template-columns:1fr;}
+  .stats3{grid-template-columns:repeat(3,1fr);}
+  .fuel-grid{grid-template-columns:repeat(3,1fr);}
+  .banner{flex-direction:column;text-align:center;}
+}
+
+/* ── NUTRISCORE ── */
+.ns{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;font-size:13px;font-weight:800;color:#fff;flex-shrink:0;}
+.ns-a{background:#1e8449;}.ns-b{background:#58d68d;}.ns-c{background:#f4d03f;color:#333;}
+.ns-d{background:#e67e22;}.ns-e{background:#e74c3c;}.ns-u{background:#aaa;}
+.ns-wrap{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--t2);}
+
+/* ── ECOSCORE ── */
+.eco{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--grl);color:var(--grd);}
+
+/* ── SCANNER PAGE ── */
+.scanner-wrap{position:relative;width:100%;max-width:400px;margin:0 auto;}
+.scanner-video{width:100%;border-radius:var(--r);background:#000;aspect-ratio:1;object-fit:cover;display:block;}
+.scanner-frame{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.scanner-box{width:65%;aspect-ratio:1;border:3px solid var(--gr);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);position:relative;}
+.scanner-box::before,.scanner-box::after{content:'';position:absolute;width:20px;height:20px;border-color:var(--gr);border-style:solid;}
+.scanner-box::before{top:-3px;left:-3px;border-width:3px 0 0 3px;border-radius:4px 0 0 0;}
+.scanner-box::after{bottom:-3px;right:-3px;border-width:0 3px 3px 0;border-radius:0 0 4px 0;}
+.scanner-line{position:absolute;left:10%;right:10%;height:2px;background:var(--gr);box-shadow:0 0 8px var(--gr);animation:scanLine 2s ease-in-out infinite;}
+@keyframes scanLine{0%,100%{top:10%;}50%{top:85%;}}
+.scanner-hint{text-align:center;margin-top:16px;font-size:14px;color:var(--t2);font-weight:600;}
+
+/* ── PRODUCT CARD (OFF enrichi) ── */
+.off-card{background:var(--sf);border:2px solid var(--bd);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);margin-bottom:16px;}
+.off-img{width:100%;max-height:200px;object-fit:contain;background:var(--bg);padding:12px;}
+.off-body{padding:16px;}
+.off-name{font-size:18px;font-weight:800;margin-bottom:4px;}
+.off-brand{font-size:13px;color:var(--t2);margin-bottom:12px;}
+.off-badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.off-prices{margin-top:14px;}
+.off-prices-title{font-size:13px;font-weight:700;color:var(--t2);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.price-contrib{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--bd);}
+.price-contrib:last-child{border-bottom:none;}
+.price-contrib-store{font-size:14px;font-weight:700;}
+.price-contrib-val{font-size:18px;font-weight:800;color:var(--gr);}
+.price-contrib-date{font-size:11px;color:var(--t3);}
+
+/* ── SEARCH RESULTS (OFF) ── */
+.off-results{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+.off-result-item{display:flex;align-items:center;gap:12px;background:var(--sf);border:2px solid var(--bd);border-radius:12px;padding:12px;cursor:pointer;transition:.15s;}
+.off-result-item:hover{border-color:var(--gr);}
+.off-result-img{width:56px;height:56px;object-fit:contain;background:var(--bg);border-radius:8px;flex-shrink:0;}
+.off-result-name{font-size:14px;font-weight:700;line-height:1.3;}
+.off-result-brand{font-size:12px;color:var(--t2);margin-top:2px;}
+.off-result-qty{font-size:11px;color:var(--t3);}
+
+/* ── CONTRIBUTE PRICE ── */
+.contrib-form{background:var(--grl);border:2px solid var(--gr);border-radius:var(--r);padding:16px;margin-top:14px;}
+.contrib-form h4{font-size:15px;font-weight:700;color:var(--grd);margin-bottom:12px;}
+.contrib-row{display:flex;gap:10px;align-items:flex-end;}
+
+</style>
+
+<!-- Firebase SDK v10 (compat mode) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<!-- firebase-storage désactivé (nécessite forfait Blaze) -->
+<!-- ZXing — Scanner de code-barres universel (Android + iOS + Desktop) -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@latest/umd/index.min.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-top">
+    <a href="#" class="logo" onclick="goTab('accueil')">Prix<em>es</em></a>
+    <div class="srch">
+      <svg class="srch-ico" width="17" height="17" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="srchInput" type="text" placeholder="Chercher un produit ou une offre..." aria-label="Chercher un produit ou une offre">
+    </div>
+    <button class="mic-btn" id="micBtn" onclick="startVoice()" aria-label="Recherche vocale">🎤</button>
+    <div class="hdr-btns">
+      <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" aria-label="Activer le mode sombre">🌙</button>
+      <button class="btn-login" id="btnLogin" onclick="openModal('modalLogin')" aria-label="Se connecter">👤 Se connecter</button>
+      <button class="btn-poster" onclick="openModal('modalPoster')" aria-label="Poster une offre">➕ Poster</button>
+    </div>
+  </div>
+</header>
+
+<!-- PAGES -->
+
+<!-- PULL-TO-REFRESH -->
+<div class="ptr" id="ptrIndicator" aria-hidden="true" aria-live="polite">
+  <div class="ptr-spin" id="ptrSpinner"></div>
+  <span class="ptr-txt" id="ptrText">Relâchez pour actualiser</span>
+</div>
+
+<!-- ACCUEIL -->
+<div class="page" id="pg-accueil">
+  <div class="banner" role="banner">
+    <div class="banner-ico">🛒</div>
+    <div>
+      <h2>Prixes — Pour tout le monde</h2>
+      <p>Comparez les prix des courses, carburants, et partagez les bonnes affaires du moment.</p>
+    </div>
+  </div>
+
+  <div class="sec-title">⛽ Carburants du jour</div>
+  <div class="fuel-grid" id="fuelHome"></div>
+
+  <div class="sec-title" style="margin-top:8px;">🔥 Meilleures économies courses</div>
+  <div class="prod-grid" id="topProds"></div>
+
+  <div class="sec-title" style="margin-top:8px;">🤝 Dernières offres partagées</div>
+  <div class="deals-list" id="topDeals"></div>
+</div>
+
+<!-- COURSES -->
+<div class="page page-hidden" id="pg-courses">
+  <div class="filter-search">
+    <input class="filter-input" id="coursesSearch" type="text" placeholder="🔍 Chercher un produit..." aria-label="Chercher un produit">
+    <button class="mic-btn" style="width:52px;height:52px;font-size:20px;" onclick="startVoice()" aria-label="Recherche vocale">🎤</button>
+  </div>
+  <div class="cats" id="catsBarre" role="group" aria-label="Catégories"></div>
+  <div id="subCats"></div>
+  <div id="coursesCount" style="font-size:13px;color:var(--t2);margin-bottom:12px;"></div>
+  <div class="prod-grid" id="coursesGrid"></div>
+</div>
+
+<!-- DETAIL PRODUIT -->
+<div class="page page-hidden" id="pg-detail">
+  <button class="back-btn" onclick="retourCourses()" aria-label="Retour">← Retour</button>
+  <div id="detailContent"></div>
+</div>
+
+<!-- CARBURANTS -->
+<div class="page page-hidden" id="pg-fuel">
+  <div class="banner" style="background:linear-gradient(135deg,#92400e,#f97316);">
+    <div class="banner-ico">⛽</div>
+    <div>
+      <h2>Prix des carburants</h2>
+      <p>Comparez les stations près de vous.</p>
+    </div>
+  </div>
+  <div id="fuelPage"></div>
+</div>
+
+<!-- DEALS -->
+<div class="page page-hidden" id="pg-deals">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <div class="sec-title" style="margin-bottom:0;">🤝 Offres partagées</div>
+    <button class="btn-poster" onclick="openModal('modalPoster')" style="font-size:13px;padding:8px 14px;">➕ Poster</button>
+  </div>
+  <div class="sort-bar" role="group" aria-label="Trier">
+    <button class="sort-btn on" onclick="setSortDeals(this,'pop')" aria-pressed="true">🔥 Populaires</button>
+    <button class="sort-btn" onclick="setSortDeals(this,'new')" aria-pressed="false">✨ Nouvelles</button>
+    <button class="sort-btn" onclick="setSortDeals(this,'eco')" aria-pressed="false">💰 Meilleures remises</button>
+  </div>
+  <div class="deals-list" id="dealsFeed"></div>
+</div>
+
+<!-- SCANNER -->
+<div class="page page-hidden" id="pg-scanner">
+  <div class="banner" style="background:linear-gradient(135deg,#1e3a5f,#2563eb);">
+    <div class="banner-ico">📷</div>
+    <div>
+      <h2>Scanner un produit</h2>
+      <p>Scannez le code-barres pour voir les vrais prix et infos nutritionnelles.</p>
+    </div>
+  </div>
+
+  <div id="scannerSection">
+    <div class="scanner-wrap">
+      <video id="scannerVideo" class="scanner-video" autoplay playsinline muted aria-label="Flux caméra pour scanner le code-barres"></video>
+      <div class="scanner-frame" aria-hidden="true">
+        <div class="scanner-box"><div class="scanner-line"></div></div>
+      </div>
+    </div>
+    <p class="scanner-hint">📦 Pointez vers un code-barres EAN / QR</p>
+    <div style="text-align:center;margin-top:12px;">
+      <button onclick="startScanner()" class="btn-poster" style="margin:0 6px;" id="btnStartScan">▶ Démarrer</button>
+      <button onclick="stopScanner()" class="btn-login" style="margin:0 6px;background:var(--t2);border-color:var(--t2);" id="btnStopScan">⏹ Arrêter</button>
+    </div>
+    <div style="text-align:center;margin-top:12px;">
+      <button onclick="document.getElementById('manualBarcode').style.display='block'" class="df-btn" style="font-size:13px;">⌨️ Saisir le code manuellement</button>
+    </div>
+    <div id="manualBarcode" style="display:none;margin-top:12px;">
+      <div class="fld">
+        <label for="barcodeInput">Code-barres (EAN-13)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="tel" id="barcodeInput" class="filter-input" placeholder="ex: 3017620422003" maxlength="14">
+          <button onclick="lookupBarcode(document.getElementById('barcodeInput').value)" class="btn-poster" style="white-space:nowrap;flex-shrink:0;">Chercher</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="productResult" style="display:none;margin-top:16px;"></div>
+</div>
+
+<!-- INSTALL BANNER -->
+<div class="install-banner" id="installBanner" role="alert" aria-live="polite">
+  <div class="install-banner-text">
+    <strong>📲 Installer Prixes</strong>
+    <span>Accès rapide depuis votre écran d'accueil</span>
+  </div>
+  <button class="install-btn" id="installBtn" onclick="doInstall()">Installer</button>
+  <button class="install-close" onclick="dismissInstall()" aria-label="Fermer">×</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav" aria-label="Navigation principale">
+  <button class="bnav-btn on" id="nav-accueil" onclick="goTab('accueil')" aria-pressed="true">
+    <span class="ico">🏠</span><span class="lbl">Accueil</span>
+  </button>
+  <button class="bnav-btn" id="nav-courses" onclick="goTab('courses')" aria-pressed="false">
+    <span class="ico">🛒</span><span class="lbl">Courses</span>
+  </button>
+  <button class="bnav-btn" id="nav-fuel" onclick="goTab('fuel')" aria-pressed="false">
+    <span class="ico">⛽</span><span class="lbl">Carburants</span>
+  </button>
+  <button class="bnav-btn" id="nav-deals" onclick="goTab('deals')" aria-pressed="false">
+    <span class="ico">🤝</span><span class="lbl">Deals</span>
+  </button>
+  <button class="bnav-btn" id="nav-scanner" onclick="goTab('scanner')" aria-pressed="false">
+    <span class="ico">📷</span><span class="lbl">Scanner</span>
+  </button>
+</nav>
+
+<!-- MODAL POSTER -->
+<div class="overlay" id="modalPoster" role="dialog" aria-modal="true" aria-labelledby="posterH">
+  <div class="modal">
+    <h2 id="posterH">📢 Partager une offre</h2>
+    <p class="modal-sub">Vous avez trouvé une bonne affaire ? Partagez-la !</p>
+    <div class="fld"><label for="pTitle">Qu'avez-vous trouvé ? *</label>
+      <input type="text" id="pTitle" placeholder="ex: Poulet halal à 5€ au lieu de 8€"></div>
+    <div class="frow">
+      <div class="fld"><label for="pStore">Chez qui ? *</label>
+        <select id="pStore"><option value="">— Choisir —</option><option>E.Leclerc</option><option>Lidl</option><option>Aldi</option><option>Carrefour</option><option>Intermarché</option><option>Grand Frais</option><option>Amazon</option><option>Autre</option></select></div>
+      <div class="fld"><label for="pCat">Catégorie *</label>
+        <select id="pCat"><option value="">— Choisir —</option><option>Alimentation</option><option>Électronique</option><option>Vêtements</option><option>Maison</option><option>Santé</option><option>Loisirs</option></select></div>
+    </div>
+    <div class="frow">
+      <div class="fld"><label for="pOld">Prix habituel (€) *</label>
+        <input type="number" id="pOld" placeholder="8.99" step="0.01" min="0" oninput="calcSav()"></div>
+      <div class="fld"><label for="pNew">Prix maintenant (€) *</label>
+        <input type="number" id="pNew" placeholder="4.99" step="0.01" min="0" oninput="calcSav()"></div>
+    </div>
+    <div class="sav-prev" id="savPrev">💰 Entrez les deux prix pour voir l'économie</div>
+    <div class="fld"><label for="pLink">Lien vers l'offre</label>
+      <input type="url" id="pLink" placeholder="https://..."></div>
+    <div class="fld"><label for="pExp">Valide jusqu'au</label>
+      <input type="date" id="pExp"></div>
+    <div class="fld"><label for="pDesc">Détails</label>
+      <textarea id="pDesc" placeholder="Informations supplémentaires..."></textarea></div>
+    <div class="fld">
+      <label>Photo du produit</label>
+      <div class="photo-zone" id="photoZone">
+        <input type="file" id="pPhoto" accept="image/*" capture="environment" onchange="previewPhoto(this)" aria-label="Choisir une photo depuis la galerie ou prendre une photo">
+        <span class="ph-ico">📸</span>
+        <div class="ph-lbl">Prendre une photo ou choisir</div>
+        <div class="ph-sub">Depuis votre appareil photo ou galerie</div>
+        <img id="photoPreview" alt="Aperçu de la photo">
+      </div>
+    </div>
+    <div class="mod-btns">
+      <button class="btn-pub" onclick="publier()">✅ Publier</button>
+      <button class="btn-ann" onclick="closeModal('modalPoster')">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LOGIN -->
+<div class="overlay" id="modalLogin" role="dialog" aria-modal="true" aria-labelledby="loginH">
+  <div class="modal">
+    <h2 id="loginH">👤 Mon compte</h2>
+    <p class="modal-sub">Créez un compte pour poster des offres et suivre votre réputation.</p>
+    <div class="login-tabs" role="tablist">
+      <button class="ltab on" onclick="setLoginTab(this,'signup')" role="tab" aria-selected="true">Créer un compte</button>
+      <button class="ltab" onclick="setLoginTab(this,'login')" role="tab" aria-selected="false">Se connecter</button>
+    </div>
+    <div class="fld"><label for="lEmail">Adresse e-mail *</label>
+      <input type="email" id="lEmail" placeholder="exemple@email.com"></div>
+    <div class="fld" id="lNameWrap"><label for="lName">Votre prénom ou pseudo *</label>
+      <input type="text" id="lName" placeholder="ex: Marie ou Doudou75"></div>
+    <div class="fld"><label for="lPass">Mot de passe *</label>
+      <input type="password" id="lPass" placeholder="Au moins 8 caractères"></div>
+    <div class="mod-btns">
+      <button class="btn-pub" onclick="doLogin()">✅ Continuer</button>
+      <button class="btn-ann" onclick="closeModal('modalLogin')">Annuler</button>
+    </div>
+    <div style="text-align:center;margin-top:14px;">
+      <div style="font-size:13px;color:var(--t2);margin-bottom:10px;">ou</div>
+      <button onclick="loginGoogle()" style="width:100%;background:var(--sf);border:2px solid var(--bd);border-radius:10px;padding:12px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--t);transition:.15s;min-height:48px;" onmouseover="this.style.borderColor='var(--gr)'" onmouseout="this.style.borderColor='var(--bd)'">
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/></svg>
+        Continuer avec Google
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ─── DONNÉES PRODUITS (reprises de l'original) ───
+const STORES=[
+  {id:'leclerc',name:'E.Leclerc',color:'#3b82f6',lat:48.8566,lng:2.3522},
+  {id:'lidl',name:'Lidl',color:'#f59e0b',lat:48.8626,lng:2.3475},
+  {id:'aldi',name:'Aldi',color:'#06b6d4',lat:48.8694,lng:2.3412},
+  {id:'granfrais',name:'Grand Frais',color:'#10b981',lat:48.8540,lng:2.3585},
+  {id:'carrefour',name:'Carrefour',color:'#ef4444',lat:48.8612,lng:2.3536},
+];
+const FUEL=[
+  {id:'total',name:'TotalEnergies',prices:{e95:1.52,diesel:1.48,e85:0.89}},
+  {id:'leclerc',name:'E.Leclerc',prices:{e95:1.45,diesel:1.42,e85:0.85}},
+  {id:'carrefour',name:'Carrefour',prices:{e95:1.49,diesel:1.45,e85:0.87}},
+];
+const PRODS=[
+  {id:1,name:'Farine T55',unit:'kg',cat:'epicerie',emoji:'🌾',trend:'down',prices:{leclerc:0.72,lidl:0.65,aldi:0.68,granfrais:0.89,carrefour:0.70}},
+  {id:2,name:'Sucre blanc',unit:'kg',cat:'epicerie',emoji:'🍚',trend:'stable',prices:{leclerc:0.89,lidl:0.79,aldi:0.82,granfrais:0.99,carrefour:0.85}},
+  {id:3,name:"Huile tournesol",unit:'L',cat:'epicerie',emoji:'🫙',trend:'up',prices:{leclerc:1.49,lidl:1.29,aldi:1.35,granfrais:1.69,carrefour:1.39}},
+  {id:4,name:'Pâtes spaghetti',unit:'500g',cat:'epicerie',emoji:'🍝',trend:'stable',prices:{leclerc:0.69,lidl:0.55,aldi:0.59,granfrais:0.89,carrefour:0.65}},
+  {id:5,name:'Riz basmati',unit:'kg',cat:'epicerie',emoji:'🍚',trend:'stable',prices:{leclerc:1.89,lidl:1.49,aldi:1.59,granfrais:2.20,carrefour:1.70}},
+  {id:6,name:'Sel fin',unit:'kg',cat:'epicerie',emoji:'🧂',trend:'stable',prices:{leclerc:0.39,lidl:0.29,aldi:0.32,granfrais:0.55,carrefour:0.35}},
+  {id:7,name:"Huile d'olive",unit:'L',cat:'epicerie',emoji:'🫒',trend:'up',prices:{leclerc:4.99,lidl:3.99,aldi:4.29,granfrais:5.99,carrefour:4.50}},
+  {id:9,name:'Lait demi-écrémé',unit:'L',cat:'laitier',emoji:'🥛',trend:'stable',prices:{leclerc:0.89,lidl:0.75,aldi:0.79,granfrais:1.05,carrefour:0.85}},
+  {id:10,name:'Beurre 250g',unit:'250g',cat:'laitier',emoji:'🧈',trend:'up',prices:{leclerc:1.99,lidl:1.69,aldi:1.79,granfrais:2.40,carrefour:1.95}},
+  {id:11,name:'Yaourt nature x8',unit:'lot',cat:'laitier',emoji:'🫙',trend:'stable',prices:{leclerc:1.29,lidl:0.99,aldi:1.05,granfrais:1.59,carrefour:1.15}},
+  {id:12,name:'Fromage râpé 200g',unit:'200g',cat:'laitier',emoji:'🧀',trend:'up',prices:{leclerc:1.79,lidl:1.49,aldi:1.55,granfrais:2.10,carrefour:1.69}},
+  {id:13,name:'Œufs x12',unit:'boîte',cat:'laitier',emoji:'🥚',trend:'up',prices:{leclerc:2.49,lidl:1.99,aldi:2.10,granfrais:3.20,carrefour:2.30}},
+  {id:14,name:'Blanc de poulet',unit:'kg',cat:'viande',emoji:'🍗',trend:'up',prices:{leclerc:8.90,lidl:7.20,aldi:7.80,granfrais:9.50,carrefour:8.50}},
+  {id:15,name:'Poulet fermier',unit:'kg',cat:'viande',emoji:'🐔',trend:'stable',prices:{leclerc:4.50,lidl:3.80,aldi:4.10,granfrais:5.20,carrefour:4.80}},
+  {id:16,name:'Steak haché 5%',unit:'kg',cat:'viande',emoji:'🥩',trend:'up',prices:{leclerc:10.90,lidl:8.99,aldi:9.50,granfrais:12.50,carrefour:10.20}},
+  {id:17,name:'Côtelettes porc',unit:'kg',cat:'viande',emoji:'🥓',trend:'stable',prices:{leclerc:7.50,lidl:6.20,aldi:6.80,granfrais:8.50,carrefour:7.80}},
+  {id:18,name:'Filet de saumon',unit:'kg',cat:'viande',emoji:'🐟',trend:'up',prices:{leclerc:18.90,lidl:15.99,aldi:16.50,granfrais:22.00,carrefour:19.50}},
+  {id:19,name:'Thon en boîte',unit:'140g',cat:'viande',emoji:'🥫',trend:'stable',prices:{leclerc:1.29,lidl:0.99,aldi:1.05,granfrais:1.60,carrefour:1.15}},
+  {id:20,name:'Poulet Halal',unit:'kg',cat:'viande',emoji:'🐔',trend:'stable',halal:true,prices:{leclerc:5.50,granfrais:6.20,carrefour:5.80}},
+  {id:21,name:'Viande Halal',unit:'kg',cat:'viande',emoji:'🥩',trend:'stable',halal:true,prices:{leclerc:14.90,granfrais:16.50,carrefour:15.20}},
+  {id:22,name:'Tomates rondes',unit:'kg',cat:'fl',emoji:'🍅',trend:'down',prices:{leclerc:1.99,lidl:1.49,aldi:1.59,granfrais:1.80,carrefour:1.70}},
+  {id:23,name:'Pommes de terre',unit:'kg',cat:'fl',emoji:'🥔',trend:'stable',prices:{leclerc:0.99,lidl:0.79,aldi:0.85,granfrais:1.20,carrefour:0.90}},
+  {id:24,name:'Oignons',unit:'kg',cat:'fl',emoji:'🧅',trend:'stable',prices:{leclerc:0.89,lidl:0.69,aldi:0.75,granfrais:1.10,carrefour:0.80}},
+  {id:25,name:'Carottes',unit:'kg',cat:'fl',emoji:'🥕',trend:'stable',prices:{leclerc:0.99,lidl:0.79,aldi:0.85,granfrais:1.30,carrefour:0.90}},
+  {id:26,name:'Bananes',unit:'kg',cat:'fl',emoji:'🍌',trend:'down',prices:{leclerc:1.49,lidl:1.19,aldi:1.29,granfrais:1.60,carrefour:1.35}},
+  {id:27,name:'Pommes Golden',unit:'kg',cat:'fl',emoji:'🍎',trend:'stable',prices:{leclerc:1.99,lidl:1.59,aldi:1.69,granfrais:2.50,carrefour:1.80}},
+  {id:28,name:'Courgettes',unit:'kg',cat:'fl',emoji:'🥒',trend:'down',prices:{leclerc:1.49,lidl:1.19,aldi:1.29,granfrais:1.80,carrefour:1.40}},
+  {id:29,name:'Lessive liquide',unit:'1.5L',cat:'hygiene',emoji:'🧺',trend:'up',prices:{leclerc:3.99,lidl:2.99,aldi:3.19,granfrais:4.99,carrefour:3.49}},
+  {id:30,name:'Liquide vaisselle',unit:'750ml',cat:'hygiene',emoji:'🫧',trend:'stable',prices:{leclerc:1.29,lidl:0.89,aldi:0.99,granfrais:1.59,carrefour:1.10}},
+  {id:31,name:'Papier toilette x12',unit:'lot',cat:'hygiene',emoji:'🧻',trend:'up',prices:{leclerc:3.99,lidl:2.99,aldi:3.29,granfrais:4.99,carrefour:3.50}},
+  {id:32,name:'Eau minérale 1.5L',unit:'L',cat:'boisson',emoji:'💧',trend:'stable',prices:{leclerc:0.29,lidl:0.22,aldi:0.24,granfrais:0.35,carrefour:0.27}},
+  {id:33,name:"Jus d'orange",unit:'L',cat:'boisson',emoji:'🍊',trend:'up',prices:{leclerc:1.29,lidl:0.99,aldi:1.05,granfrais:1.60,carrefour:1.15}},
+  {id:34,name:'Coca-Cola 1.5L',unit:'L',cat:'boisson',emoji:'🥤',trend:'stable',prices:{leclerc:1.79,lidl:1.49,aldi:1.55,granfrais:1.99,carrefour:1.65}},
+];
+const CATS=[
+  {id:'all',label:'Tous'},
+  {id:'epicerie',label:'🌾 Épicerie'},
+  {id:'laitier',label:'🥛 Laitiers'},
+  {id:'viande',label:'🥩 Viandes'},
+  {id:'fl',label:'🥦 Fruits & Légumes'},
+  {id:'hygiene',label:'🧴 Hygiène'},
+  {id:'boisson',label:'🥤 Boissons'},
+];
+
+// ─── DEALS COMMUNAUTAIRES ───
+// ════════════════════════════════════════════════════
+// ⚙️  FIREBASE CONFIG — remplacez ces valeurs par les
+//     vôtres (Firebase Console → Paramètres du projet)
+// ════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDrDQSLFbnRACznBYiIlXZVfnmUDKy1T3E",
+  authDomain:        "prixes-b07fb.firebaseapp.com",
+  projectId:         "prixes-b07fb",
+  storageBucket:     "prixes-b07fb.firebasestorage.app",
+  messagingSenderId: "469759036890",
+  appId:             "1:469759036890:web:4e1f4a8ac33b5862ac04e3"
+};
+
+// ── État Firebase ────────────────────────────────────
+let db=null, auth=null, storage=null;
+let currentUser=null;           // utilisateur connecté Firebase
+let dealsUnsub=null;            // listener Firestore temps réel
+
+// ── Deals (chargés depuis Firestore, démo en fallback) ──
+let DEALS=[
+  {id:'demo1',author:'Jean-Michel',ini:'JM',rep:127,title:'Poulet Halal entier 5€ au lieu de 9€',store:'E.Leclerc',priceNow:4.99,priceBefore:8.99,expiry:'Valide jusqu\'au 10 juin ✅',urgent:false,vOui:247,vNon:8,comments:12,link:'#'},
+  {id:'demo2',author:'Sarah',ini:'SA',rep:89,title:'Lait Bio 1L à 1€ au lieu de 1,50€',store:'Lidl',priceNow:1.00,priceBefore:1.50,expiry:'⚠️ Expire dans 4 jours !',urgent:true,vOui:134,vNon:5,comments:8,link:'#'},
+  {id:'demo3',author:'Karim',ini:'KA',rep:210,title:'Casque Sony WH-1000 150€ au lieu de 280€',store:'Amazon',priceNow:149.99,priceBefore:279.99,expiry:'Valide jusqu\'au 15 juin ✅',urgent:false,vOui:456,vNon:21,comments:34,link:'#'},
+  {id:'demo4',author:'Fatima',ini:'FA',rep:55,title:"Huile d'olive 1L à 3,99€ au lieu de 6,50€",store:'Carrefour',priceNow:3.99,priceBefore:6.50,expiry:'Valide jusqu\'au 12 juin ✅',urgent:false,vOui:98,vNon:3,comments:5,link:'#'},
+];
+
+// ─── UTILS ───
+const bestP=p=>Math.min(...Object.values(p.prices).filter(v=>v));
+const worstP=p=>Math.max(...Object.values(p.prices).filter(v=>v));
+const bestS=p=>STORES.find(s=>p.prices[s.id]===bestP(p)&&p.prices[s.id]);
+const savePct=p=>Math.round((1-bestP(p)/worstP(p))*100);
+const TC=t=>t==='up'?'color:var(--rd)':t==='down'?'color:var(--gr)':'color:var(--t2)';
+const TE=t=>t==='up'?'↑':t==='down'?'↓':'→';
+
+let userVotes=JSON.parse(localStorage.getItem('pxv')||'{}');
+function saveVotes(){localStorage.setItem('pxv',JSON.stringify(userVotes));}
+
+// ─── SYNTHÈSE VOCALE ───
+let _voiceUnlocked=false;
+function _unlockVoice(){
+  if(_voiceUnlocked||!window.speechSynthesis) return;
+  // iOS nécessite un utterance vide depuis un geste utilisateur
+  const u=new SpeechSynthesisUtterance('');
+  u.volume=0;
+  window.speechSynthesis.speak(u);
+  _voiceUnlocked=true;
+}
+document.addEventListener('click',_unlockVoice,{once:true});
+document.addEventListener('touchstart',_unlockVoice,{once:true,passive:true});
+
+function speak(txt){
+  if(!window.speechSynthesis){
+    toast('🔇 Synthèse vocale non disponible sur ce navigateur');
+    return;
+  }
+  // iOS bug: speechSynthesis se bloque après 15 secondes d'inactivité — relancer
+  if(window.speechSynthesis.paused) window.speechSynthesis.resume();
+  window.speechSynthesis.cancel();
+  setTimeout(()=>{
+    const u=new SpeechSynthesisUtterance(txt);
+    u.lang='fr-FR';
+    u.rate=0.88;
+    u.pitch=1;
+    u.volume=1;
+    u.onerror=e=>{
+      if(e.error!=='interrupted')
+        console.warn('[Prixes] Voix erreur :',e.error);
+    };
+    window.speechSynthesis.speak(u);
+  },50); // petit délai pour laisser cancel() se terminer sur iOS
+}
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ─── NAVIGATION ───
+let currentPage='accueil';
+function goTab(tab){
+  const prevPage=currentPage;
+  document.querySelectorAll('.page').forEach(p=>p.classList.add('page-hidden'));
+  document.querySelectorAll('.bnav-btn').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed','false');});
+  document.getElementById('pg-'+tab).classList.remove('page-hidden');
+  const nb=document.getElementById('nav-'+tab);
+  if(nb){nb.classList.add('on');nb.setAttribute('aria-pressed','true');}
+  currentPage=tab;
+  if(tab==='accueil')renderAccueil();
+  if(tab==='courses')renderCourses();
+  if(tab==='fuel')renderFuelPage();
+  if(tab==='deals')renderDeals();
+  window.scrollTo(0,0);
+  // Phase 3: entrée animée
+  if(tab!==prevPage){
+    const el=document.getElementById('pg-'+tab);
+    if(el){el.classList.remove('page-enter');void el.offsetWidth;el.classList.add('page-enter');setTimeout(()=>el.classList.remove('page-enter'),250);}
+  }
+}
+
+// ─── ACCUEIL ───
+function renderAccueil(){
+  // ── Carburants : montrer les données immédiatement (cache ou demo) ──
+  const fkeys=[{k:'sp95',l:'SP95',e:'⛽'},{k:'gazole',l:'Diesel',e:'🛢️'},{k:'e10',l:'E10',e:'🌿'}];
+  const homeEl=document.getElementById('fuelHome');
+
+  // Vérifier cache avant tout
+  const cached=JSON.parse(localStorage.getItem('px_fuel')||'null');
+  if(cached&&(Date.now()-cached.ts)<FUEL_TTL&&cached.stations?.length>0){
+    // Cache valide → afficher directement, pas de skeleton
+    renderFuelData(cached.stations,null,null,'API');
+  } else {
+    // Pas de cache → afficher les prix démo immédiatement + essayer API en arrière-plan
+    renderFuelData(buildDemoStations(),null,null,'demo');
+    refreshFuelHome();
+  }
+
+  // top produits (meilleur % économie)
+  const top=[...PRODS].sort((a,b)=>savePct(b)-savePct(a)).slice(0,8);
+  document.getElementById('topProds').innerHTML=top.map(p=>{
+    const bp=bestP(p);const bs=bestS(p);
+    return `<div class="pc" onclick="voirDetail(${p.id})" role="button" tabindex="0" aria-label="${p.name}, meilleur prix ${bp.toFixed(2)} euros chez ${bs?.name}">
+      ${p.halal?'<div class="halal-badge">🟢 Halal</div>':''}
+      <div class="pc-em">${p.emoji}</div>
+      <div class="pc-name">${p.name}</div>
+      <div class="pc-unit">/ ${p.unit}</div>
+      <div class="pc-best">${bp.toFixed(2)} €</div>
+      <div class="pc-store">${bs?.name}</div>
+      <div class="pc-trend" style="${TC(p.trend)}">${TE(p.trend)}</div>
+      <button class="speak-pill" onclick="event.stopPropagation();speak('${p.name}, ${bp.toFixed(2)} euros chez ${bs?.name}')" aria-label="Lire à voix haute">🔊</button>
+    </div>`;
+  }).join('');
+
+  // top deals
+  const top3=DEALS.sort((a,b)=>b.vOui-a.vOui).slice(0,3);
+  document.getElementById('topDeals').innerHTML=top3.map(d=>renderDealCard(d)).join('');
+}
+
+// ─── COURSES ───
+let currentCat='all';
+let searchQ='';
+function renderCourses(){
+  // cats
+  document.getElementById('catsBarre').innerHTML=CATS.map(c=>`
+    <button class="cat-btn ${currentCat===c.id?'on':''}" onclick="setCat('${c.id}')" aria-pressed="${currentCat===c.id}">${c.label}</button>`).join('');
+
+  // sous-cat viande
+  if(currentCat==='viande'){
+    document.getElementById('subCats').innerHTML=`<div class="cats" style="margin-bottom:12px;" role="group" aria-label="Filtrer la viande">
+      <button class="cat-btn ${subCat==='all'?'on':''}" onclick="setSubCat('all')" aria-pressed="${subCat==='all'}">Tous</button>
+      <button class="cat-btn ${subCat==='halal'?'on':''}" onclick="setSubCat('halal')" aria-pressed="${subCat==='halal'}">🟢 Halal</button>
+      <button class="cat-btn ${subCat==='standard'?'on':''}" onclick="setSubCat('standard')" aria-pressed="${subCat==='standard'}">Standard</button>
+    </div>`;
+  } else {
+    document.getElementById('subCats').innerHTML='';subCat='all';
+  }
+
+  let list=[...PRODS];
+  if(currentCat!=='all') list=list.filter(p=>p.cat===currentCat);
+  if(currentCat==='viande'&&subCat==='halal') list=list.filter(p=>p.halal);
+  if(currentCat==='viande'&&subCat==='standard') list=list.filter(p=>!p.halal);
+  if(searchQ) list=list.filter(p=>p.name.toLowerCase().includes(searchQ));
+
+  document.getElementById('coursesCount').textContent=list.length+' produit'+(list.length>1?'s':'');
+  document.getElementById('coursesGrid').innerHTML=list.map(p=>{
+    const bp=bestP(p);const bs=bestS(p);const sp=savePct(p);
+    return `<div class="pc" onclick="voirDetail(${p.id})" role="button" tabindex="0" aria-label="${p.name}, meilleur prix ${bp.toFixed(2)} euros chez ${bs?.name}">
+      ${p.halal?'<div class="halal-badge">🟢 Halal</div>':''}
+      <div class="pc-em">${p.emoji}</div>
+      <div class="pc-name">${p.name}</div>
+      <div class="pc-unit">/ ${p.unit}</div>
+      <div class="pc-best">${bp.toFixed(2)} €</div>
+      <div class="pc-store">${bs?.name}</div>
+      <div class="pc-trend" style="${TC(p.trend)}">${TE(p.trend)}</div>
+      ${sp>10?`<div style="margin-top:8px;font-size:11px;font-weight:700;color:var(--or);">💰 -${sp}%</div>`:''}
+      <button class="speak-pill" onclick="event.stopPropagation();speak('${p.name}, ${bp.toFixed(2)} euros chez ${bs?.name}')" aria-label="Lire à voix haute">🔊</button>
+    </div>`;
+  }).join('');
+}
+let subCat='all';
+function setCat(c){currentCat=c;renderCourses();}
+function setSubCat(s){subCat=s;renderCourses();}
+
+document.getElementById('coursesSearch').addEventListener('input',e=>{
+  searchQ=e.target.value.toLowerCase().trim();renderCourses();
+});
+
+// ─── DETAIL PRODUIT ───
+function voirDetail(id){
+  const p=PRODS.find(x=>x.id===id);if(!p)return;
+  const sorted=Object.entries(p.prices).filter(e=>e[1]).map(e=>({id:e[0],price:e[1]})).sort((a,b)=>a.price-b.price);
+  const minP=bestP(p);const maxP=worstP(p);const sp=savePct(p);
+  document.getElementById('detailContent').innerHTML=`
+    <div class="det-head">
+      <div class="det-em">${p.emoji}</div>
+      <div>
+        <div class="det-name">${p.name}${p.halal?' 🟢':''}</div>
+        <div class="det-unit">par ${p.unit}</div>
+        <div id="detNS" style="margin-top:6px;"></div>
+      </div>
+      <button style="margin-left:auto;background:var(--gr);border:none;border-radius:10px;width:46px;height:46px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:#fff;" onclick="speak('${p.name}, ${minP.toFixed(2)} euros chez ${bestS(p)?.name}')" aria-label="Lire à voix haute">🔊</button>
+    </div>
+    <div class="stats3">
+      <div class="dstat"><div class="dsv" style="color:var(--gr)">${minP.toFixed(2)} €</div><div class="dsl">Meilleur prix</div></div>
+      <div class="dstat"><div class="dsv">${maxP.toFixed(2)} €</div><div class="dsl">Prix le plus cher</div></div>
+      <div class="dstat"><div class="dsv" style="color:var(--or)">${sp}%</div><div class="dsl">Économie max</div></div>
+    </div>
+    <div class="scomp">
+      <div class="scomp-h"><div>Magasin</div><div>Prix</div><div>Y aller</div></div>
+      ${sorted.map((e,i)=>{
+        const s=STORES.find(x=>x.id===e.id);
+        return `<div class="srow ${i===0?'best':''}">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="sdot" style="background:${s?.color}"></div>
+            <div class="sname">${i===0?'⭐ ':''}${s?.name}</div>
+          </div>
+          <div class="sprice" style="color:${i===0?'var(--gr)':'var(--t)'}">${e.price.toFixed(2)} €</div>
+          <div style="display:flex;gap:6px;">
+            <button class="nbtn gps" onclick="goMaps('${s?.id}')" aria-label="Itinéraire vers ${s?.name}">📍 GPS</button>
+            <button class="nbtn" onclick="speak('${getNav(s?.id)}')" aria-label="Instructions vocales pour ${s?.name}">🎤</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div id="offContrib" style="margin-top:12px;"></div>
+    <button onclick="goTab('scanner');document.getElementById('manualBarcode').style.display='block'" class="df-btn" style="width:100%;margin-top:12px;justify-content:center;font-size:14px;">📷 Scanner pour vrais prix communautaires</button>`;
+
+  document.querySelectorAll('.page').forEach(p=>p.classList.add('page-hidden'));
+  document.getElementById('pg-detail').classList.remove('page-hidden');
+  window.scrollTo(0,0);
+
+  // Charger Nutriscore + prix Open Prices en arrière-plan
+  searchOFF(p.name).then(products=>{
+    if(!products.length) return;
+    const best=products[0];
+    const nsEl=document.getElementById('detNS');
+    if(nsEl&&best.nutriscore_grade)
+      nsEl.innerHTML=`<div class="ns-wrap">${nsBadge(best.nutriscore_grade)} Nutriscore</div>`;
+    // Prix contributifs
+    getOPPrices(best.code).then(prices=>{
+      const sec=document.getElementById('offContrib');
+      if(!sec||prices.length===0) return;
+      const byStore={};
+      prices.forEach(pr=>{
+        const k=(pr.location_display_name||pr.location_name||'?').substring(0,25);
+        if(!byStore[k]||new Date(pr.date)>new Date(byStore[k].date)) byStore[k]={...pr,storeName:k};
+      });
+      const rows=Object.values(byStore).sort((a,b)=>a.price-b.price).slice(0,5);
+      sec.innerHTML=`<div class="off-prices" style="background:var(--sf);border:2px solid var(--bd);border-radius:var(--r);padding:14px;">
+        <div class="off-prices-title">🌍 Prix communautaires réels
+          <span style="font-size:11px;color:var(--t3);">${prices.length} contribution${prices.length>1?'s':''}</span></div>
+        ${rows.map((r,i)=>`<div class="price-contrib" ${i===0?'style="background:var(--grl);padding:8px 10px;border-radius:6px;"':''}>
+          <div><div class="price-contrib-store">${i===0?'⭐ ':''} ${r.storeName}</div>
+            <div class="price-contrib-date">${new Date(r.date).toLocaleDateString('fr-FR')}</div></div>
+          <div class="price-contrib-val">${Number(r.price).toFixed(2)} €</div>
+        </div>`).join('')}
+      </div>`;
+    }).catch(()=>{});
+  }).catch(()=>{});
+}
+function retourCourses(){
+  document.getElementById('pg-detail').classList.add('page-hidden');
+  if(currentPage==='courses') document.getElementById('pg-courses').classList.remove('page-hidden');
+  else {document.getElementById('pg-accueil').classList.remove('page-hidden');currentPage='accueil';}
+}
+function goMaps(sid){
+  const s=STORES.find(x=>x.id===sid);if(!s)return;
+  const query=encodeURIComponent(s.name);
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      const {latitude:lat,longitude:lng}=pos.coords;
+      window._userLat=lat;window._userLng=lng;
+      window.open(`https://www.google.com/maps/dir/?api=1&origin=${lat},${lng}&destination=${query}&travelmode=driving`,'_blank');
+    },()=>{
+      window.open(`https://www.google.com/maps/search/?api=1&query=${query}`,'_blank');
+    },{timeout:5000});
+  } else {
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`,'_blank');
+  }
+}
+function getNav(sid){
+  const s=STORES.find(x=>x.id===sid);
+  const nom=s?.name||'ce magasin';
+  const msgs={
+    leclerc:`Direction ${nom}. Une fois arrivé, l'entrée principale est bien indiquée. L'accueil peut vous guider vers n'importe quel rayon.`,
+    lidl:`Direction ${nom}. Le magasin est en libre service. Les produits frais sont généralement au fond du magasin.`,
+    aldi:`Direction ${nom}. Les allées sont larges et numérotées. Demandez au caissier si vous cherchez un produit spécifique.`,
+    granfrais:`Direction ${nom}. Ce magasin est spécialisé fruits, légumes et produits frais. Le personnel est disponible pour vous aider.`,
+    carrefour:`Direction ${nom}. C'est un grand magasin. Un plan est disponible à l'entrée. Vous pouvez aussi demander à l'accueil.`,
+  };
+  return msgs[sid]||`Direction ${nom}. Bonne route !`;
+}
+
+// ─── CARBURANTS RÉELS (API data.economie.gouv.fr) ───
+const FUEL_TTL = 30*60*1000; // cache 30 min
+
+function fuelSkeleton(){
+  return `<div class="fuel-type-wrap">
+    <div class="fuel-type-title" style="margin-bottom:12px;">⛽ Chargement en cours...</div>
+    <div class="fuel-grid">
+      ${[1,2,3].map(()=>`<div class="fuel-card"><div class="skeleton" style="height:80px;border-radius:10px;"></div></div>`).join('')}
+    </div>
+  </div>`.repeat(3);
+}
+
+async function loadFuelAPI(lat,lng,radiusKm=5){
+  // Construire l'URL manuellement — URLSearchParams encode mal les apostrophes POINT
+  const where=`distance(geom,geom'POINT(${lng} ${lat})',${radiusKm}km)`;
+  const govUrl='https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records'
+    +'?where='+encodeURIComponent(where)
+    +'&limit=20'
+    +'&select=id,nom,adresse,ville,sp95_prix,gazole_prix,e10_prix,e85_prix,latitude,longitude'
+    +'&timezone=Europe%2FParis';
+
+  // Tentative 1 : API gouvernementale directe
+  try{
+    const r=await fetch(govUrl,{headers:{'Accept':'application/json'},signal:AbortSignal.timeout?AbortSignal.timeout(8000):undefined});
+    if(r.ok){const j=await r.json();if(j.results?.length>0){console.log('[Prixes] ✅ API gouv directe');return j.results;}}
+  }catch(e){console.warn('[Prixes] API gouv :',e.message);}
+
+  // Tentative 2 : allorigins.win (proxy CORS fiable)
+  try{
+    const proxy='https://api.allorigins.win/raw?url='+encodeURIComponent(govUrl);
+    const r2=await fetch(proxy,{signal:AbortSignal.timeout?AbortSignal.timeout(10000):undefined});
+    if(r2.ok){const j2=await r2.json();if(j2.results?.length>0){console.log('[Prixes] ✅ API via allorigins');return j2.results;}}
+  }catch(e){console.warn('[Prixes] allorigins :',e.message);}
+
+  // Tentative 3 : htmldriven corsproxy
+  try{
+    const proxy2='https://corsproxy.io/?url='+encodeURIComponent(govUrl);
+    const r3=await fetch(proxy2,{signal:AbortSignal.timeout?AbortSignal.timeout(10000):undefined});
+    if(r3.ok){const j3=await r3.json();if(j3.results?.length>0){console.log('[Prixes] ✅ API via corsproxy');return j3.results;}}
+  }catch(e){console.warn('[Prixes] corsproxy :',e.message);}
+
+  throw new Error('Toutes les sources API ont échoué');
+}
+
+function buildFuelSummary(stations){
+  // Aggreger: pour chaque type, prendre le min/moyenne sur toutes les stations proches
+  const types=['sp95','gazole','e10','e85'];
+  const result={};
+  types.forEach(t=>{
+    const vals=stations
+      .map(s=>parseFloat(s[t+'_prix']))
+      .filter(v=>v&&v>0&&v<5);
+    if(vals.length){
+      result[t]={
+        min: Math.min(...vals),
+        avg: vals.reduce((a,b)=>a+b,0)/vals.length,
+        count: vals.length
+      };
+    }
+  });
+
+  // Top 3 stations les moins chères (sur SP95 ou gazole)
+  const ranked=[...stations]
+    .filter(s=>parseFloat(s.sp95_prix)>0||parseFloat(s.gazole_prix)>0)
+    .sort((a,b)=>{
+      const pa=parseFloat(a.sp95_prix||a.gazole_prix||99);
+      const pb=parseFloat(b.sp95_prix||b.gazole_prix||99);
+      return pa-pb;
+    })
+    .slice(0,5);
+
+  return {summary:result, top:ranked};
+}
+
+function renderFuelData(stations, lat, lng, source='API'){
+  const page=document.getElementById('fuelPage');
+  const homeEl=document.getElementById('fuelHome');
+  const {summary, top}=buildFuelSummary(stations);
+
+  const types=[
+    {k:'sp95',l:'Essence SP95',e:'⛽'},
+    {k:'gazole',l:'Diesel',e:'🛢️'},
+    {k:'e10',l:'Sans-plomb E10',e:'🌿'},
+    {k:'e85',l:'Bioéthanol E85',e:'🟢'},
+  ];
+
+  // ── ACCUEIL: 3 vignettes prix min ──
+  if(homeEl){
+    const shown=types.filter(t=>summary[t.k]).slice(0,3);
+    if(shown.length===0){
+      // Aucune donnée valide → forcer les démo
+      const demo=buildDemoStations();
+      const {summary:ds}=buildFuelSummary(demo);
+      homeEl.innerHTML=types.filter(t=>ds[t.k]).slice(0,3).map(f=>{
+        const d=ds[f.k];
+        return `<div class="fuel-card">
+          <div style="font-size:28px;margin-bottom:6px;">${f.e}</div>
+          <div class="fuel-name">${f.l}</div>
+          <div class="fuel-price" style="color:var(--t2);">${d.min.toFixed(2)} €</div>
+          <div class="fuel-star" style="color:var(--t3);">données démo</div>
+        </div>`;
+      }).join('');
+    } else {
+      homeEl.innerHTML=shown.map(f=>{
+        const d=summary[f.k];
+        const isReal=source==='API';
+        return `<div class="fuel-card ${isReal?'best':''}">
+          <div style="font-size:28px;margin-bottom:6px;">${f.e}</div>
+          <div class="fuel-name">${f.l}</div>
+          <div class="fuel-price" style="color:${isReal?'var(--gr)':'var(--t2)'};">${d.min.toFixed(isReal?3:2)} €</div>
+          <div class="fuel-star" style="color:${isReal?'var(--gr)':'var(--t3)'};">${isReal?'⭐ Prix le + bas ('+d.count+' stations)':'données démo'}</div>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  // ── PAGE CARBURANTS ──
+  if(!page) return;
+
+  const srcLabel=source==='API'
+    ?`<div style="font-size:12px;color:var(--t2);margin-bottom:16px;padding:8px 12px;background:var(--grl);border-radius:8px;">📡 Données officielles data.gouv.fr · Stations dans un rayon de 5 km · Mis à jour toutes les 10 min</div>`
+    :`<div style="font-size:12px;color:var(--t2);margin-bottom:16px;padding:8px 12px;background:var(--orl);border-radius:8px;">⚠️ Données de démonstration — Activez la géolocalisation pour voir les vrais prix près de chez vous</div>`;
+
+  // Tableau des prix moyens par type
+  const typesAvail=types.filter(t=>summary[t.k]);
+  const avgTable=`<div class="fuel-type-wrap">
+    <div class="fuel-type-title">📊 Prix moyens dans votre secteur</div>
+    ${typesAvail.map(f=>{
+      const d=summary[f.k];
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--bd);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:22px;">${f.e}</span>
+          <div>
+            <div style="font-size:14px;font-weight:700;">${f.l}</div>
+            <div style="font-size:12px;color:var(--t2);">${d.count} station${d.count>1?'s':''} trouvée${d.count>1?'s':''}</div>
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:22px;font-weight:800;color:var(--gr);">${d.min.toFixed(3)} €</div>
+          <div style="font-size:11px;color:var(--t2);">moy. ${d.avg.toFixed(3)} €</div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+
+  // Top stations les moins chères
+  // Stocker les coords utilisateur pour les itinéraires
+  if(lat&&lat>0) window._userLat=lat;
+  if(lng&&lng>0) window._userLng=lng;
+
+  const stationsHtml=top.length?`<div class="fuel-type-wrap">
+    <div class="fuel-type-title">📍 Stations les moins chères près de vous</div>
+    ${top.map((s,i)=>{
+      const sp=parseFloat(s.sp95_prix)||null;
+      const ga=parseFloat(s.gazole_prix)||null;
+      const e10=parseFloat(s.e10_prix)||null;
+      const prices=[
+        sp&&`SP95 : ${sp.toFixed(3)} €`,
+        ga&&`Diesel : ${ga.toFixed(3)} €`,
+        e10&&`E10 : ${e10.toFixed(3)} €`,
+      ].filter(Boolean);
+      // Nom propre : utiliser nom ou enseigne ou adresse
+      const stationName=(s.nom&&s.nom.trim())||'Station';
+      const fullAddr=`${stationName}, ${s.adresse||''}, ${s.ville||''}`.trim().replace(/^,\s*/,'').replace(/,\s*,/g,',');
+      const addrEncoded=encodeURIComponent(fullAddr);
+      // URL Maps avec itinéraire si on a la position utilisateur, sinon recherche par adresse
+      const hasSt=s.latitude&&s.longitude;
+      const hasUser=window._userLat&&window._userLng;
+      // URL Maps correcte : destination par coordonnées (fiable) avec itinéraire depuis l'utilisateur
+      const destCoords=`${s.latitude},${s.longitude}`;
+      const destAddr=addrEncoded;
+      const gmUrl=hasSt&&hasUser
+        ? `https://www.google.com/maps/dir/?api=1&origin=${window._userLat},${window._userLng}&destination=${destCoords}&travelmode=driving`
+        : hasSt
+          ? `https://www.google.com/maps/search/?api=1&query=${destAddr}`
+          : `https://www.google.com/maps/search/?api=1&query=${destAddr}`;
+      // Texte vocal de navigation
+      const voiceText=`Direction ${stationName}${s.adresse?', '+s.adresse:''}${s.ville?', '+s.ville:''}. ${prices[0]||'Prix disponible sur place'}.`;
+      return `<div style="padding:14px 0;border-bottom:${i<top.length-1?'1px solid var(--bd)':'none'};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+          <div style="flex:1;">
+            <div style="font-size:15px;font-weight:700;">${i===0?'⭐ ':''}${stationName}</div>
+            <div style="font-size:13px;color:var(--t2);margin-top:2px;">${s.adresse||''}, ${s.ville||''}</div>
+            <div style="font-size:13px;font-weight:600;color:var(--gr);margin-top:6px;">${prices.join(' · ')}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+            <a href="${gmUrl}" target="_blank" rel="noopener" style="background:var(--or);color:#fff;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;" aria-label="Itinéraire vers ${stationName}">📍 GPS</a>
+            <button onclick="speak('${voiceText.replace(/'/g,"\\'")}')" style="background:var(--gr);color:#fff;border:none;border-radius:10px;padding:9px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;" aria-label="Lire l'adresse à voix haute">🔊 Guide</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`:'';
+
+  page.innerHTML=srcLabel+avgTable+stationsHtml;
+}
+
+async function renderFuelPage(){
+  const page=document.getElementById('fuelPage');
+  if(!page) return;
+
+  // Afficher données démo immédiatement (pas de skeleton bloquant)
+  const cached=JSON.parse(localStorage.getItem('px_fuel')||'null');
+  if(cached&&(Date.now()-cached.ts)<FUEL_TTL&&cached.stations?.length>0){
+    renderFuelData(cached.stations,window._userLat||null,window._userLng||null,'API');
+    return; // Cache valide → pas besoin de recharger
+  }
+  // Pas de cache → montrer démo pendant le chargement
+  renderFuelData(buildDemoStations(),null,null,'demo');
+
+  try{
+    let lat=48.8566,lng=2.3522; // Paris par défaut
+
+    if(navigator.geolocation){
+      try{
+        const pos=await new Promise((resolve,reject)=>{
+          navigator.geolocation.getCurrentPosition(resolve,reject,
+            {timeout:6000,enableHighAccuracy:false,maximumAge:300000}
+          );
+        });
+        lat=pos.coords.latitude;lng=pos.coords.longitude;
+        window._userLat=lat;window._userLng=lng;
+      } catch(e){
+        // Géoloc refusée → garder Paris, afficher message
+        page.querySelector&&page.querySelector('[data-src-label]')?.remove();
+        toast('📍 Position non disponible — prix Paris affichés');
+      }
+    }
+
+    const stations=await loadFuelAPI(lat,lng);
+    if(stations&&stations.length>0){
+      localStorage.setItem('px_fuel',JSON.stringify({ts:Date.now(),stations,lat:Math.round(lat*100)/100}));
+      renderFuelData(stations,lat,lng,'API');
+    } else {
+      // Essayer avec 15km
+      const stations2=await loadFuelAPI(lat,lng,15);
+      if(stations2&&stations2.length>0){
+        localStorage.setItem('px_fuel',JSON.stringify({ts:Date.now(),stations:stations2,lat:Math.round(lat*100)/100}));
+        renderFuelData(stations2,lat,lng,'API');
+      } else {
+        renderFuelData(buildDemoStations(),-1,-1,'demo');
+        toast('⚠️ Aucune station trouvée dans 15 km');
+      }
+    }
+  } catch(err){
+    console.warn('[Prixes] Fuel page erreur :',err.message||err);
+    // Garder les données démo déjà affichées
+    toast('⚠️ Impossible de charger les prix en temps réel');
+  }
+}
+
+// Données de démonstration si API indisponible
+function buildDemoStations(){
+  return FUEL.map(s=>({
+    nom:s.name,adresse:'Paris',ville:'Paris',
+    latitude:48.8566,longitude:2.3522,
+    sp95_prix:s.prices.e95,
+    gazole_prix:s.prices.diesel,
+    e10_prix:s.prices.e85,
+    e85_prix:null
+  }));
+}
+
+// Mettre à jour l'accueil avec les vraies données (appel API en arrière-plan)
+async function refreshFuelHome(){
+  // Timeout global de 8 secondes — après ça on garde les données démo
+  const timeoutId=setTimeout(()=>{
+    // Si après 8s on est encore sur les données démo, le signaler discrètement
+    const homeEl=document.getElementById('fuelHome');
+    if(homeEl&&homeEl.querySelector('.fuel-star')?.textContent?.includes('démo')){
+      console.warn('[Prixes] API carburants : timeout');
+    }
+  },8000);
+
+  try{
+    let lat,lng;
+
+    // Essayer géolocalisation
+    if(navigator.geolocation){
+      try{
+        const pos=await new Promise((resolve,reject)=>{
+          navigator.geolocation.getCurrentPosition(resolve,reject,
+            {timeout:6000,enableHighAccuracy:false,maximumAge:300000}
+          );
+        });
+        lat=pos.coords.latitude;
+        lng=pos.coords.longitude;
+        window._userLat=lat;window._userLng=lng;
+      } catch(geoErr){
+        // Géoloc refusée ou indisponible → fallback Paris
+        console.info('[Prixes] Géoloc non disponible, Paris par défaut');
+        lat=48.8566;lng=2.3522;
+      }
+    } else {
+      // Pas de géolocalisation → Paris par défaut
+      lat=48.8566;lng=2.3522;
+    }
+
+    // Appel API
+    const stations=await loadFuelAPI(lat,lng);
+    clearTimeout(timeoutId);
+
+    if(stations&&stations.length>0){
+      localStorage.setItem('px_fuel',JSON.stringify({
+        ts:Date.now(),
+        stations,
+        lat:Math.round(lat*100)/100
+      }));
+      renderFuelData(stations,lat,lng,'API');
+    } else {
+      // API a répondu mais 0 stations dans 5km → essayer 10km
+      const stations2=await loadFuelAPI(lat,lng,10);
+      if(stations2&&stations2.length>0){
+        localStorage.setItem('px_fuel',JSON.stringify({ts:Date.now(),stations:stations2,lat:Math.round(lat*100)/100}));
+        renderFuelData(stations2,lat,lng,'API');
+      } else {
+        renderFuelData(buildDemoStations(),-1,-1,'demo');
+      }
+    }
+  } catch(err){
+    clearTimeout(timeoutId);
+    console.warn('[Prixes] API carburants erreur :',err.message||err);
+    // Garder les données démo déjà affichées — ne rien écraser
+  }
+}
+
+// ─── DEALS ───
+let sortDeals='pop';
+function setSortDeals(btn,s){
+  sortDeals=s;
+  document.querySelectorAll('.sort-btn').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-pressed','false');});
+  btn.classList.add('on');btn.setAttribute('aria-pressed','true');
+  renderDeals();
+}
+function renderDeals(container='dealsFeed'){
+  let list=[...DEALS];
+  if(sortDeals==='pop') list.sort((a,b)=>b.vOui-a.vOui);
+  if(sortDeals==='new') list.reverse();
+  if(sortDeals==='eco') list.sort((a,b)=>(b.priceBefore-b.priceNow)/b.priceBefore-(a.priceBefore-a.priceNow)/a.priceBefore);
+  document.getElementById(container).innerHTML=list.map(d=>renderDealCard(d)).join('');
+}
+function renderDealCard(d){
+  const save=Math.round((1-d.priceNow/d.priceBefore)*100);
+  const saveEur=(d.priceBefore-d.priceNow).toFixed(2);
+  const myV=userVotes[d.id];
+  return `<article class="deal-card ${d.vOui>100?'hot':''}" id="dc-${d.id}">
+    <div class="deal-body">
+      <div class="deal-top">
+        <div class="d-author">
+          <div class="d-avatar">${d.ini}</div>
+          <div><div class="d-aname">${d.author}</div><div class="d-arep">⭐ ${d.rep} points</div></div>
+        </div>
+        <div class="d-tag ${d.vOui>100?'tag-hot':'tag-new'}">${d.vOui>100?'🔥 Populaire':'✨ Nouveau'}</div>
+      </div>
+      <div class="deal-title">${d.title}</div>
+      ${d.photo?`<img src="${d.photo}" alt="Photo du deal" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;margin-bottom:10px;">`:''}
+      <div class="deal-meta"><span class="store-pill">📍 ${d.store}</span></div>
+      <div class="deal-price" aria-label="Prix ${d.priceNow}€ au lieu de ${d.priceBefore}€">
+        <div class="dprice-now">${d.priceNow.toFixed(2)} €</div>
+        <div><div class="dprice-before">Avant : ${d.priceBefore.toFixed(2)} €</div>
+          <div class="dprice-save">Économie ${saveEur} € (-${save}%)</div></div>
+      </div>
+      <div class="deal-expiry"><span class="${d.urgent?'urgent':'ok'}">${d.expiry}</span></div>
+      <div class="vote-lbl">Cette offre est-elle intéressante ?</div>
+      <div class="vote-btns" role="group">
+        <button class="vbtn vbtn-oui ${myV==='oui'?'voted':''}" onclick="vote(${d.id},'oui')" aria-pressed="${myV==='oui'}">👍 Oui, c'est bon !</button>
+        <button class="vbtn vbtn-non ${myV==='non'?'voted':''}" onclick="vote(${d.id},'non')" aria-pressed="${myV==='non'}">👎 Non</button>
+      </div>
+      <div class="vote-result" id="vr-${d.id}">✅ <strong>${d.vOui}</strong> oui · ❌ ${d.vNon} non</div>
+      <div class="deal-foot">
+        <button class="df-btn" aria-label="${d.comments} commentaires">💬 ${d.comments}</button>
+        <button class="df-btn df-buy" onclick="ouvrirDeal('${d.store.replace(/'/g,"\\'")}','${d.title.replace(/'/g,"\\'").replace(/"/g,"&quot;")}','${(d.link||'#').replace(/'/g,"\\'")}');haptic('light')" aria-label="Voir l'offre chez ${d.store}">🛒 Voir l'offre</button>
+        <button class="df-btn" onclick="speak('${d.title}. Prix ${d.priceNow} euros. Économie de ${saveEur} euros.')" aria-label="Lire à voix haute">🔊</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+// ─── SEARCH HEADER ───
+let searchTimer=null;
+document.getElementById('srchInput').addEventListener('input',e=>{
+  searchQ=e.target.value.toLowerCase().trim();
+  clearTimeout(searchTimer);
+  if(currentPage==='courses'){
+    if(searchQ.length>=3){
+      // Recherche dans OFF après 600ms de pause (évite trop de requêtes)
+      searchTimer=setTimeout(()=>showOFFResults(searchQ),600);
+    } else {
+      renderCourses();
+    }
+  } else if(searchQ) goTab('courses');
+});
+
+// ─── RECONNAISSANCE VOCALE ───
+const SpeechRec=window.SpeechRecognition||window.webkitSpeechRecognition;
+const rec=SpeechRec?new SpeechRec():null;
+if(rec){
+  rec.lang='fr-FR';
+  rec.continuous=false;
+  rec.interimResults=false;
+  rec.maxAlternatives=3;
+}
+function startVoice(){
+  if(!rec){
+    toast('⚠️ Micro non disponible — essayez Chrome ou Safari');
+    return;
+  }
+  const btn=document.getElementById('micBtn');
+  const srchInput=document.getElementById('srchInput');
+  btn.classList.add('listening');
+  toast('🎤 Parlez maintenant...');
+
+  rec.onresult=e=>{
+    btn.classList.remove('listening');
+    // Prendre la meilleure alternative avec le score de confiance le plus élevé
+    let best='';
+    let bestConf=0;
+    for(let i=0;i<e.results[0].length;i++){
+      if(e.results[0][i].confidence>bestConf){
+        bestConf=e.results[0][i].confidence;
+        best=e.results[0][i].transcript.toLowerCase().trim();
+      }
+    }
+    if(!best){
+      toast("🎤 Rien entendu, réessayez");
+      return;
+    }
+    srchInput.value=best;
+    searchQ=best;
+    speak('Recherche : '+best);
+    goTab('courses');
+    // Vérifier si des résultats trouvés
+    const found=PRODS.filter(p=>p.name.toLowerCase().includes(best));
+    if(found.length===0){
+      setTimeout(()=>toast('Aucun produit trouvé pour "'+best+'"'),800);
+    } else {
+      setTimeout(()=>toast('✅ '+found.length+' produit'+(found.length>1?'s':'')+" trouvé"+(found.length>1?'s':'')),800);
+    }
+  };
+  rec.onerror=e=>{
+    btn.classList.remove('listening');
+    const errs={
+      'not-allowed':'🚫 Microphone refusé — vérifiez les permissions',
+      'no-speech':'🎤 Rien entendu — parlez plus fort',
+      'network':'📶 Erreur réseau — vérifiez votre connexion',
+      'aborted':'🎤 Écoute annulée',
+    };
+    toast(errs[e.error]||'⚠️ Erreur micro : '+e.error);
+  };
+  rec.onend=()=>btn.classList.remove('listening');
+  try{
+    rec.start();
+  } catch(e){
+    // Déjà en cours d'écoute
+    btn.classList.remove('listening');
+    toast('🎤 Microphone déjà actif');
+  }
+}
+
+// ─── POSTER ───
+function calcSav(){
+  const o=parseFloat(document.getElementById('pOld').value);
+  const n=parseFloat(document.getElementById('pNew').value);
+  const el=document.getElementById('savPrev');
+  if(o>0&&n>0&&o>n){
+    const pct=Math.round((1-n/o)*100);
+    const eur=(o-n).toFixed(2);
+    el.textContent=`💰 Économie de ${eur} € soit -${pct}% — Bonne affaire !`;
+  } else el.textContent='💰 Entrez les deux prix pour voir l\'économie';
+}
+
+async function publier(){
+  const title=document.getElementById('pTitle').value.trim();
+  const store=document.getElementById('pStore').value;
+  const o=parseFloat(document.getElementById('pOld').value);
+  const n=parseFloat(document.getElementById('pNew').value);
+  const link=document.getElementById('pLink').value.trim();
+  const exp=document.getElementById('pExp').value;
+  const desc=document.getElementById('pDesc').value.trim();
+
+  if(!title||!store||!o||!n){toast('⚠️ Merci de remplir les champs obligatoires');haptic('error');return;}
+  if(n>=o){toast('⚠️ Le prix réduit doit être inférieur au prix habituel');haptic('error');return;}
+
+  // Demander connexion si non connecté
+  if(!currentUser){
+    closeModal('modalPoster');
+    openModal('modalLogin');
+    toast('📝 Connectez-vous pour publier votre offre');
+    return;
+  }
+
+  const btn=document.querySelector('#modalPoster .btn-pub');
+  if(btn){btn.textContent='⏳ Publication...';btn.disabled=true;}
+
+  try{
+    // Récupérer le profil utilisateur
+    const userSnap=await db.collection('users').doc(currentUser.uid).get();
+    const profile=userSnap.data()||{};
+    const author=currentUser.displayName||profile.username||currentUser.email?.split('@')[0]||'Anonyme';
+    const ini=author.slice(0,2).toUpperCase();
+
+    // Upload photo désactivé (Storage nécessite forfait Blaze)
+    // photoUrl reste null — la photo ne sera pas sauvegardée
+    let photoUrl = null;
+    /*
+    const photoFile = document.getElementById('pPhoto')?.files?.[0];
+    if (photoFile && storage) { ... }
+    */
+
+    // Expiry label
+    let expLabel='Valide maintenant ✅';
+    if(exp){
+      const d=new Date(exp);
+      const now=new Date();
+      const diff=(d-now)/(1000*60*60*24);
+      expLabel=diff<=3?`⚠️ Expire dans ${Math.ceil(diff)} jour(s) !`:`Valide jusqu'au ${d.toLocaleDateString('fr-FR',{day:'numeric',month:'long'})} ✅`;
+    }
+
+    // Sauvegarder dans Firestore
+    await db.collection('deals').add({
+      authorId:currentUser.uid,
+      author,ini,
+      rep:profile.rep||0,
+      title,store,
+      priceNow:n,priceBefore:o,
+      expiry:expLabel,
+      urgent:exp?(new Date(exp)-new Date())<3*86400000:false,
+      vOui:0,vNon:0,comments:0,
+      link:link||storeDealUrl(store,title),
+      photo:photoUrl,
+      description:desc||'',
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Incrémenter dealsCount du profil
+    await db.collection('users').doc(currentUser.uid).update({
+      dealsCount:firebase.firestore.FieldValue.increment(1),
+      rep:firebase.firestore.FieldValue.increment(1)
+    }).catch(()=>{});
+
+    closeModal('modalPoster');
+    haptic('success');
+    toast('🎉 Votre offre est publiée !');
+    goTab('deals');
+    // Reset formulaire
+    ['pTitle','pStore','pCat','pOld','pNew','pLink','pExp','pDesc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    const prev=document.getElementById('photoPreview');
+    if(prev){prev.classList.remove('show');prev.src='';}
+    const zone=document.getElementById('photoZone');
+    if(zone){
+      zone.style.paddingBottom='';
+      const lbl=zone.querySelector('.ph-lbl');const sub=zone.querySelector('.ph-sub');
+      if(lbl) lbl.textContent='Prendre une photo ou choisir';
+      if(sub) sub.textContent='Depuis votre appareil photo ou galerie';
+    }
+    const inp=document.getElementById('pPhoto');if(inp)inp.value='';
+    document.getElementById('savPrev').textContent='💰 Entrez les deux prix pour voir l\'économie';
+
+  } catch(err){
+    console.error('[Prixes] Publier :', err);
+    toast('❌ Erreur : '+err.message);
+  } finally {
+    if(btn){btn.textContent='✅ Publier';btn.disabled=false;}
+  }
+}
+
+// ─── FIREBASE AUTH ───
+function setLoginTab(btn,mode){
+  document.querySelectorAll('.ltab').forEach(b=>{b.classList.remove('on');b.setAttribute('aria-selected','false');});
+  btn.classList.add('on');btn.setAttribute('aria-selected','true');
+  document.getElementById('lNameWrap').style.display=mode==='signup'?'':'none';
+  btn._mode=mode;
+}
+async function doLogin(){
+  if(!auth){toast('⚠️ Firebase non initialisé — vérifiez la config');return;}
+  const email=document.getElementById('lEmail').value.trim();
+  const pw=document.getElementById('lPass').value;
+  const name=document.getElementById('lName').value.trim();
+  if(!email||!pw){toast('⚠️ Merci de remplir votre e-mail et mot de passe');return;}
+
+  const isSignup=document.querySelector('.ltab.on')?._mode!=='login';
+  const btn=document.querySelector('#modalLogin .btn-pub');
+  if(btn){btn.textContent='⏳ Connexion...';btn.disabled=true;}
+
+  try{
+    let cred;
+    if(isSignup){
+      if(!name){toast('⚠️ Merci d\'entrer un prénom ou pseudo');return;}
+      cred=await auth.createUserWithEmailAndPassword(email,pw);
+      // Enregistrer le profil dans Firestore
+      await db.collection('users').doc(cred.user.uid).set({
+        username:name,
+        ini:name.slice(0,2).toUpperCase(),
+        email,
+        rep:0,
+        dealsCount:0,
+        totalVotes:0,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      await cred.user.updateProfile({displayName:name});
+    } else {
+      cred=await auth.signInWithEmailAndPassword(email,pw);
+    }
+    closeModal('modalLogin');
+    toast('✅ Bienvenue '+(cred.user.displayName||name||email.split('@')[0])+' !');
+  } catch(err){
+    const msgs={
+      'auth/email-already-in-use':'Cet e-mail est déjà utilisé',
+      'auth/weak-password':'Mot de passe trop court (6 caractères min.)',
+      'auth/user-not-found':'Aucun compte avec cet e-mail',
+      'auth/wrong-password':'Mot de passe incorrect',
+      'auth/invalid-email':'Format d\'e-mail invalide',
+      'auth/too-many-requests':'Trop de tentatives — réessayez plus tard',
+    };
+    toast('❌ '+(msgs[err.code]||err.message));
+  } finally {
+    if(btn){btn.textContent='✅ Continuer';btn.disabled=false;}
+  }
+}
+async function loginGoogle(){
+  if(!auth){toast('⚠️ Firebase non initialisé');return;}
+  try{
+    const provider=new firebase.auth.GoogleAuthProvider();
+    const cred=await auth.signInWithPopup(provider);
+    const user=cred.user;
+    // Créer le profil si nouveau
+    const snap=await db.collection('users').doc(user.uid).get();
+    if(!snap.exists){
+      await db.collection('users').doc(user.uid).set({
+        username:user.displayName||user.email.split('@')[0],
+        ini:(user.displayName||'?').slice(0,2).toUpperCase(),
+        email:user.email,
+        rep:0,dealsCount:0,totalVotes:0,
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    closeModal('modalLogin');
+    toast('✅ Bienvenue '+(user.displayName||user.email.split('@')[0])+' !');
+  } catch(err){
+    if(err.code!=='auth/popup-closed-by-user')
+      toast('❌ Connexion Google impossible : '+err.message);
+  }
+}
+function doLogout(){
+  auth?.signOut().then(()=>toast('À bientôt !'));
+}
+function updateAuthUI(user){
+  const btn=document.getElementById('btnLogin');
+  if(user){
+    const name=user.displayName||user.email?.split('@')[0]||'Moi';
+    if(btn) btn.textContent='👤 '+name;
+  } else {
+    if(btn) btn.textContent='👤 Se connecter';
+  }
+}
+
+// ─── MODALS ───
+function openModal(id){haptic('light');document.getElementById(id).classList.add('open');const fi=document.querySelector('#'+id+' input,#'+id+' select');if(fi)setTimeout(()=>fi.focus(),100);}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.classList.remove('open');}));
+
+// ─── KEYBOARD ACCESS ───
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(el=>el.classList.remove('open'));});
+
+// ─── DARK MODE ───
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  const on=document.body.classList.contains('dark');
+  localStorage.setItem('px_dark',on?'1':'');
+  document.getElementById('darkToggle').textContent=on?'☀️':'🌙';
+  document.getElementById('darkToggle').setAttribute('aria-label',on?'Désactiver le mode sombre':'Activer le mode sombre');
+}
+(function initDark(){
+  if(localStorage.getItem('px_dark')||matchMedia('(prefers-color-scheme:dark)').matches){
+    document.body.classList.add('dark');
+    document.getElementById('darkToggle').textContent='☀️';
+  }
+})();
+
+// Manifest chargé depuis /manifest.json (fichier réel)
+
+// ─── SERVICE WORKER (fichier /sw.js) ───
+(function registerSW(){
+  if(!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('/sw.js', {scope:'/'})
+    .then(reg=>{
+      console.log('[Prixes PWA] ✅ Service Worker actif');
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed'&&navigator.serviceWorker.controller)
+            toast('🔄 Mise à jour disponible — rechargez la page');
+        });
+      });
+    })
+    .catch(err=>console.warn('[Prixes PWA] SW :',err));
+})();
+// ─── INSTALL PROMPT ───
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  deferredPrompt=e;
+  if(!localStorage.getItem('px_install_dismissed')){
+    setTimeout(()=>{
+      document.getElementById('installBanner').classList.add('show');
+    },3000);
+  }
+});
+function doInstall(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(choice=>{
+    if(choice.outcome==='accepted'){
+      toast('🎉 Prixes est installé sur votre écran d\'accueil !');
+      document.getElementById('installBanner').classList.remove('show');
+    }
+    deferredPrompt=null;
+  });
+}
+function dismissInstall(){
+  document.getElementById('installBanner').classList.remove('show');
+  localStorage.setItem('px_install_dismissed','1');
+}
+window.addEventListener('appinstalled',()=>{
+  toast('✅ Prixes installé avec succès !');
+  document.getElementById('installBanner').classList.remove('show');
+});
+
+// ─── OFFLINE INDICATOR ───
+function updateOnlineStatus(){
+  if(!navigator.onLine){
+    toast('📵 Vous êtes hors ligne — les données peuvent ne pas être à jour');
+  }
+}
+window.addEventListener('offline', updateOnlineStatus);
+
+// ─── LIENS ENSEIGNES (Fix: remplace link:'#' par vraie recherche) ───
+function storeDealUrl(store, title){
+  const q=encodeURIComponent(title.replace(/[€à–-]/g,' ').trim());
+  const map={
+    'E.Leclerc'   :`https://www.e.leclerc/recherche?q=${q}`,
+    'Lidl'        :`https://www.lidl.fr/recherche?q=${q}`,
+    'Aldi'        :`https://www.aldi.fr/recherche?q=${q}`,
+    'Carrefour'   :`https://www.carrefour.fr/s?q=${q}`,
+    'Intermarché' :`https://www.intermarche.com/produits/recherche?q=${q}`,
+    'Grand Frais' :`https://www.grand-frais.com/recherche?q=${q}`,
+    'Amazon'      :`https://www.amazon.fr/s?k=${q}`,
+    'Autre'       :`https://www.google.fr/search?q=${q}+prix+promotion`,
+  };
+  return map[store]||`https://www.google.fr/search?q=${q}+${encodeURIComponent(store)}`;
+}
+
+function ouvrirDeal(store, title, link){
+  // Si un vrai lien est fourni, l'utiliser — sinon générer un lien de recherche
+  const url=(link&&link!=='#')?link:storeDealUrl(store,title);
+  window.open(url,'_blank','noopener,noreferrer');
+}
+function haptic(type='light'){
+  if(!navigator.vibrate) return;
+  const p={light:10,medium:[10,30,10],success:[10,50,20],error:[30,20,30,20,30]};
+  navigator.vibrate(p[type]||10);
+}
+
+// ─── PHASE 3: SWIPE NAVIGATION ───
+const TABS=['accueil','courses','fuel','deals'];
+let txStart=0,tyStart=0,swipeActive=false;
+
+document.addEventListener('touchstart',e=>{
+  // Ne pas déclencher si dans un modal ou si on scroll horizontalement déjà
+  if(document.querySelector('.overlay.open')) return;
+  txStart=e.touches[0].clientX;
+  tyStart=e.touches[0].clientY;
+  swipeActive=true;
+},{passive:true});
+
+document.addEventListener('touchend',e=>{
+  if(!swipeActive) return;
+  swipeActive=false;
+  const dx=e.changedTouches[0].clientX-txStart;
+  const dy=e.changedTouches[0].clientY-tyStart;
+  // Swipe horizontal dominant + assez long + pas dans un champ texte
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){
+    const tag=document.activeElement?.tagName;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT') return;
+    const ci=TABS.indexOf(currentPage);
+    if(dx<0&&ci<TABS.length-1){haptic('light');goTab(TABS[ci+1]);}
+    else if(dx>0&&ci>0){haptic('light');goTab(TABS[ci-1]);}
+  }
+},{passive:true});
+
+// ─── INIT ───
+renderAccueil();
+</script>
+</body>
+</html>
+const PTR_THRESHOLD=80;
+
+document.addEventListener('touchstart',e=>{
+  if(window.scrollY===0&&!document.querySelector('.overlay.open')){
+    ptrY=e.touches[0].clientY;
+    ptrActive=true;
+  }
+},{passive:true});
+
+document.addEventListener('touchmove',e=>{
+  if(!ptrActive) return;
+  const dy=e.touches[0].clientY-ptrY;
+  const ptr=document.getElementById('ptrIndicator');
+  if(dy>20&&window.scrollY===0){
+    ptr.classList.add('active');
+    document.getElementById('ptrText').textContent=dy>PTR_THRESHOLD?'Relâchez !':'Tirez encore...';
+  }
+},{passive:true});
+
+document.addEventListener('touchend',e=>{
+  if(!ptrActive) return;
+  ptrActive=false;
+  const dy=e.changedTouches[0].clientY-ptrY;
+  const ptr=document.getElementById('ptrIndicator');
+  if(dy>PTR_THRESHOLD&&window.scrollY===0){
+    ptr.classList.add('spin');
+    document.getElementById('ptrText').textContent='Actualisation...';
+    haptic('medium');
+    setTimeout(()=>{
+      if(currentPage==='accueil') renderAccueil();
+      if(currentPage==='courses') renderCourses();
+      if(currentPage==='fuel') renderFuelPage();
+      if(currentPage==='deals') renderDeals();
+      ptr.classList.remove('active','spin');
+      toast('✅ Actualisé !');
+    },900);
+  } else {
+    ptr.classList.remove('active','spin');
+  }
+},{passive:true});
+
+// ─── PHASE 3: VOTE ANIMÉ (Firebase) ───
+async function vote(id,type){
+  const d=DEALS.find(x=>x.id===id);if(!d)return;
+  const prev=userVotes[id];
+
+  // Si même vote → retirer
+  const finalType=(prev===type)?null:type;
+
+  // Mise à jour locale immédiate (optimistic UI)
+  if(prev==='oui') d.vOui=Math.max(0,d.vOui-1);
+  if(prev==='non') d.vNon=Math.max(0,d.vNon-1);
+  if(finalType==='oui') d.vOui++;
+  if(finalType==='non') d.vNon++;
+  if(finalType) userVotes[id]=finalType; else delete userVotes[id];
+  saveVotes();
+
+  // Feedback UI
+  if(!finalType){toast('Vote retiré');haptic('light');}
+  else if(finalType==='oui'){toast('👍 Merci pour votre vote !');haptic('success');}
+  else {toast('👎 Vote enregistré');haptic('medium');}
+
+  // Animation
+  const card=document.getElementById('dc-'+id);
+  if(card){
+    const btn=card.querySelector(finalType==='oui'?'.vbtn-oui':finalType==='non'?'.vbtn-non':'.vbtn-oui');
+    if(btn&&finalType){
+      btn.classList.remove('pop-yes','pop-no');
+      void btn.offsetWidth;
+      btn.classList.add(finalType==='oui'?'pop-yes':'pop-no');
+      setTimeout(()=>btn.classList.remove('pop-yes','pop-no'),350);
+    }
+    const vr=document.getElementById('vr-'+id);
+    if(vr) vr.innerHTML=`✅ <strong>${d.vOui}</strong> oui · ❌ ${d.vNon} non`;
+    card.querySelectorAll('.vbtn').forEach(b=>{
+      const isOui=b.classList.contains('vbtn-oui');
+      const active=userVotes[id]===(isOui?'oui':'non');
+      b.classList.toggle('voted',active);
+      b.setAttribute('aria-pressed',active);
+    });
+  }
+
+  // Persistance Firestore (si connecté et deal Firestore)
+  if(db&&!String(id).startsWith('demo')){
+    try{
+      const voteRef=db.collection('votes').doc(`${currentUser?.uid||'anon'}_${id}`);
+      const dealRef=db.collection('deals').doc(id);
+
+      await db.runTransaction(async tx=>{
+        const dealSnap=await tx.get(dealRef);
+        if(!dealSnap.exists) return;
+        const data=dealSnap.data();
+        let newOui=data.vOui||0;
+        let newNon=data.vNon||0;
+        if(prev==='oui') newOui=Math.max(0,newOui-1);
+        if(prev==='non') newNon=Math.max(0,newNon-1);
+        if(finalType==='oui') newOui++;
+        if(finalType==='non') newNon++;
+        tx.update(dealRef,{vOui:newOui,vNon:newNon});
+        if(finalType) tx.set(voteRef,{userId:currentUser?.uid||'anon',dealId:id,type:finalType,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+        else tx.delete(voteRef);
+      });
+    } catch(err){
+      console.warn('[Prixes] Vote Firestore :',err.message);
+    }
+  }
+}
+
+// ─── PHASE 3: PHOTO PREVIEW ───
+function previewPhoto(input){
+  const file=input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const img=document.getElementById('photoPreview');
+    img.src=e.target.result;
+    img.classList.add('show');
+    document.getElementById('photoZone').style.paddingBottom='8px';
+    document.querySelector('#photoZone .ph-lbl').textContent='Photo sélectionnée ✅';
+    document.querySelector('#photoZone .ph-sub').textContent=file.name;
+    haptic('success');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ════════════════════════════════════════════════
+// 🥗 OPEN FOOD FACTS + OPEN PRICES — APIs réelles
+// ════════════════════════════════════════════════
+
+const OFF_BASE = 'https://world.openfoodfacts.org';
+const OP_BASE  = 'https://prices.openfoodfacts.org/api/v1';
+const OFF_HEADERS = {'User-Agent':'Prixes/1.0 (https://prixes.netlify.app)', 'Accept':'application/json'};
+
+// Nutriscore → badge HTML
+function nsBadge(grade){
+  if(!grade||grade==='unknown') return '<span class="ns ns-u" aria-label="Nutriscore inconnu">?</span>';
+  const g=grade.toUpperCase();
+  return `<span class="ns ns-${g.toLowerCase()}" aria-label="Nutriscore ${g}">${g}</span>`;
+}
+
+// EcoScore → badge
+function ecoBadge(grade){
+  if(!grade||grade==='unknown'||grade==='not-applicable') return '';
+  const emojis={a:'🌿',b:'🌱',c:'⚠️',d:'⛽',e:'❌'};
+  return `<span class="eco">${emojis[grade.toLowerCase()]||'♻️'} Éco ${grade.toUpperCase()}</span>`;
+}
+
+// NOVA group label
+function novaLabel(n){
+  const labels={1:'🥦 Brut',2:'🍳 Transformé',3:'🥫 Ingrédients ajoutés',4:'⚠️ Ultra-transformé'};
+  return labels[n]||'';
+}
+
+// ─── OPEN FOOD FACTS — chercher un produit par code-barres ───
+async function getOFFProduct(barcode){
+  try{
+    const url=`${OFF_BASE}/api/v2/product/${barcode}.json?fields=product_name,brands,image_url,nutriscore_grade,ecoscore_grade,nova_group,quantity,categories_tags,labels_tags,ingredients_text,allergens_tags`;
+    const r=await fetch(url,{headers:OFF_HEADERS,signal:AbortSignal.timeout?AbortSignal.timeout(8000):undefined});
+    if(!r.ok) throw new Error(r.status);
+    const d=await r.json();
+    if(d.status===1) return d.product;
+    return null;
+  }catch(e){console.warn('[OFF]',e.message);return null;}
+}
+
+// ─── OPEN FOOD FACTS — recherche textuelle ───
+async function searchOFF(query){
+  try{
+    const url=`${OFF_BASE}/cgi/search.pl?search_terms=${encodeURIComponent(query)}&tagtype_0=countries&tag_contains_0=contains&tag_0=france&action=process&json=1&page_size=20&fields=code,product_name,brands,image_url,nutriscore_grade,quantity`;
+    const r=await fetch(url,{headers:OFF_HEADERS,signal:AbortSignal.timeout?AbortSignal.timeout(8000):undefined});
+    if(!r.ok) throw new Error(r.status);
+    const d=await r.json();
+    return d.products||[];
+  }catch(e){console.warn('[OFF search]',e.message);return [];}
+}
+
+// ─── OPEN PRICES — vrais prix contributifs par barcode ───
+async function getOPPrices(barcode){
+  try{
+    const url=`${OP_BASE}/prices?product_code=${barcode}&country=fr&currency=EUR&size=30&order_by=-date`;
+    const r=await fetch(url,{headers:OFF_HEADERS,signal:AbortSignal.timeout?AbortSignal.timeout(8000):undefined});
+    if(!r.ok) throw new Error(r.status);
+    const d=await r.json();
+    return d.items||[];
+  }catch(e){console.warn('[OpenPrices]',e.message);return [];}
+}
+
+// ─── AFFICHER UN PRODUIT ENRICHI (OFF + Open Prices) ───
+async function displayProduct(barcode){
+  const el=document.getElementById('productResult');
+  if(!el) return;
+  el.style.display='block';
+  el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--t2);">
+    <div class="ptr-spin" style="animation:spin .7s linear infinite;width:36px;height:36px;border-width:4px;margin:0 auto 12px;"></div>
+    Chargement du produit...</div>`;
+
+  // Requêtes parallèles
+  const [product, prices] = await Promise.all([
+    getOFFProduct(barcode),
+    getOPPrices(barcode)
+  ]);
+
+  if(!product){
+    el.innerHTML=`<div class="empty"><div class="empty-icon">🔍</div><h3>Produit non trouvé</h3>
+      <p>Code : ${barcode}<br>Ce produit n'est pas encore dans la base Open Food Facts.</p>
+      <button onclick="window.open('https://world.openfoodfacts.org/product/${barcode}/','_blank')" class="btn-poster" style="margin-top:16px;">➕ Ajouter ce produit</button></div>`;
+    return;
+  }
+
+  const ns=nsBadge(product.nutriscore_grade);
+  const eco=ecoBadge(product.ecoscore_grade);
+  const nova=product.nova_group?`<span class="eco" style="background:${product.nova_group===1?'var(--grl)':product.nova_group===4?'#fee2e2':'#fef9c3'};color:${product.nova_group===1?'var(--grd)':product.nova_group===4?'var(--rd)':'var(--yw)'}">${novaLabel(product.nova_group)}</span>`:'';
+  const labels=(product.labels_tags||[]).filter(l=>l.includes('fr:')).map(l=>l.replace('fr:','').replace(/-/g,' ')).slice(0,3).map(l=>`<span class="eco">🏷️ ${l}</span>`).join('');
+
+  // Prix contributifs groupés par enseigne
+  let pricesHtml='';
+  if(prices.length>0){
+    // Grouper par location/enseigne, garder le plus récent
+    const byStore={};
+    prices.forEach(p=>{
+      const storeName=p.location_display_name||p.location_name||p.location_osm_name||'Magasin inconnu';
+      const key=storeName.toLowerCase().substring(0,20);
+      if(!byStore[key]||new Date(p.date)>new Date(byStore[key].date)){
+        byStore[key]={...p,storeName};
+      }
+    });
+    const sorted=Object.values(byStore).sort((a,b)=>a.price-b.price);
+    pricesHtml=`<div class="off-prices">
+      <div class="off-prices-title">💰 Prix relevés par la communauté
+        <span style="font-size:11px;color:var(--t3);font-weight:400;">(${prices.length} contribution${prices.length>1?'s':''})</span>
+      </div>
+      ${sorted.map((p,i)=>`
+        <div class="price-contrib" ${i===0?'style="background:var(--grl);margin:-2px -2px 0;padding:10px 14px;border-radius:8px;"':''}>
+          <div>
+            <div class="price-contrib-store">${i===0?'⭐ ':''} ${p.storeName}</div>
+            <div class="price-contrib-date">Vu le ${new Date(p.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="price-contrib-val">${Number(p.price).toFixed(2)} €</div>
+            ${p.price_per_unit?`<div style="font-size:11px;color:var(--t2);">${p.price_per_unit.toFixed(2)} €/u</div>`:''}
+          </div>
+        </div>`).join('')}
+    </div>`;
+  } else {
+    pricesHtml=`<div class="contrib-form">
+      <h4>📋 Pas encore de prix pour ce produit en France</h4>
+      <p style="font-size:13px;color:var(--t2);margin-bottom:12px;">Soyez le premier à contribuer ! Entrez le prix que vous avez vu.</p>
+      <div class="contrib-row">
+        <div class="fld" style="flex:1;margin:0;">
+          <label for="contribStore">Magasin</label>
+          <select id="contribStore" style="min-height:44px;padding:10px;border:2px solid var(--bd);border-radius:10px;font-size:15px;font-family:inherit;background:var(--sf);">
+            <option>E.Leclerc</option><option>Lidl</option><option>Aldi</option><option>Carrefour</option><option>Intermarché</option><option>Monoprix</option><option>Autre</option>
+          </select>
+        </div>
+        <div class="fld" style="flex:1;margin:0;">
+          <label for="contribPrice">Prix (€)</label>
+          <input type="number" id="contribPrice" step="0.01" min="0" placeholder="2.99" style="min-height:44px;padding:10px;border:2px solid var(--bd);border-radius:10px;font-size:15px;font-family:inherit;background:var(--sf);">
+        </div>
+      </div>
+      <button onclick="contributerPrix('${barcode}','${(product.product_name||'').replace(/'/g,'')}')" class="btn-poster" style="width:100%;margin-top:10px;">✅ Contribuer ce prix</button>
+    </div>`;
+  }
+
+  // Afficher dans Deals si connecté
+  const addToDealBtn=currentUser?`<button onclick="addProductAsDeal('${barcode}','${(product.product_name||'').replace(/'/g,"\\'")}','${product.brands||''}')" class="btn-poster" style="width:100%;margin-top:10px;">📢 Partager comme deal</button>`:'';
+
+  el.innerHTML=`
+    <div class="off-card">
+      ${product.image_url?`<img src="${product.image_url}" class="off-img" alt="${product.product_name||'Produit'}" loading="lazy">`:''}
+      <div class="off-body">
+        <div class="off-name">${product.product_name||'Produit inconnu'}</div>
+        <div class="off-brand">${product.brands||''} ${product.quantity?'· '+product.quantity:''}</div>
+        <div class="off-badges">
+          <div class="ns-wrap">${ns} <span>Nutriscore</span></div>
+          ${eco}${nova}${labels}
+        </div>
+        ${product.allergens_tags?.length?`<div style="font-size:12px;color:var(--rd);margin-bottom:10px;">⚠️ Allergènes : ${product.allergens_tags.map(a=>a.replace('en:','')).join(', ')}</div>`:''}
+        ${pricesHtml}
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="window.open('https://fr.openfoodfacts.org/product/${barcode}/','_blank')" class="df-btn" style="font-size:12px;">🔗 Voir sur OFF</button>
+          <button onclick="speak('${(product.product_name||'').replace(/'/g,'')}, Nutriscore ${(product.nutriscore_grade||'inconnu').toUpperCase()}')" class="df-btn" style="font-size:12px;">🔊 Lire</button>
+        </div>
+        ${addToDealBtn}
+      </div>
+    </div>`;
+}
+
+// ─── CONTRIBUER UN PRIX (sauvegarde dans Firestore local) ───
+async function contributerPrix(barcode, productName){
+  const store=document.getElementById('contribStore')?.value;
+  const price=parseFloat(document.getElementById('contribPrice')?.value);
+  if(!store||!price||price<=0){toast('⚠️ Merci de remplir le magasin et le prix');return;}
+  haptic('success');
+  // Sauvegarder dans Firestore si disponible
+  if(db){
+    try{
+      await db.collection('prices').add({
+        barcode,productName,store,price,
+        userId:currentUser?.uid||'anon',
+        date:new Date().toISOString().split('T')[0],
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }catch(e){console.warn('[Prix Firestore]',e);}
+  }
+  toast(`✅ Merci ! Prix de ${price.toFixed(2)}€ chez ${store} enregistré`);
+  lookupBarcode(barcode); // Recharger avec le nouveau prix
+}
+
+// ─── AJOUTER COMME DEAL ───
+function addProductAsDeal(barcode, productName, brand){
+  document.getElementById('pTitle').value=`${productName} ${brand?'('+brand+')':''} - Prix intéressant`;
+  openModal('modalPoster');
+  goTab('deals');
+}
+
+// ─── AFFICHER RÉSULTATS RECHERCHE OFF ───
+async function showOFFResults(query){
+  const coursesGrid=document.getElementById('coursesGrid');
+  if(!coursesGrid) return;
+
+  // Afficher un message de chargement
+  coursesGrid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--t2);">
+    🔍 Recherche de "${query}" dans Open Food Facts...</div>`;
+
+  const products=await searchOFF(query);
+  if(products.length===0){
+    // Fallback : recherche dans les produits locaux
+    renderCourses();
+    return;
+  }
+
+  coursesGrid.innerHTML=`<div style="grid-column:1/-1;">
+    <div style="font-size:13px;color:var(--t2);margin-bottom:12px;">${products.length} produits trouvés sur Open Food Facts</div>
+    <div class="off-results">
+    ${products.map(p=>`
+      <div class="off-result-item" onclick="lookupBarcode('${p.code}')" role="button" tabindex="0" aria-label="${p.product_name||'Produit'} - cliquez pour voir les prix">
+        <img src="${p.image_url||'data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 40 40\'><rect fill=\'%23f0f0f0\' width=\'40\' height=\'40\'/><text x=\'50%\' y=\'60%\' text-anchor=\'middle\' font-size=\'20\'>📦</text></svg>'}"
+          class="off-result-img" alt="${p.product_name||'Produit'}" loading="lazy"
+          onerror="this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 40 40\'><rect fill=\'%23f0f0f0\' width=\'40\' height=\'40\'/><text x=\'50%\' y=\'60%\' text-anchor=\'middle\' font-size=\'20\'>📦</text></svg>'">
+        <div style="flex:1;min-width:0;">
+          <div class="off-result-name">${p.product_name||'Produit sans nom'}</div>
+          <div class="off-result-brand">${p.brands||''}</div>
+          <div class="off-result-qty">${p.quantity||''}</div>
+          <div style="margin-top:4px;">${nsBadge(p.nutriscore_grade)}</div>
+        </div>
+        <div style="color:var(--t3);font-size:18px;">›</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ─── LOOKUP PAR CODE-BARRES (depuis scanner ou saisie) ───
+async function lookupBarcode(barcode){
+  if(!barcode||barcode.length<6){toast('⚠️ Code-barres invalide');return;}
+  barcode=barcode.replace(/\s/g,'');
+  stopScanner();
+  goTab('scanner');
+  await displayProduct(barcode);
+  haptic('success');
+}
+
+// ════════════════════
+// 📷 SCANNER ZXing
+// ════════════════════
+let scannerReader=null;
+let scannerActive=false;
+
+async function startScanner(){
+  if(scannerActive) return;
+  const videoEl=document.getElementById('scannerVideo');
+  if(!videoEl){toast('⚠️ Vidéo non disponible');return;}
+
+  try{
+    // Demander l'accès caméra
+    await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+
+    // Utiliser BarcodeDetector natif si disponible (Chrome Android)
+    if('BarcodeDetector' in window){
+      await startNativeScanner(videoEl);
+    } else if(window.ZXingBrowser){
+      // Fallback ZXing
+      await startZXingScanner(videoEl);
+    } else {
+      toast('⚠️ Scanner non disponible — utilisez la saisie manuelle');
+    }
+    scannerActive=true;
+    toast('📷 Scanner actif — pointez vers un code-barres');
+  } catch(e){
+    if(e.name==='NotAllowedError'){
+      toast('🚫 Caméra refusée — utilisez la saisie manuelle');
+    } else {
+      toast('⚠️ Erreur caméra : '+e.message);
+    }
+    document.getElementById('manualBarcode').style.display='block';
+  }
+}
+
+async function startNativeScanner(videoEl){
+  const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+  videoEl.srcObject=stream;
+  await videoEl.play();
+  const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128']});
+  const scan=async()=>{
+    if(!scannerActive) return;
+    try{
+      const codes=await detector.detect(videoEl);
+      if(codes.length>0){
+        haptic('success');
+        await lookupBarcode(codes[0].rawValue);
+        return;
+      }
+    }catch(e){}
+    requestAnimationFrame(scan);
+  };
+  requestAnimationFrame(scan);
+}
+
+async function startZXingScanner(videoEl){
+  const codeReader=new ZXingBrowser.BrowserMultiFormatReader();
+  scannerReader=codeReader;
+  const devices=await ZXingBrowser.BrowserCodeReader.listVideoInputDevices();
+  const backCamera=devices.find(d=>d.label.toLowerCase().includes('back')||d.label.toLowerCase().includes('arrière'))||devices[devices.length-1];
+  const deviceId=backCamera?.deviceId;
+  codeReader.decodeFromVideoDevice(deviceId,'scannerVideo',async(result,err)=>{
+    if(result&&scannerActive){
+      haptic('success');
+      await lookupBarcode(result.getText());
+    }
+  });
+}
+
+function stopScanner(){
+  scannerActive=false;
+  // Arrêter le flux vidéo
+  const videoEl=document.getElementById('scannerVideo');
+  if(videoEl?.srcObject){
+    videoEl.srcObject.getTracks().forEach(t=>t.stop());
+    videoEl.srcObject=null;
+  }
+  if(scannerReader){
+    try{scannerReader.reset();}catch(e){}
+    scannerReader=null;
+  }
+}
+
+// Arrêter le scanner quand on quitte l'onglet
+const _origGoTab=goTab;
+function goTab(tab){
+  if(currentPage==='scanner'&&tab!=='scanner') stopScanner();
+  _origGoTab(tab);
+}
+
+// ─── FIREBASE INIT ───
+function initFirebase(){
+  if(FIREBASE_CONFIG.apiKey==='VOTRE_API_KEY'){
+    console.warn('[Prixes] Firebase non configuré — mode démo activé');
+    return;
+  }
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db      = firebase.firestore();
+    auth    = firebase.auth();
+    // storage désactivé (forfait Spark)
+
+    // Observer l'état de connexion
+    auth.onAuthStateChanged(user=>{
+      currentUser=user;
+      updateAuthUI(user);
+      // Charger les votes Firestore si connecté
+      if(user&&db){
+        db.collection('votes').where('userId','==',user.uid).get()
+          .then(snap=>{
+            snap.forEach(doc=>{const v=doc.data();userVotes[v.dealId]=v.type;});
+            saveVotes();
+          }).catch(()=>{});
+      }
+    });
+
+    // Écouter les deals en temps réel
+    listenDeals();
+    console.log('[Prixes] ✅ Firebase connecté');
+  } catch(err){
+    console.error('[Prixes] Firebase init :', err);
+  }
+}
+
+function listenDeals(){
+  if(!db) return;
+  if(dealsUnsub) dealsUnsub();
+  dealsUnsub=db.collection('deals')
+    .orderBy('createdAt','desc')
+    .limit(50)
+    .onSnapshot(snap=>{
+      if(snap.empty) return; // garder les démos si Firestore est vide
+      DEALS=snap.docs.map(doc=>{
+        const d=doc.data();
+        return {id:doc.id,author:d.author||'Anonyme',ini:d.ini||'?',rep:d.rep||0,
+          title:d.title||'',store:d.store||'',priceNow:d.priceNow||0,
+          priceBefore:d.priceBefore||0,expiry:d.expiry||'',urgent:d.urgent||false,
+          vOui:d.vOui||0,vNon:d.vNon||0,comments:d.comments||0,
+          link:d.link||'#',photo:d.photo||null,description:d.description||''};
+      });
+      if(currentPage==='deals') renderDeals();
+      if(currentPage==='accueil'){
+        const el=document.getElementById('topDeals');
+        if(el) el.innerHTML=DEALS.slice(0,3).map(d=>renderDealCard(d)).join('');
+      }
+    },err=>console.warn('[Prixes] Deals Firestore :',err.message));
+}
+
+// ─── INIT ───
+initFirebase();
+renderAccueil();
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Deals : lecture publique, écriture authentifiée ──────────────
+    match /deals/{dealId} {
+      // Tout le monde peut lire les deals
+      allow read: if true;
+
+      // Seuls les utilisateurs connectés peuvent créer
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.title.size() > 3
+        && request.resource.data.title.size() < 200
+        && request.resource.data.priceNow > 0
+        && request.resource.data.priceBefore > 0
+        && request.resource.data.priceNow < request.resource.data.priceBefore;
+
+      // Seuls les votes (vOui, vNon) peuvent être mis à jour par tous
+      allow update: if request.auth != null
+        && (
+          // L'auteur peut modifier son deal
+          request.auth.uid == resource.data.authorId
+          ||
+          // N'importe qui peut mettre à jour seulement vOui et vNon
+          (request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['vOui', 'vNon']))
+        );
+
+      // Seul l'auteur peut supprimer son deal
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.authorId;
+    }
+
+    // ── Votes : lecture/écriture par utilisateur connecté ────────────
+    match /votes/{voteId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null
+        && (voteId == request.auth.uid + '_' + request.resource.data.dealId
+            || voteId.matches(request.auth.uid + '_.*'));
+    }
+
+    // ── Profils utilisateurs ──────────────────────────────────────────
+    match /users/{userId} {
+      // Lecture publique (affichage réputation dans les deals)
+      allow read: if true;
+
+      // Écriture uniquement par l'utilisateur lui-même
+      allow create: if request.auth != null
+        && request.auth.uid == userId;
+
+      allow update: if request.auth != null
+        && request.auth.uid == userId;
+    }
+  }
+}

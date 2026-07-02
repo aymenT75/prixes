@@ -1,0 +1,77 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-prixes}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prixes}
+      POSTGRES_DB: ${POSTGRES_DB:-prixes}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prixes}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build: ./apps/api
+    env_file: .env
+    restart: unless-stopped
+    # Inside the compose network, reach Postgres/Redis by service name (not localhost).
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-prixes}:${POSTGRES_PASSWORD:-prixes}@db:5432/${POSTGRES_DB:-prixes}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').status==200 else 1)\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  worker:
+    build: ./apps/api
+    env_file: .env
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-prixes}:${POSTGRES_PASSWORD:-prixes}@db:5432/${POSTGRES_DB:-prixes}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    command: arq app.worker.main.WorkerSettings
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        # Browser runs on the host, so it calls the host-published API port.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+  redisdata:

@@ -1,0 +1,59 @@
+{
+  "name": "Prixes — Comparez & Partagez",
+  "short_name": "Prixes",
+  "description": "Comparez les prix des courses et carburants, partagez les meilleures offres. Accessible à tous.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f4f0",
+  "theme_color": "#005c3c",
+  "lang": "fr",
+  "dir": "ltr",
+  "orientation": "portrait-primary",
+  "categories": ["shopping", "finance", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Comparer les courses",
+      "short_name": "Courses",
+      "description": "Comparer les prix des produits",
+      "url": "/?tab=courses",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Prix carburants",
+      "short_name": "Carburants",
+      "description": "Voir les prix des carburants proches",
+      "url": "/?tab=fuel",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Deals communautaires",
+      "short_name": "Deals",
+      "description": "Voir les offres partagées",
+      "url": "/?tab=deals",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
+}
