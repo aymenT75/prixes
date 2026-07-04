@@ -41,10 +41,12 @@ export function AccessibilityFab() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-md rounded-t-3xl bg-surface-container-lowest p-6 pb-10 shadow-float sm:rounded-3xl"
+            className="max-h-[90vh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl bg-surface-container-lowest p-6 pb-10 shadow-float sm:rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-5 flex items-center justify-between">
+            {/* Sticky so the close button stays reachable even when the sheet
+                scrolls (long content + enlarged text can exceed the viewport). */}
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-5 flex items-center justify-between bg-surface-container-lowest px-6 pb-3 pt-6">
               <h2 className="flex items-center gap-2 text-headline-md text-on-surface">
                 <Icon name="accessibility_new" className="text-primary" /> Accessibilité
               </h2>

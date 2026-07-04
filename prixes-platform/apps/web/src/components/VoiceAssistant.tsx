@@ -165,10 +165,10 @@ export function VoiceAssistant() {
           onClick={close}
         >
           <div
-            className="w-full max-w-md rounded-t-3xl bg-surface-container-lowest p-6 pb-10 shadow-float"
+            className="max-h-[90vh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl bg-surface-container-lowest p-6 pb-10 shadow-float"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between">
+            <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between bg-surface-container-lowest px-6 pb-3 pt-6">
               <h2 className="text-headline-md text-on-surface">Assistant vocal</h2>
               <button
                 onClick={close}
