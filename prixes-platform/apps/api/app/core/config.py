@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # This is the Firebase *project id* (public); no service-account key needed.
     firebase_project_id: str = "prixes-b07fb"
 
+    # AI product recognition (deal photo → product name). Optional: barcode
+    # detection works without it; this is the vision fallback. Set the key to enable.
+    anthropic_api_key: str = ""
+    recognition_model: str = "claude-haiku-4-5-20251001"
+
     # Object storage
     s3_endpoint_url: str = ""
     s3_bucket: str = "prixes-photos"

@@ -48,6 +48,10 @@ interface A11yState {
   diets: string[];
   autoRead: boolean;
   ready: boolean;
+  voiceOpen: boolean;
+  setVoiceOpen: (v: boolean) => void;
+  a11yOpen: boolean;
+  setA11yOpen: (v: boolean) => void;
   init: () => void;
   setFontScale: (s: FontScale) => void;
   biggerText: () => void;
@@ -97,6 +101,10 @@ export const useA11y = create<A11yState>((set, get) => ({
   diets: [],
   autoRead: false,
   ready: false,
+  voiceOpen: false,
+  setVoiceOpen: (voiceOpen) => set({ voiceOpen }),
+  a11yOpen: false,
+  setA11yOpen: (a11yOpen) => set({ a11yOpen }),
 
   init() {
     if (typeof window === "undefined") return;

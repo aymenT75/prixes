@@ -93,6 +93,11 @@ export const api = {
   voteDeal: (id: string, value: 1 | -1) =>
     request<Deal>(`/deals/${id}/vote`, { method: "POST", body: JSON.stringify({ value }) }),
   deleteDeal: (id: string) => request<void>(`/deals/${id}`, { method: "DELETE" }),
+  recognizeDeal: (image: string, media_type: string) =>
+    request<{ available: boolean; product_name: string | null; brand: string | null }>(
+      "/deals/recognize",
+      { method: "POST", body: JSON.stringify({ image, media_type }) },
+    ),
   reportDeal: (deal_id: string, reason: string, note?: string) =>
     request("/moderation/reports", {
       method: "POST",

@@ -20,7 +20,8 @@ type Phase = "idle" | "listening" | "responding" | "error";
 export function VoiceAssistant() {
   const router = useRouter();
   const a11y = useA11y();
-  const [open, setOpen] = useState(false);
+  const open = useA11y((s) => s.voiceOpen);
+  const setOpen = useA11y((s) => s.setVoiceOpen);
   const [phase, setPhase] = useState<Phase>("idle");
   const [transcript, setTranscript] = useState("");
   const [response, setResponse] = useState("");
@@ -129,12 +130,17 @@ export function VoiceAssistant() {
     startRef.current = startListening;
   }, [startListening]);
 
-  const openAssistant = useCallback(() => {
-    setOpen(true);
-    // Greet + immediately listen (one tap = talk).
-    speak("Je vous écoute.");
-    setTimeout(startListening, 350);
-  }, [startListening]);
+  // When the assistant is opened (from the accessibility sheet), greet + listen.
+  const greetedRef = useRef(false);
+  useEffect(() => {
+    if (open && !greetedRef.current) {
+      greetedRef.current = true;
+      speak("Je vous écoute.");
+      setTimeout(startListening, 350);
+    } else if (!open) {
+      greetedRef.current = false;
+    }
+  }, [open, startListening]);
 
   const close = useCallback(() => {
     try {
@@ -145,22 +151,11 @@ export function VoiceAssistant() {
     stopSpeaking();
     setOpen(false);
     setPhase("idle");
-  }, []);
+  }, [setOpen]);
 
+  // Launcher lives in the top header (PageHeader); this only renders the overlay.
   return (
     <>
-      {/* Floating mic button */}
-      <button
-        onClick={openAssistant}
-        aria-label="Assistant vocal — appuyez puis parlez"
-        className="fixed bottom-24 left-4 z-[55] flex h-16 w-16 items-center justify-center
-                   rounded-full bg-primary text-on-primary shadow-float ring-4 ring-primary/20
-                   transition-transform active:scale-90"
-      >
-        <Icon name="mic" fill className="text-[30px]" />
-      </button>
-
-      {/* Overlay */}
       {open && (
         <div
           role="dialog"

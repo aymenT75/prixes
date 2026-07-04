@@ -57,6 +57,18 @@ class VoteIn(BaseModel):
     value: Literal[1, -1]
 
 
+class RecognizeIn(BaseModel):
+    # Base64-encoded image (no data: prefix) + its media type.
+    image: str = Field(min_length=16)
+    media_type: Literal["image/jpeg", "image/png", "image/webp"] = "image/jpeg"
+
+
+class RecognizeOut(BaseModel):
+    available: bool  # False when no vision API key is configured
+    product_name: str | None = None
+    brand: str | None = None
+
+
 class FeedPage(BaseModel):
     items: list[DealOut]
     next_cursor: int | None

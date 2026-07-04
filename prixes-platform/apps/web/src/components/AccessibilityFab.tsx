@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-
 import { Icon } from "@/components/Icon";
 import { ALL_ALLERGENS, ALL_DIETS, useA11y, type FontScale } from "@/lib/useA11y";
 
@@ -25,21 +23,15 @@ export function AccessibilityFab() {
     toggleAllergen,
     toggleDiet,
     setAutoRead,
+    setVoiceOpen,
+    a11yOpen: open,
+    setA11yOpen: setOpen,
   } = useA11y();
-  const [open, setOpen] = useState(false);
 
+  // The launcher lives in the top header (PageHeader) now; this component only
+  // renders the sheet, opened via the shared store.
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Options d'accessibilité — taille du texte, contraste, thème"
-        className="fixed bottom-[172px] left-4 z-[55] flex h-12 w-12 items-center justify-center
-                   rounded-full bg-surface-container-highest text-on-surface shadow-float
-                   ring-2 ring-outline-variant/40 transition-transform active:scale-90"
-      >
-        <Icon name="accessibility_new" className="text-[24px]" />
-      </button>
-
       {open && (
         <div
           role="dialog"
@@ -64,6 +56,25 @@ export function AccessibilityFab() {
                 <Icon name="close" />
               </button>
             </div>
+
+            {/* Voice assistant launcher */}
+            <button
+              onClick={() => {
+                setOpen(false);
+                setVoiceOpen(true);
+              }}
+              className="mb-5 flex w-full items-center gap-3 rounded-2xl bg-primary p-4 text-left text-on-primary shadow-card active:scale-[0.99]"
+            >
+              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
+                <Icon name="mic" fill className="text-[26px]" />
+              </span>
+              <span>
+                <span className="block text-label-lg font-bold">Assistant vocal</span>
+                <span className="block text-micro opacity-90">
+                  Parlez pour chercher, comparer, naviguer
+                </span>
+              </span>
+            </button>
 
             {/* Text size */}
             <fieldset className="mb-5">

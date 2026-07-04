@@ -11,6 +11,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
 import { eur } from "@/lib/format";
+import { shareOrCopy } from "@/lib/share";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
 import { speak, vibrate } from "@/lib/voice";
@@ -31,7 +32,26 @@ export default function ProductDetailPage({ params }: { params: Promise<{ barcod
   const [price, setPrice] = useState("");
   const [listMsg, setListMsg] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
+  const [shared, setShared] = useState(false);
   const announcedRef = useRef<string | null>(null);
+
+  async function shareResult() {
+    if (!data) return;
+    const price =
+      data.best_price != null
+        ? ` — meilleur prix ${eur(data.best_price)}${
+            data.best_unit_price != null ? ` (${eur(data.best_unit_price)} ${data.unit_label})` : ""
+          }`
+        : "";
+    const res = await shareOrCopy({
+      title: data.name ?? "Prixes",
+      text: `${data.name ?? "Ce produit"}${price} sur Prixes`,
+    });
+    if (res !== "failed") {
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    }
+  }
 
   const addToList = useMutation({
     mutationFn: () => api.addToList({ barcode }),
@@ -144,7 +164,19 @@ export default function ProductDetailPage({ params }: { params: Promise<{ barcod
 
   return (
     <div>
-      <PageHeader title="Produit" back />
+      <PageHeader
+        title="Produit"
+        back
+        action={
+          <button
+            onClick={shareResult}
+            aria-label="Partager ce produit"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-primary transition-colors hover:bg-surface-container-high active:scale-95"
+          >
+            <Icon name={shared ? "check" : "ios_share"} className="text-[22px]" />
+          </button>
+        }
+      />
 
       {/* Hero */}
       <section className="mb-6 flex flex-col items-center">
@@ -311,6 +343,18 @@ export default function ProductDetailPage({ params }: { params: Promise<{ barcod
         </section>
       )}
 
+      {/* Buy online — after seeing the price, go to the merchant offers */}
+      <a
+        href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
+          [data.name, data.brand].filter(Boolean).join(" "),
+        )}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn-primary mb-6 w-full py-3.5"
+      >
+        <Icon name="storefront" className="text-[20px]" /> Acheter en ligne
+      </a>
+
       {/* Price history */}
       {history && history.points.length >= 2 && (
         <section className="card mb-6 p-5">
@@ -330,14 +374,24 @@ export default function ProductDetailPage({ params }: { params: Promise<{ barcod
             <p className="text-body-md text-on-surface-variant">Aucun prix relevé. Ajoutez le vôtre 👇</p>
           )}
           {data.prices.map((p, i) => (
-            <div key={i} className="card flex items-center justify-between p-4">
+            <a
+              key={i}
+              href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
+                [data.name, p.store].filter(Boolean).join(" "),
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="card flex items-center justify-between p-4 transition-shadow hover:shadow-float"
+            >
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-headline-md text-primary">
                   {(p.store ?? "?").charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <p className="text-label-lg text-on-surface">{p.store ?? "Magasin"}</p>
-                  <p className="text-micro uppercase text-on-surface-variant">{p.source}</p>
+                  <p className="flex items-center gap-1 text-micro uppercase text-on-surface-variant">
+                    {p.source} <Icon name="open_in_new" className="text-[13px]" />
+                  </p>
                 </div>
               </div>
               <div className="text-right">
@@ -348,7 +402,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ barcod
                   </p>
                 )}
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </section>

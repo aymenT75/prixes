@@ -6,13 +6,36 @@ from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
+from app.core.config import settings
 from app.core.deps import CurrentUser, DbSession
 from app.core.rate_limit import RateLimit
 from app.domains.deals import service
 from app.domains.deals.models import Deal
-from app.domains.deals.schemas import DealCreate, DealOut, FeedPage, VoteIn
+from app.domains.deals.recognize import recognize_product
+from app.domains.deals.schemas import (
+    DealCreate,
+    DealOut,
+    FeedPage,
+    RecognizeIn,
+    RecognizeOut,
+    VoteIn,
+)
 
 router = APIRouter(prefix="/deals", tags=["deals"])
+
+
+@router.post(
+    "/recognize",
+    response_model=RecognizeOut,
+    dependencies=[Depends(RateLimit("recognize", times=30, window=3600))],
+)
+async def recognize(data: RecognizeIn, user: CurrentUser) -> RecognizeOut:
+    """AI vision fallback: identify a product from a photo (barcode is tried
+    client-side first). Returns available=False when no vision key is set."""
+    if not settings.anthropic_api_key:
+        return RecognizeOut(available=False)
+    name, brand = await recognize_product(data.image, data.media_type)
+    return RecognizeOut(available=True, product_name=name, brand=brand)
 
 
 @router.get("", response_model=FeedPage)
