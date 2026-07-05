@@ -9,13 +9,12 @@ import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
 
+// Only surface what the bottom tab bar does NOT already cover — Courses, Scanner,
+// Carburant and Deals are permanent tabs, so putting them here too is redundant.
+// These two personal tools have no tab, so this is their quick access.
 const SHORTCUTS = [
-  { href: "/courses", label: "Courses", icon: "shopping_basket", box: "bg-primary/10 text-primary" },
-  { href: "/scanner", label: "Scanner", icon: "qr_code_scanner", box: "bg-tertiary/10 text-tertiary" },
   { href: "/list", label: "Ma liste", icon: "list_alt", box: "bg-primary/10 text-primary" },
   { href: "/alerts", label: "Alertes", icon: "notifications_active", box: "bg-secondary/10 text-secondary" },
-  { href: "/fuel", label: "Carburant", icon: "local_gas_station", box: "bg-fuel-accent/10 text-fuel-accent" },
-  { href: "/deals", label: "Deals", icon: "sell", box: "bg-deal-accent/10 text-deal-accent" },
 ];
 
 export default function HomePage() {
@@ -38,15 +37,20 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mb-8 grid grid-cols-2 gap-gutter">
-        {SHORTCUTS.map((s) => (
-          <Link key={s.href} href={s.href} className="card flex items-center gap-3 p-4 active:scale-95">
-            <span className={`flex h-11 w-11 items-center justify-center rounded-lg ${s.box}`}>
-              <Icon name={s.icon} fill className="text-[22px]" />
-            </span>
-            <span className="text-label-lg text-on-surface">{s.label}</span>
-          </Link>
-        ))}
+      <section className="mb-8">
+        <h2 className="mb-3 flex items-center gap-2 text-headline-md text-on-surface">
+          <Icon name="apps" className="text-primary" /> Mes outils
+        </h2>
+        <div className="grid grid-cols-2 gap-gutter">
+          {SHORTCUTS.map((s) => (
+            <Link key={s.href} href={s.href} className="card flex items-center gap-3 p-4 active:scale-95">
+              <span className={`flex h-11 w-11 items-center justify-center rounded-lg ${s.box}`}>
+                <Icon name={s.icon} fill className="text-[22px]" />
+              </span>
+              <span className="text-label-lg text-on-surface">{s.label}</span>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section>
