@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { eur, timeAgo } from "@/lib/format";
 import { shareOrCopy } from "@/lib/share";
 import { useApp } from "@/lib/store";
+import { useDialog } from "@/lib/useDialog";
 import type { Deal } from "@/lib/types";
 
 // The report reasons the backend accepts, with human labels + icons.
@@ -25,6 +26,7 @@ export function DealCard({ deal }: { deal: Deal }) {
   const { user, openLogin } = useApp();
   const [reporting, setReporting] = useState(false);
   const [reported, setReported] = useState(false);
+  const reportRef = useDialog(reporting, () => setReporting(false));
 
   const vote = useMutation({
     mutationFn: (value: 1 | -1) => api.voteDeal(deal.id, value),
@@ -93,7 +95,7 @@ export function DealCard({ deal }: { deal: Deal }) {
             <Icon name="sell" className="text-[32px]" />
           </div>
         )}
-        <div className="absolute left-1.5 top-1.5 rounded bg-deal-accent px-1.5 py-0.5 text-micro text-white">
+        <div className="absolute left-1.5 top-1.5 rounded bg-deal-accent px-1.5 py-0.5 text-micro text-on-deal-accent">
           -{deal.discount_pct}%
         </div>
       </a>
@@ -168,10 +170,12 @@ export function DealCard({ deal }: { deal: Deal }) {
 
       {reporting && (
         <div
+          ref={reportRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
           aria-label="Signaler ce deal"
-          className="fixed inset-0 z-[60] grid place-items-end bg-black/40 backdrop-blur-sm sm:place-items-center"
+          className="fixed inset-0 z-[60] grid place-items-end bg-black/40 backdrop-blur-sm outline-none sm:place-items-center"
           onClick={() => setReporting(false)}
         >
           <div

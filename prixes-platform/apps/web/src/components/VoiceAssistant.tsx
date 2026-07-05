@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Icon } from "@/components/Icon";
 import { useA11y } from "@/lib/useA11y";
+import { useDialog } from "@/lib/useDialog";
 import {
   createVoiceRecognizer,
   parseIntent,
@@ -149,15 +150,19 @@ export function VoiceAssistant() {
     setPhase("idle");
   }, [setOpen]);
 
+  const dialogRef = useDialog(open, close);
+
   // Launcher lives in the top header (PageHeader); this only renders the overlay.
   return (
     <>
       {open && (
         <div
+          ref={dialogRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
           aria-label="Assistant vocal Prixes"
-          className="fixed inset-0 z-[70] flex flex-col items-center justify-end bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[70] flex flex-col items-center justify-end bg-black/50 backdrop-blur-sm outline-none"
           onClick={close}
         >
           <div

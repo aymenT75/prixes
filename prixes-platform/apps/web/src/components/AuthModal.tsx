@@ -14,6 +14,7 @@ import { auth, googleProvider, nativeSignIn } from "@/lib/firebase";
 import { isNativeApp, nativePlatform } from "@/lib/platform";
 import { useApp } from "@/lib/store";
 import { tokenStore } from "@/lib/tokens";
+import { useDialog } from "@/lib/useDialog";
 
 // Map Firebase error codes to friendly French messages.
 function frError(code: string): string {
@@ -51,6 +52,7 @@ export function AuthModal() {
     setNative(isNativeApp());
     setIsIos(nativePlatform() === "ios");
   }, []);
+  const dialogRef = useDialog(loginModalOpen, () => openLogin(false));
 
   if (!loginModalOpen) return null;
 
@@ -117,7 +119,12 @@ export function AuthModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[60] grid place-items-end bg-black/40 backdrop-blur-sm sm:place-items-center"
+      ref={dialogRef}
+      tabIndex={-1}
+      role="dialog"
+      aria-modal="true"
+      aria-label={mode === "login" ? "Connexion" : "Créer un compte"}
+      className="fixed inset-0 z-[60] grid place-items-end bg-black/40 backdrop-blur-sm outline-none sm:place-items-center"
       onClick={() => openLogin(false)}
     >
       <div
@@ -128,7 +135,7 @@ export function AuthModal() {
           <h2 className="text-headline-md text-on-surface">
             {mode === "login" ? "Bon retour 👋" : "Créer un compte"}
           </h2>
-          <button onClick={() => openLogin(false)} className="text-on-surface-variant">
+          <button onClick={() => openLogin(false)} aria-label="Fermer" className="text-on-surface-variant">
             <Icon name="close" />
           </button>
         </div>
@@ -185,6 +192,7 @@ export function AuthModal() {
             <input
               className="input"
               placeholder="Pseudo"
+              aria-label="Pseudo"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
               required
@@ -194,6 +202,8 @@ export function AuthModal() {
             className="input"
             type="email"
             placeholder="Email"
+            aria-label="Adresse email"
+            autoComplete="email"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             required
@@ -202,11 +212,17 @@ export function AuthModal() {
             className="input"
             type="password"
             placeholder="Mot de passe"
+            aria-label="Mot de passe"
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
             required
           />
-          {error && <p className="text-label-md text-error">{error}</p>}
+          {error && (
+            <p role="alert" className="text-label-md text-error">
+              {error}
+            </p>
+          )}
           <button className="btn-primary w-full py-3" disabled={busy}>
             {busy ? "..." : mode === "login" ? "Se connecter" : "Créer mon compte"}
           </button>

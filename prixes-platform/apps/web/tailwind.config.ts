@@ -35,6 +35,7 @@ export default {
         "on-error": "rgb(var(--color-on-error) / <alpha-value>)",
         "error-container": "rgb(var(--color-error-container) / <alpha-value>)",
         "deal-accent": "rgb(var(--color-deal-accent) / <alpha-value>)",
+        "on-deal-accent": "rgb(var(--color-on-deal-accent) / <alpha-value>)",
         "surface-container": "rgb(var(--color-surface-container) / <alpha-value>)",
         "surface-container-high": "rgb(var(--color-surface-container-high) / <alpha-value>)",
         "surface-dim": "rgb(var(--color-surface-dim) / <alpha-value>)",

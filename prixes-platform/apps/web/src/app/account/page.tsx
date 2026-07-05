@@ -107,9 +107,14 @@ export default function AccountPage() {
               value={draftName}
               onChange={(e) => setDraftName(e.target.value)}
               maxLength={64}
+              aria-label="Nouveau pseudo"
               className="rounded-lg border border-outline bg-surface px-3 py-1 text-center text-body-lg text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
             />
-            {saveError && <p className="text-label-sm text-error">{saveError}</p>}
+            {saveError && (
+              <p role="alert" className="text-label-sm text-error">
+                {saveError}
+              </p>
+            )}
             <div className="flex gap-2">
               <button onClick={saveUsername} disabled={busy} className="btn-primary px-4 py-1 text-label-md">
                 Enregistrer
@@ -157,7 +162,7 @@ export default function AccountPage() {
         <Row icon="dark_mode" title="Mode sombre" subtitle="Changer le thème">
           {mounted && (
             <label className="relative inline-flex cursor-pointer items-center">
-              <input type="checkbox" className="peer sr-only" checked={isDark} onChange={toggle} />
+              <input type="checkbox" className="peer sr-only" aria-label="Mode sombre" checked={isDark} onChange={toggle} />
               <div className="h-6 w-11 rounded-full bg-surface-variant after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-on-surface after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full" />
             </label>
           )}

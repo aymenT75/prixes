@@ -2,6 +2,7 @@
 
 import { Icon } from "@/components/Icon";
 import { ALL_ALLERGENS, ALL_DIETS, useA11y, type FontScale } from "@/lib/useA11y";
+import { useDialog } from "@/lib/useDialog";
 
 const SIZES: { key: FontScale; label: string; cls: string }[] = [
   { key: "normal", label: "A", cls: "text-[16px]" },
@@ -27,6 +28,7 @@ export function AccessibilityFab() {
     a11yOpen: open,
     setA11yOpen: setOpen,
   } = useA11y();
+  const dialogRef = useDialog(open, () => setOpen(false));
 
   // The launcher lives in the top header (PageHeader) now; this component only
   // renders the sheet, opened via the shared store.
@@ -34,10 +36,12 @@ export function AccessibilityFab() {
     <>
       {open && (
         <div
+          ref={dialogRef}
+          tabIndex={-1}
           role="dialog"
           aria-modal="true"
           aria-label="Options d'accessibilité"
-          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center"
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/50 backdrop-blur-sm outline-none sm:items-center"
           onClick={() => setOpen(false)}
         >
           <div

@@ -454,6 +454,7 @@ function ProductDetail() {
           <input
             className="input flex-1"
             placeholder="Magasin"
+            aria-label="Nom du magasin"
             value={store}
             onChange={(e) => setStore(e.target.value)}
             required
@@ -463,6 +464,7 @@ function ProductDetail() {
             type="number"
             step="0.01"
             placeholder="Prix €"
+            aria-label="Prix en euros"
             value={price}
             onChange={(e) => setPrice(e.target.value)}
             required

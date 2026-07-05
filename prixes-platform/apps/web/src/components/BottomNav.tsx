@@ -16,7 +16,7 @@ const TABS = [
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="glass fixed inset-x-0 bottom-0 z-50 flex h-[80px] items-center justify-around border-t border-outline-variant/50 pb-[env(safe-area-inset-bottom)] shadow-nav">
+    <nav aria-label="Navigation principale" className="glass fixed inset-x-0 bottom-0 z-50 flex h-[80px] items-center justify-around border-t border-outline-variant/50 pb-[env(safe-area-inset-bottom)] shadow-nav">
       {TABS.map((t) => {
         const active = t.href === "/" ? pathname === "/" : pathname.startsWith(t.href);
         return (

@@ -7,6 +7,7 @@ import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
 import { isNativeApp } from "@/lib/platform";
 import { useApp } from "@/lib/store";
+import { useDialog } from "@/lib/useDialog";
 
 const EMPTY = {
   title: "",
@@ -77,6 +78,7 @@ export function PostDealModal() {
     queryFn: () => api.meta(),
     staleTime: 5 * 60_000,
   });
+  const dialogRef = useDialog(postModalOpen, () => openPost(false));
 
   if (!postModalOpen) return null;
   if (!user) {
@@ -199,14 +201,29 @@ export function PostDealModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[60] grid place-items-end bg-black/40 backdrop-blur-sm sm:place-items-center"
+      ref={dialogRef}
+      tabIndex={-1}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Poster un deal"
+      className="fixed inset-0 z-[60] grid place-items-end bg-black/40 backdrop-blur-sm outline-none sm:place-items-center"
       onClick={() => openPost(false)}
     >
       <div
         className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-xl bg-surface-container-lowest p-6 shadow-float sm:rounded-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="mb-4 text-headline-md text-on-surface">Poster un deal</h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-headline-md text-on-surface">Poster un deal</h2>
+          <button
+            type="button"
+            onClick={() => openPost(false)}
+            aria-label="Fermer"
+            className="rounded-full p-2 text-on-surface-variant hover:bg-surface-container-high"
+          >
+            <Icon name="close" />
+          </button>
+        </div>
 
         {/* Photo recognition */}
         <input
@@ -244,6 +261,7 @@ export function PostDealModal() {
           <input
             className="input"
             placeholder="Titre du deal (ex: Nutella 750g)"
+            aria-label="Titre du deal"
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
             required
@@ -252,6 +270,7 @@ export function PostDealModal() {
           <input
             className="input"
             placeholder="Enseigne (Carrefour, Lidl...)"
+            aria-label="Enseigne"
             value={form.store}
             onChange={(e) => setForm({ ...form, store: e.target.value })}
           />
@@ -261,6 +280,7 @@ export function PostDealModal() {
               type="number"
               step="0.01"
               placeholder="Prix réduit €"
+              aria-label="Prix réduit en euros"
               value={form.price_now}
               onChange={(e) => setForm({ ...form, price_now: e.target.value })}
               required
@@ -270,6 +290,7 @@ export function PostDealModal() {
               type="number"
               step="0.01"
               placeholder="Prix habituel €"
+              aria-label="Prix habituel en euros"
               value={form.price_before}
               onChange={(e) => setForm({ ...form, price_before: e.target.value })}
               required
@@ -279,10 +300,15 @@ export function PostDealModal() {
           <input
             className="input"
             placeholder="Lien vers l'offre (optionnel)"
+            aria-label="Lien vers l'offre (optionnel)"
             value={form.link}
             onChange={(e) => setForm({ ...form, link: e.target.value })}
           />
-          {error && <p className="text-label-md text-error">{error}</p>}
+          {error && (
+            <p role="alert" className="text-label-md text-error">
+              {error}
+            </p>
+          )}
           <button className="btn-primary w-full py-3" disabled={busy}>
             {busy ? "Publication..." : "Publier le deal"}
           </button>

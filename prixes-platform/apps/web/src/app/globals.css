@@ -34,7 +34,10 @@
   --color-primary: 0 107 71;
   --color-on-error: 255 255 255;
   --color-error-container: 255 218 214;
-  --color-deal-accent: 232 77 20;
+  /* Darkened from 232 77 20 so white text on it (badge/FAB) and the price text
+     reach WCAG 1.4.3 (>=4.5:1). ~5.2:1 with white. */
+  --color-deal-accent: 194 65 12;
+  --color-on-deal-accent: 255 255 255;
   --color-surface-container: 239 238 234;
   --color-surface-container-high: 233 232 228;
   --color-surface-dim: 219 218 214;
@@ -92,6 +95,9 @@ html.dark {
   --color-on-error: 179 0 0;
   --color-error-container: 179 0 0;
   --color-deal-accent: 255 168 130;
+  /* deal-accent is light in dark mode, so on-deal-accent flips to a dark brown
+     for readable text/badges on it. */
+  --color-on-deal-accent: 40 20 0;
   --color-surface-container: 33 38 45;
   --color-surface-container-high: 45 51 59;
   --color-surface-dim: 13 17 23;
