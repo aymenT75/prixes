@@ -37,6 +37,14 @@ services:
   api:
     # Internal only behind Caddy.
     ports: !reset []
+    # Read-only mount of the FCM service-account credential (absent = push disabled).
+    volumes:
+      - ./secrets:/app/secrets:ro
+
+  worker:
+    # The worker sends FCM push on price drops, so it needs the credential too.
+    volumes:
+      - ./secrets:/app/secrets:ro
 
   # Datastores stay on the internal network only — never exposed to the host.
   db:
