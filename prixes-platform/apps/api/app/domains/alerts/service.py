@@ -92,10 +92,11 @@ def _should_trigger(alert: PriceAlert, best: Decimal) -> bool:
     return alert.baseline_price is not None and best < alert.baseline_price
 
 
-async def evaluate_all(db: AsyncSession) -> int:
+async def evaluate_all(db: AsyncSession) -> list[PriceAlert]:
     """Scan active, un-triggered alerts and mark those whose condition is met.
 
-    Returns the number newly triggered. Called by the ARQ worker on a schedule.
+    Returns the alerts newly triggered (so the worker can push notifications).
+    Called by the ARQ worker on a schedule.
     """
     alerts = list(
         (
@@ -106,7 +107,7 @@ async def evaluate_all(db: AsyncSession) -> int:
             )
         ).scalars()
     )
-    triggered = 0
+    triggered: list[PriceAlert] = []
     now = datetime.now(UTC)
     for alert in alerts:
         best = await current_best(db, alert.barcode)
@@ -116,7 +117,7 @@ async def evaluate_all(db: AsyncSession) -> int:
             alert.triggered_at = now
             alert.triggered_price = best
             alert.acknowledged = False
-            triggered += 1
+            triggered.append(alert)
         # Track the lowest seen so a future dip still counts as a "new low".
         if alert.baseline_price is None or best < alert.baseline_price:
             alert.baseline_price = best

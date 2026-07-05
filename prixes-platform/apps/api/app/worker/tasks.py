@@ -19,6 +19,7 @@ from app.core.http import get_http_client
 from app.core import models as _models  # noqa: F401
 from app.domains.alerts import service as alert_service
 from app.domains.fuel.models import FuelStation
+from app.domains.notifications import service as notify_service
 from app.domains.products.ingest import refresh_prices as _refresh_prices
 
 # gov ids: 1=Gazole 2=SP95 3=E85 4=GPLc 5=SP98 6=E10
@@ -84,11 +85,14 @@ async def ingest_fuel(_: dict[str, Any]) -> dict[str, int]:
 
 
 async def evaluate_price_alerts(_: dict[str, Any]) -> dict[str, int]:
-    """Check every active price alert against the latest prices and flag matches."""
+    """Check every active price alert against the latest prices, flag matches, and
+    push a notification to the owner's devices (in addition to the in-app flag)."""
     async with SessionLocal() as db:
         triggered = await alert_service.evaluate_all(db)
         await db.commit()
-    return {"triggered": triggered}
+        pushed = await notify_service.notify_price_drops(db, triggered) if triggered else 0
+        await db.commit()
+    return {"triggered": len(triggered), "pushed": pushed}
 
 
 async def refresh_prices(_: dict[str, Any]) -> dict[str, int]:

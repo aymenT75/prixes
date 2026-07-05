@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     # This is the Firebase *project id* (public); no service-account key needed.
     firebase_project_id: str = "prixes-b07fb"
 
+    # Firebase Cloud Messaging (server → device push for price alerts). Provide a
+    # service-account credential as a file path OR inline JSON. Empty = push disabled
+    # (alerts still trigger in-app + email). APNs is delivered through FCM.
+    firebase_service_account_file: str = ""
+    firebase_service_account_json: str = ""
+
     # AI product recognition (deal photo → product name). Optional: barcode
     # detection works without it; this is the vision fallback. Set the key to enable.
     anthropic_api_key: str = ""
@@ -56,7 +62,12 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        web = [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+        # Fixed origins used by the Capacitor native shells (iOS uses capacitor://,
+        # Android uses https://localhost with androidScheme "https"). Always allowed so
+        # the mobile apps work without extra env configuration.
+        native = ["capacitor://localhost", "ionic://localhost", "https://localhost", "http://localhost"]
+        return web + [o for o in native if o not in web]
 
     @property
     def is_production(self) -> bool:
