@@ -6,11 +6,12 @@ import {
   signInWithPopup,
   updateProfile,
 } from "firebase/auth";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
-import { auth, googleProvider } from "@/lib/firebase";
+import { auth, googleProvider, nativeSignIn } from "@/lib/firebase";
+import { isNativeApp, nativePlatform } from "@/lib/platform";
 import { useApp } from "@/lib/store";
 import { tokenStore } from "@/lib/tokens";
 
@@ -43,6 +44,13 @@ export function AuthModal() {
   const [form, setForm] = useState({ email: "", username: "", password: "" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  // Resolved after mount to avoid a hydration mismatch on the social buttons.
+  const [native, setNative] = useState(false);
+  const [isIos, setIsIos] = useState(false);
+  useEffect(() => {
+    setNative(isNativeApp());
+    setIsIos(nativePlatform() === "ios");
+  }, []);
 
   if (!loginModalOpen) return null;
 
@@ -80,11 +88,28 @@ export function AuthModal() {
     setBusy(true);
     setError(null);
     try {
-      const cred = await signInWithPopup(auth, googleProvider);
-      await finish(await cred.user.getIdToken());
+      if (native) {
+        await finish(await nativeSignIn("google"));
+      } else {
+        const cred = await signInWithPopup(auth, googleProvider);
+        await finish(await cred.user.getIdToken());
+      }
     } catch (err) {
       const code = (err as { code?: string }).code ?? "";
       setError(code ? frError(code) : "Erreur Google");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function appleSignIn() {
+    setBusy(true);
+    setError(null);
+    try {
+      await finish(await nativeSignIn("apple"));
+    } catch (err) {
+      const code = (err as { code?: string }).code ?? "";
+      setError(code ? frError(code) : "Erreur Apple");
     } finally {
       setBusy(false);
     }
@@ -122,6 +147,20 @@ export function AuthModal() {
           </svg>
           Continuer avec Google
         </button>
+
+        {/* Apple — required by App Store guidelines when other social logins are offered. */}
+        {isIos && (
+          <button
+            onClick={appleSignIn}
+            disabled={busy}
+            className="mb-4 flex w-full items-center justify-center gap-3 rounded-full bg-black py-3 text-label-lg text-white transition-all active:scale-95 disabled:opacity-60"
+          >
+            <svg viewBox="0 0 384 512" className="h-5 w-5" fill="currentColor" aria-hidden>
+              <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+            </svg>
+            Continuer avec Apple
+          </button>
+        )}
 
         <div className="mb-4 flex items-center gap-3 text-micro uppercase tracking-wider text-on-surface-variant">
           <hr className="flex-1 border-outline-variant/30" /> ou <hr className="flex-1 border-outline-variant/30" />

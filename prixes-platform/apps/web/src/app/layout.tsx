@@ -5,6 +5,7 @@ import "./globals.css";
 import { A11yLayer } from "@/components/A11yLayer";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthModal } from "@/components/AuthModal";
+import { NativeSetup } from "@/components/NativeSetup";
 import { PostDealModal } from "@/components/PostDealModal";
 import { Providers } from "@/components/Providers";
 
@@ -37,13 +38,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="fr" className={jakarta.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-background text-on-surface antialiased">
         <Providers>
-          <main id="contenu" className="mx-auto w-full max-w-2xl px-margin-mobile pb-[110px] pt-6">
+          <main
+            id="contenu"
+            className="mx-auto w-full max-w-2xl px-margin-mobile pb-[110px] pt-[calc(env(safe-area-inset-top)+1.5rem)]"
+          >
             {children}
           </main>
           <BottomNav />
           <AuthModal />
           <PostDealModal />
           <A11yLayer />
+          <NativeSetup />
         </Providers>
       </body>
     </html>

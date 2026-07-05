@@ -4,6 +4,7 @@ import { create } from "zustand";
 
 import { api } from "./api";
 import { auth } from "./firebase";
+import { isNativeApp } from "./platform";
 import { tokenStore } from "./tokens";
 import type { User } from "./types";
 
@@ -43,6 +44,12 @@ export const useApp = create<AppState>((set) => ({
     set({ user: null });
     // Also end the Firebase session (best-effort — ignore if not signed in).
     void signOut(auth).catch(() => {});
+    // Native shell: end the native Firebase session too.
+    if (isNativeApp()) {
+      void import("@capacitor-firebase/authentication")
+        .then(({ FirebaseAuthentication }) => FirebaseAuthentication.signOut())
+        .catch(() => {});
+    }
   },
   openLogin: (loginModalOpen) => set({ loginModalOpen }),
   openPost: (postModalOpen) => set({ postModalOpen }),

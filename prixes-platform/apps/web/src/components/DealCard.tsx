@@ -65,11 +65,29 @@ export function DealCard({ deal }: { deal: Deal }) {
 
   const temp = deal.votes_up - deal.votes_down;
 
+  // Every deal must lead somewhere: the store's own link when provided, otherwise a
+  // Google Shopping search for the item so the card is never a dead end.
+  const dest =
+    deal.link ??
+    `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
+      [deal.title, deal.store].filter(Boolean).join(" "),
+    )}`;
+  const destLabel = `${deal.title}${deal.store ? `, ${deal.store}` : ""} — ${
+    deal.link ? "voir l'offre sur le site du magasin" : "chercher cette offre en ligne"
+  } (nouvelle fenêtre)`;
+
   return (
     <article className="card flex gap-4 p-gutter transition-all hover:shadow-float">
-      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-surface-container">
+      <a
+        href={dest}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-hidden="true"
+        tabIndex={-1}
+        className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-surface-container"
+      >
         {deal.photo_url ? (
-          <Image src={deal.photo_url} alt={deal.title} fill className="object-cover" sizes="96px" />
+          <Image src={deal.photo_url} alt="" fill className="object-cover" sizes="96px" />
         ) : (
           <div className="flex h-full items-center justify-center text-outline-variant">
             <Icon name="sell" className="text-[32px]" />
@@ -78,14 +96,24 @@ export function DealCard({ deal }: { deal: Deal }) {
         <div className="absolute left-1.5 top-1.5 rounded bg-deal-accent px-1.5 py-0.5 text-micro text-white">
           -{deal.discount_pct}%
         </div>
-      </div>
+      </a>
 
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center gap-2 text-micro text-on-surface-variant">
           {deal.store && <span className="font-bold uppercase tracking-wider text-primary">{deal.store}</span>}
           <span>· {timeAgo(deal.created_at)}</span>
         </div>
-        <h3 className="mt-0.5 line-clamp-2 text-label-lg text-on-surface">{deal.title}</h3>
+        <h3 className="mt-0.5 line-clamp-2 text-label-lg text-on-surface">
+          <a
+            href={dest}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={destLabel}
+            className="hover:underline focus-visible:underline"
+          >
+            {deal.title}
+          </a>
+        </h3>
         <div className="mt-1 flex items-baseline gap-2">
           <span className="text-headline-md text-deal-accent">{eur(deal.price_now)}</span>
           <span className="text-label-md text-on-surface-variant/60 line-through">{eur(deal.price_before)}</span>
@@ -125,16 +153,15 @@ export function DealCard({ deal }: { deal: Deal }) {
             >
               <Icon name="flag" fill={reported} className="text-[18px]" />
             </button>
-            {deal.link && (
-              <a
-                href={deal.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-label-md text-on-primary active:scale-95"
-              >
-                <Icon name="open_in_new" className="text-[16px]" /> Voir
-              </a>
-            )}
+            <a
+              href={dest}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={deal.link ? "Voir l'offre sur le site du magasin (nouvelle fenêtre)" : "Chercher cette offre en ligne (nouvelle fenêtre)"}
+              className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-label-md text-on-primary active:scale-95"
+            >
+              <Icon name="open_in_new" className="text-[16px]" /> Voir
+            </a>
           </div>
         </div>
       </div>

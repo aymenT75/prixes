@@ -109,7 +109,7 @@ function AlertRow({
       }`}
     >
       <Link
-        href={`/courses/${alert.barcode}`}
+        href={`/courses/detail?barcode=${alert.barcode}`}
         className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white"
       >
         {alert.image_url ? (
@@ -122,7 +122,15 @@ function AlertRow({
       </Link>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-label-lg text-on-surface">{alert.name ?? alert.barcode}</p>
+        <p className="truncate text-label-lg text-on-surface">
+          <Link
+            href={`/courses/detail?barcode=${alert.barcode}`}
+            aria-label={`${alert.name ?? alert.barcode} — voir la fiche produit`}
+            className="hover:underline focus-visible:underline"
+          >
+            {alert.name ?? alert.barcode}
+          </Link>
+        </p>
         {triggered ? (
           <p className="text-micro text-primary">
             Maintenant à {alert.triggered_price != null ? eur(alert.triggered_price) : "—"} !

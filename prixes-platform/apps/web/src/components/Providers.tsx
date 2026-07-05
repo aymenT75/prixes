@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
+import { isNativeApp } from "@/lib/platform";
 import { useApp } from "@/lib/store";
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -17,8 +18,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     loadMe();
     // Theme + accessibility settings are initialised by <A11yLayer/> (useA11y.init).
-    // Register service worker (PWA)
-    if ("serviceWorker" in navigator) {
+    // Register the service worker for the web PWA only. Inside the Capacitor native
+    // shell the app is served from bundled assets; a competing SW cache causes
+    // stale-asset bugs, so we skip registration there.
+    if (!isNativeApp() && "serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
   }, [loadMe]);

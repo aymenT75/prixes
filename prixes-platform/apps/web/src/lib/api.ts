@@ -146,6 +146,12 @@ export const api = {
   ackAlert: (id: string) => request<PriceAlert>(`/alerts/${id}/ack`, { method: "POST" }),
   removeAlert: (id: string) => request<void>(`/alerts/${id}`, { method: "DELETE" }),
 
+  // ── Push devices (native) ──
+  registerDevice: (body: { token: string; platform: "ios" | "android" | "web" }) =>
+    request<{ ok: boolean }>("/devices", { method: "POST", body: JSON.stringify(body) }),
+  unregisterDevice: (token: string) =>
+    request<void>(`/devices/${encodeURIComponent(token)}`, { method: "DELETE" }),
+
   // ── Uploads ──
   presign: (contentType: string) =>
     request<{ upload_url: string; public_url: string; key: string }>(

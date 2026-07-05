@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Prixes</string>
+    <string name="title_activity_main">Prixes</string>
+    <string name="package_name">software.omnilink.prixes</string>
+    <string name="custom_url_scheme">software.omnilink.prixes</string>
+</resources>

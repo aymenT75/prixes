@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
+import { scanBarcodeNative } from "@/lib/barcode";
+import { isNativeApp } from "@/lib/platform";
 
 declare global {
   interface Window {
@@ -30,6 +32,10 @@ export default function ScannerPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [torchOn, setTorchOn] = useState(false);
   const [torchable, setTorchable] = useState(false);
+  // Resolved after mount so the prerendered (web) markup and the hydrated (native)
+  // markup match — avoids a hydration mismatch on the camera UI.
+  const [native, setNative] = useState(false);
+  useEffect(() => setNative(isNativeApp()), []);
 
   // Directly open the product as soon as we have a code — the whole point of the
   // scanner. Guarded so overlapping detections can't double-navigate.
@@ -39,12 +45,40 @@ export default function ScannerPage() {
       handledRef.current = true;
       setStatus("found");
       if (navigator.vibrate) navigator.vibrate(60);
-      router.push(`/courses/${code}`);
+      router.push(`/courses/detail?barcode=${code}`);
     },
     [router],
   );
 
+  // Native (Capacitor) path: open the ML Kit scanner instead of an in-page <video>.
+  const nativeScan = useCallback(async () => {
+    setStatus("scanning");
+    setMessage(null);
+    try {
+      const code = await scanBarcodeNative();
+      if (code && isPlausibleBarcode(code)) {
+        goToProduct(code);
+      } else {
+        // Dismissed without a (plausible) code.
+        setStatus("idle");
+      }
+    } catch (e) {
+      setStatus("error");
+      setMessage(
+        e instanceof Error && e.message === "denied"
+          ? "Accès caméra refusé — saisissez le code manuellement."
+          : e instanceof Error && e.message === "module"
+            ? "Préparation du scanner… réessayez dans un instant."
+            : "Scan indisponible — saisissez le code manuellement.",
+      );
+    }
+  }, [goToProduct]);
+
   useEffect(() => {
+    if (native) {
+      nativeScan();
+      return;
+    }
     let cancelled = false;
     let raf = 0;
     // ZXing controls (fallback path) — stopped on cleanup.
@@ -146,7 +180,7 @@ export default function ScannerPage() {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     };
-  }, [goToProduct]);
+  }, [goToProduct, native, nativeScan]);
 
   async function toggleTorch() {
     const track = streamRef.current?.getVideoTracks()[0];
@@ -166,36 +200,52 @@ export default function ScannerPage() {
     <div>
       <PageHeader title="Scanner" />
 
-      <div className="relative mb-5 overflow-hidden rounded-xl border border-outline-variant/20 bg-black shadow-card">
-        <video ref={videoRef} className="h-72 w-full object-cover" muted playsInline autoPlay />
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="h-40 w-56 rounded-xl border-2 border-white/70" />
-          {status === "scanning" && (
-            <div className="absolute h-0.5 w-56 animate-pulse bg-deal-accent" />
+      {native ? (
+        <button
+          onClick={nativeScan}
+          className="mb-5 flex h-72 w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-outline-variant/40 bg-surface-container-lowest text-primary shadow-card active:scale-[0.99]"
+        >
+          <Icon
+            name={status === "found" ? "check_circle" : "qr_code_scanner"}
+            fill
+            className="text-[56px]"
+          />
+          <span className="text-label-lg">
+            {status === "scanning" ? "Scanner ouvert…" : "Appuyez pour scanner"}
+          </span>
+        </button>
+      ) : (
+        <div className="relative mb-5 overflow-hidden rounded-xl border border-outline-variant/20 bg-black shadow-card">
+          <video ref={videoRef} className="h-72 w-full object-cover" muted playsInline autoPlay />
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="h-40 w-56 rounded-xl border-2 border-white/70" />
+            {status === "scanning" && (
+              <div className="absolute h-0.5 w-56 animate-pulse bg-deal-accent" />
+            )}
+          </div>
+          {status === "idle" && (
+            <div className="absolute inset-0 flex items-center justify-center text-white/80">
+              <Icon name="photo_camera" className="text-[40px]" />
+            </div>
+          )}
+          {status === "found" && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white">
+              <Icon name="check_circle" fill className="text-[48px] text-primary" />
+            </div>
+          )}
+          {torchable && (
+            <button
+              onClick={toggleTorch}
+              aria-label="Lampe"
+              className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/50 text-white active:scale-95"
+            >
+              <Icon name={torchOn ? "flashlight_on" : "flashlight_off"} className="text-[22px]" />
+            </button>
           )}
         </div>
-        {status === "idle" && (
-          <div className="absolute inset-0 flex items-center justify-center text-white/80">
-            <Icon name="photo_camera" className="text-[40px]" />
-          </div>
-        )}
-        {status === "found" && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white">
-            <Icon name="check_circle" fill className="text-[48px] text-primary" />
-          </div>
-        )}
-        {torchable && (
-          <button
-            onClick={toggleTorch}
-            aria-label="Lampe"
-            className="absolute right-3 top-3 grid h-10 w-10 place-items-center rounded-full bg-black/50 text-white active:scale-95"
-          >
-            <Icon name={torchOn ? "flashlight_on" : "flashlight_off"} className="text-[22px]" />
-          </button>
-        )}
-      </div>
+      )}
 
-      {status === "scanning" && (
+      {status === "scanning" && !native && (
         <p className="mb-4 text-center text-label-md text-on-surface-variant">
           Visez le code-barres du produit…
         </p>
@@ -211,7 +261,7 @@ export default function ScannerPage() {
         onSubmit={(e) => {
           e.preventDefault();
           const code = manual.trim();
-          if (code) router.push(`/courses/${code}`);
+          if (code) router.push(`/courses/detail?barcode=${code}`);
         }}
         className="flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container-lowest px-4 py-2.5 shadow-card focus-within:border-primary"
       >

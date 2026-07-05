@@ -18,3 +18,21 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+
+// Native (Capacitor) social sign-in. `signInWithPopup` is a browser concept that does
+// not work in a webview, so on device we use @capacitor-firebase/authentication to run
+// the native Google/Apple flow. It signs into the native Firebase SDK, then we read the
+// resulting Firebase ID token and exchange it via the same /auth/firebase endpoint the
+// web uses — so Apple needs no dedicated backend, just the Apple provider enabled in
+// the Firebase console.
+export async function nativeSignIn(provider: "google" | "apple"): Promise<string> {
+  const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
+  if (provider === "google") {
+    await FirebaseAuthentication.signInWithGoogle();
+  } else {
+    await FirebaseAuthentication.signInWithApple();
+  }
+  const { token } = await FirebaseAuthentication.getIdToken();
+  if (!token) throw new Error("no-token");
+  return token;
+}

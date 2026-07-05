@@ -1,5 +1,8 @@
-// Share a result using the native mobile share sheet (Web Share API), falling
-// back to copying the link to the clipboard on desktop/unsupported browsers.
+import { isNativeApp } from "./platform";
+
+// Share a result using the native share sheet (@capacitor/share in the app, the Web
+// Share API in the browser), falling back to copying the link to the clipboard on
+// desktop/unsupported browsers.
 export async function shareOrCopy(data: {
   title: string;
   text: string;
@@ -7,6 +10,16 @@ export async function shareOrCopy(data: {
 }): Promise<"shared" | "copied" | "failed"> {
   const url = data.url ?? (typeof window !== "undefined" ? window.location.href : "");
   const nav = typeof navigator !== "undefined" ? navigator : undefined;
+
+  if (isNativeApp()) {
+    try {
+      const { Share } = await import("@capacitor/share");
+      await Share.share({ title: data.title, text: data.text, url });
+      return "shared";
+    } catch {
+      // User cancelled or share unavailable — fall through to clipboard.
+    }
+  }
 
   if (nav?.share) {
     try {

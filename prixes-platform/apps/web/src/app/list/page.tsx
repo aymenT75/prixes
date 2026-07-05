@@ -151,7 +151,7 @@ function ListRow({
         />
       </button>
 
-      <Link href={`/courses/${item.barcode}`} className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white">
+      <Link href={`/courses/detail?barcode=${item.barcode}`} className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white">
         {item.image_url ? (
           <Image src={item.image_url} alt={item.name ?? ""} fill className="object-contain p-1" sizes="48px" />
         ) : (
@@ -163,7 +163,13 @@ function ListRow({
 
       <div className="min-w-0 flex-1">
         <p className={`truncate text-label-lg text-on-surface ${item.checked ? "line-through" : ""}`}>
-          {item.name ?? item.barcode}
+          <Link
+            href={`/courses/detail?barcode=${item.barcode}`}
+            aria-label={`${item.name ?? item.barcode} — voir la fiche produit`}
+            className="hover:underline focus-visible:underline"
+          >
+            {item.name ?? item.barcode}
+          </Link>
         </p>
         {item.best_price != null && (
           <p className="text-micro text-on-surface-variant">{eur(item.best_price)} / u.</p>

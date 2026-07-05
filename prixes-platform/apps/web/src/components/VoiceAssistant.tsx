@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { Icon } from "@/components/Icon";
 import { useA11y } from "@/lib/useA11y";
 import {
-  createRecognizer,
+  createVoiceRecognizer,
   parseIntent,
   readPageAloud,
   speak,
   speechSupported,
   stopSpeaking,
   vibrate,
+  type VoiceRecognizer,
 } from "@/lib/voice";
 
 type Phase = "idle" | "listening" | "responding" | "error";
@@ -27,7 +28,7 @@ export function VoiceAssistant() {
   const [response, setResponse] = useState("");
   const [supported, setSupported] = useState(true);
   const [handsFree, setHandsFree] = useState(false);
-  const recRef = useRef<ReturnType<typeof createRecognizer>>(null);
+  const recRef = useRef<VoiceRecognizer | null>(null);
   const handledRef = useRef(false);
   const handsFreeRef = useRef(false);
   const openRef = useRef(false);
@@ -91,39 +92,34 @@ export function VoiceAssistant() {
     handledRef.current = false;
     setTranscript("");
     setResponse("");
-    const rec = createRecognizer();
+    const rec = createVoiceRecognizer();
     if (!rec) {
       setSupported(false);
       return;
     }
     recRef.current = rec;
-    rec.onresult = (e: any) => {
-      let txt = "";
-      for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+    rec.onPartial = (txt) => setTranscript(txt);
+    rec.onFinal = (txt) => {
       setTranscript(txt);
-      if (e.results[e.results.length - 1].isFinal && !handledRef.current) {
+      if (!handledRef.current) {
         handledRef.current = true;
         act(txt);
       }
     };
-    rec.onerror = (e: any) => {
+    rec.onError = (kind) => {
       setPhase("error");
       setResponse(
-        e?.error === "not-allowed"
-          ? "Je n'ai pas accès au micro. Autorisez le microphone dans le navigateur."
+        kind === "not-allowed"
+          ? "Je n'ai pas accès au micro. Autorisez le microphone dans les réglages."
           : "Je n'ai pas pu écouter. Réessayez.",
       );
     };
-    rec.onend = () => {
+    rec.onEnd = () => {
       setPhase((p) => (p === "listening" ? "idle" : p));
     };
-    try {
-      rec.start();
-      setPhase("listening");
-      vibrate(30);
-    } catch {
-      /* already started */
-    }
+    rec.start();
+    setPhase("listening");
+    vibrate(30);
   }, [act]);
 
   useEffect(() => {

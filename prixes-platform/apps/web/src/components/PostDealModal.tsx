@@ -1,10 +1,11 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
+import { isNativeApp } from "@/lib/platform";
 import { useApp } from "@/lib/store";
 
 const EMPTY = {
@@ -68,6 +69,8 @@ export function PostDealModal() {
   const [recog, setRecog] = useState<Recog>({ status: "idle", msg: "" });
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [native, setNative] = useState(false);
+  useEffect(() => setNative(isNativeApp()), []);
   const fileRef = useRef<HTMLInputElement>(null);
   const { data: meta } = useQuery({
     queryKey: ["meta"],
@@ -121,6 +124,27 @@ export function PostDealModal() {
       }
     } catch {
       setRecog({ status: "info", msg: "Échec de la reconnaissance — saisissez le titre." });
+    }
+  }
+
+  // Native photo capture via @capacitor/camera (prompts camera or gallery), wrapped
+  // as a File so it feeds the same barcode/AI recognition + upload path as the web
+  // <input type="file"> flow.
+  async function pickNativePhoto() {
+    try {
+      const { Camera, CameraResultType, CameraSource } = await import("@capacitor/camera");
+      const shot = await Camera.getPhoto({
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Prompt,
+        quality: 85,
+      });
+      if (!shot.webPath) return;
+      const blob = await (await fetch(shot.webPath)).blob();
+      const type = blob.type || "image/jpeg";
+      const file = new File([blob], `deal.${shot.format ?? "jpg"}`, { type });
+      await onPhotoPick(file);
+    } catch {
+      /* user cancelled or camera unavailable */
     }
   }
 
@@ -198,7 +222,7 @@ export function PostDealModal() {
         />
         <button
           type="button"
-          onClick={() => fileRef.current?.click()}
+          onClick={() => (native ? pickNativePhoto() : fileRef.current?.click())}
           disabled={recog.status === "working"}
           className="mb-2 flex w-full items-center gap-3 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-4 text-left active:scale-[0.99]"
         >

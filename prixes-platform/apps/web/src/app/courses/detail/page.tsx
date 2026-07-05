@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
-import { use, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
@@ -23,8 +24,26 @@ function parseAllergens(s: string | null): string[] {
     .filter(Boolean);
 }
 
-export default function ProductDetailPage({ params }: { params: Promise<{ barcode: string }> }) {
-  const { barcode } = use(params);
+// The product barcode is passed as a query param (?barcode=…) rather than a route
+// segment so the page works under Next.js `output: 'export'` (static export has no
+// server to resolve unbounded dynamic segments). Client-side navigation is unchanged.
+export default function ProductDetailPage() {
+  return (
+    <Suspense
+      fallback={
+        <div>
+          <PageHeader title="Produit" back />
+          <p className="py-10 text-center text-on-surface-variant">Chargement…</p>
+        </div>
+      }
+    >
+      <ProductDetail />
+    </Suspense>
+  );
+}
+
+function ProductDetail() {
+  const barcode = useSearchParams().get("barcode") ?? "";
   const qc = useQueryClient();
   const { user, openLogin } = useApp();
   const { allergens: profile, diets: dietProfile, autoRead } = useA11y();
@@ -94,6 +113,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ barcod
   const { data, isLoading } = useQuery({
     queryKey: ["product", barcode],
     queryFn: () => api.getProduct(barcode),
+    enabled: barcode.length > 0,
   });
 
   const { data: history } = useQuery({

@@ -7,6 +7,7 @@ import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
 import { eur } from "@/lib/format";
+import { getCurrentPosition } from "@/lib/geo";
 
 const FUEL_TYPES = [
   { id: "gazole", label: "Gazole" },
@@ -21,12 +22,17 @@ export default function FuelPage() {
   const [fuelType, setFuelType] = useState("gazole");
   const [geoError, setGeoError] = useState<string | null>(null);
 
-  function locate() {
-    if (!navigator.geolocation) return setGeoError("Géolocalisation non disponible.");
-    navigator.geolocation.getCurrentPosition(
-      (pos) => setCoords({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      () => setGeoError("Position refusée. Activez la localisation."),
-    );
+  async function locate() {
+    setGeoError(null);
+    try {
+      setCoords(await getCurrentPosition());
+    } catch (e) {
+      setGeoError(
+        e instanceof Error && e.message === "unsupported"
+          ? "Géolocalisation non disponible."
+          : "Position refusée. Activez la localisation.",
+      );
+    }
   }
 
   const { data, isFetching } = useQuery({
@@ -66,7 +72,9 @@ export default function FuelPage() {
       {isFetching && <p className="py-8 text-center text-on-surface-variant">Recherche des stations…</p>}
 
       <div className="space-y-4">
-        {data?.items.map((s) => (
+        {data?.items.map((s) => {
+          const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
+          return (
           <div key={s.id} className="card overflow-hidden p-gutter transition-all hover:shadow-float">
             {s.id === cheapest && (
               <div className="mb-2 inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-micro text-on-primary">
@@ -75,7 +83,17 @@ export default function FuelPage() {
             )}
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-headline-md text-on-surface">{s.brand ?? "Station"}</h3>
+                <h3 className="text-headline-md text-on-surface">
+                  <a
+                    href={mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Station ${s.brand ?? "essence"}${s.city ? ` à ${s.city}` : ""}, à ${s.distance_km} km — voir l'itinéraire (nouvelle fenêtre)`}
+                    className="hover:underline focus-visible:underline"
+                  >
+                    {s.brand ?? "Station"}
+                  </a>
+                </h3>
                 <p className="mt-1 flex items-center gap-1 text-body-md text-on-surface-variant">
                   <Icon name="location_on" className="text-[16px]" />
                   {s.city} {s.postal_code} · {s.distance_km} km
@@ -102,16 +120,18 @@ export default function FuelPage() {
                   </div>
                 ))}
               <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`}
+                href={mapsUrl}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label={`Itinéraire vers la station ${s.brand ?? "essence"} (nouvelle fenêtre)`}
                 className="ml-auto flex items-center gap-1 rounded-lg bg-primary px-4 py-2 text-label-md text-on-primary active:scale-95"
               >
                 <Icon name="directions" className="text-[18px]" /> Itinéraire
               </a>
             </div>
           </div>
-        ))}
+          );
+        })}
         {coords && data?.items.length === 0 && !isFetching && (
           <p className="py-8 text-center text-on-surface-variant">Aucune station trouvée à proximité.</p>
         )}

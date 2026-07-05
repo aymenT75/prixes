@@ -1,5 +1,8 @@
-// Voice engine — French speech recognition (Web Speech API) + speech synthesis,
-// plus a small intent parser so the assistant feels like Siri/Google Assistant.
+// Voice engine — French speech recognition + speech synthesis, plus a small intent
+// parser so the assistant feels like Siri/Google Assistant. On the web it uses the
+// Web Speech API; inside the Capacitor native shell (where WKWebView has no
+// SpeechRecognition) it uses native plugins for STT, TTS and haptics.
+import { isNativeApp } from "./platform";
 
 export type Intent =
   | { type: "navigate"; path: string; say: string }
@@ -10,11 +13,13 @@ export type Intent =
   | { type: "unknown"; say: string };
 
 export function speechSupported(): boolean {
+  if (isNativeApp()) return true; // native @capacitor-community/speech-recognition
   if (typeof window === "undefined") return false;
   return !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
 }
 
 export function ttsSupported(): boolean {
+  if (isNativeApp()) return true; // native @capacitor-community/text-to-speech
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
@@ -30,6 +35,120 @@ export function createRecognizer(): any | null {
   return rec;
 }
 
+// Unified recognizer used by the voice assistant so the UI is platform-agnostic:
+// callbacks are assigned, then start()/stop() are called. Backed by the Web Speech
+// API on the web and by @capacitor-community/speech-recognition in the native shell.
+export interface VoiceRecognizer {
+  start(): void;
+  stop(): void;
+  onPartial?: (text: string) => void;
+  onFinal?: (text: string) => void;
+  onError?: (kind: "not-allowed" | "other") => void;
+  onEnd?: () => void;
+}
+
+export function createVoiceRecognizer(): VoiceRecognizer | null {
+  return isNativeApp() ? nativeRecognizer() : webRecognizer();
+}
+
+function webRecognizer(): VoiceRecognizer | null {
+  const rec = createRecognizer();
+  if (!rec) return null;
+  const r: VoiceRecognizer = {
+    start() {
+      try {
+        rec.start();
+      } catch {
+        /* already started */
+      }
+    },
+    stop() {
+      try {
+        rec.stop();
+      } catch {
+        /* ignore */
+      }
+    },
+  };
+  rec.onresult = (e: any) => {
+    let txt = "";
+    for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
+    r.onPartial?.(txt);
+    if (e.results[e.results.length - 1].isFinal) r.onFinal?.(txt);
+  };
+  rec.onerror = (e: any) => r.onError?.(e?.error === "not-allowed" ? "not-allowed" : "other");
+  rec.onend = () => r.onEnd?.();
+  return r;
+}
+
+function nativeRecognizer(): VoiceRecognizer {
+  let partialHandle: { remove: () => void } | undefined;
+  let lastText = "";
+
+  async function cleanup() {
+    try {
+      partialHandle?.remove();
+    } catch {
+      /* ignore */
+    }
+    partialHandle = undefined;
+  }
+
+  const r: VoiceRecognizer = {
+    start() {
+      lastText = "";
+      (async () => {
+        try {
+          const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
+          const perm = await SpeechRecognition.checkPermissions().catch(() => null);
+          if (!perm || perm.speechRecognition !== "granted") {
+            const req = await SpeechRecognition.requestPermissions().catch(() => null);
+            if (!req || req.speechRecognition !== "granted") {
+              r.onError?.("not-allowed");
+              r.onEnd?.();
+              return;
+            }
+          }
+          // Live transcript via partial results (used for the on-screen text).
+          partialHandle = await SpeechRecognition.addListener("partialResults", (data: any) => {
+            const txt: string = data?.matches?.[0] ?? "";
+            if (txt) {
+              lastText = txt;
+              r.onPartial?.(txt);
+            }
+          });
+          const res: any = await SpeechRecognition.start({
+            language: "fr-FR",
+            maxResults: 1,
+            partialResults: true,
+            popup: false,
+          });
+          // Android resolves start() with the final matches; iOS delivers via listener.
+          const finalText: string = res?.matches?.[0] ?? lastText;
+          if (finalText) r.onFinal?.(finalText);
+        } catch {
+          r.onError?.("other");
+        } finally {
+          await cleanup();
+          r.onEnd?.();
+        }
+      })();
+    },
+    stop() {
+      (async () => {
+        try {
+          const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
+          await SpeechRecognition.stop();
+        } catch {
+          /* ignore */
+        }
+        await cleanup();
+      })();
+    },
+  };
+  return r;
+}
+
 let _frVoice: SpeechSynthesisVoice | null = null;
 function pickFrenchVoice(): SpeechSynthesisVoice | null {
   if (!ttsSupported()) return null;
@@ -43,6 +162,19 @@ function pickFrenchVoice(): SpeechSynthesisVoice | null {
 }
 
 export function speak(text: string, onEnd?: () => void): void {
+  if (isNativeApp()) {
+    (async () => {
+      try {
+        const { TextToSpeech } = await import("@capacitor-community/text-to-speech");
+        await TextToSpeech.stop().catch(() => {});
+        await TextToSpeech.speak({ text, lang: "fr-FR", rate: 1.0, pitch: 1.0 });
+      } catch {
+        /* TTS unavailable */
+      }
+      onEnd?.();
+    })();
+    return;
+  }
   if (!ttsSupported()) {
     onEnd?.();
     return;
@@ -59,11 +191,35 @@ export function speak(text: string, onEnd?: () => void): void {
 }
 
 export function stopSpeaking(): void {
+  if (isNativeApp()) {
+    import("@capacitor-community/text-to-speech")
+      .then(({ TextToSpeech }) => TextToSpeech.stop().catch(() => {}))
+      .catch(() => {});
+    return;
+  }
   if (ttsSupported()) window.speechSynthesis.cancel();
 }
 
 /** Haptic feedback (no-op where unsupported, e.g. desktop / iOS Safari). */
 export function vibrate(pattern: number | number[]): void {
+  if (isNativeApp()) {
+    (async () => {
+      try {
+        const { Haptics, ImpactStyle, NotificationType } = await import("@capacitor/haptics");
+        if (Array.isArray(pattern)) {
+          // Multi-pulse patterns are used for warnings (e.g. allergen alerts).
+          await Haptics.notification({ type: NotificationType.Warning });
+        } else if (pattern >= 100) {
+          await Haptics.vibrate({ duration: pattern });
+        } else {
+          await Haptics.impact({ style: ImpactStyle.Light });
+        }
+      } catch {
+        /* haptics unavailable */
+      }
+    })();
+    return;
+  }
   try {
     navigator.vibrate?.(pattern);
   } catch {

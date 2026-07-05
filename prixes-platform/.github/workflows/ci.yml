@@ -55,3 +55,27 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+
+  # Verifies the native pipeline: static export → Capacitor sync → Android build.
+  # iOS release builds require a macOS runner + signing secrets (see apps/web/MOBILE.md)
+  # and are done from Xcode on the Mac, so they are not part of this CI.
+  mobile-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - run: npm install
+      - run: npm run build:mobile
+      - run: npx cap sync android
+      - name: Assemble Android debug APK
+        working-directory: apps/web/android
+        run: ./gradlew assembleDebug --no-daemon
