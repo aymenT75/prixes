@@ -12,7 +12,7 @@ import { PriceChart } from "@/components/PriceChart";
 import { ProductCard } from "@/components/ProductCard";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
-import { eur, nutriHint, scoreColor, storeSearchUrl } from "@/lib/format";
+import { eur, nutriHint, scoreColor } from "@/lib/format";
 import { shareOrCopy } from "@/lib/share";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
@@ -439,16 +439,14 @@ function ProductDetail() {
         </Link>
       )}
 
-      {/* Buy online — after seeing the price, go to the merchant offers */}
+      {/* See all prices — the product's Open Prices page (real community relevés). */}
       <a
-        href={`https://www.google.fr/search?tbm=shop&q=${encodeURIComponent(
-          [data.name, data.brand].filter(Boolean).join(" "),
-        )}`}
+        href={`https://prices.openfoodfacts.org/products/${barcode}`}
         target="_blank"
         rel="noopener noreferrer"
         className="btn-primary mb-6 w-full py-3.5"
       >
-        <Icon name="storefront" className="text-[20px]" /> Acheter en ligne
+        <Icon name="sell" className="text-[20px]" /> Voir les prix sur Open Prices
       </a>
 
       {/* Price history */}
@@ -490,13 +488,13 @@ function ProductDetail() {
                   </p>
                 )}
                 <a
-                  href={storeSearchUrl(p.store, [data.name, data.brand].filter(Boolean).join(" "))}
+                  href={`https://prices.openfoodfacts.org/products/${barcode}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`Voir ${p.store ?? "ce produit"} en ligne (nouvelle fenêtre)`}
+                  aria-label={`Voir ce relevé de prix sur Open Prices (nouvelle fenêtre)`}
                   className="mt-1 inline-flex items-center gap-1 text-micro text-primary hover:underline focus-visible:underline"
                 >
-                  Voir en ligne <Icon name="open_in_new" className="text-[13px]" />
+                  Voir sur Open Prices <Icon name="open_in_new" className="text-[13px]" />
                 </a>
               </div>
             </div>

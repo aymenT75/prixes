@@ -31,33 +31,6 @@ export const nutriHint: Record<string, string> = {
   e: "faible qualité nutritionnelle",
 };
 
-// Where to *see the product online* per retailer — their own French store search,
-// with a Google Shopping France fallback for anything not mapped. All French.
-const RETAILER_SEARCH: Record<string, string> = {
-  Carrefour: "https://www.carrefour.fr/s?q=",
-  "Carrefour City": "https://www.carrefour.fr/s?q=",
-  "E.Leclerc": "https://www.e.leclerc/recherche?q=",
-  "E.Leclerc Drive": "https://www.e.leclerc/recherche?q=",
-  Auchan: "https://www.auchan.fr/recherche?text=",
-  Intermarché: "https://www.intermarche.com/recherche/",
-  "Intermarché Express": "https://www.intermarche.com/recherche/",
-  Lidl: "https://www.lidl.fr/q/query/",
-  Monoprix: "https://courses.monoprix.fr/recherche?q=",
-  Franprix: "https://www.franprix.fr/recherche?q=",
-  Casino: "https://www.casino.fr/recherche?q=",
-  "Super U": "https://www.coursesu.com/rechercher?q=",
-  Cora: "https://www.cora.fr/recherche?q=",
-  Aldi: "https://www.aldi.fr/recherche.html?q=",
-  "Grand Frais": "https://www.grandfrais.com/",
-};
-
-export function storeSearchUrl(store: string | null, query: string): string {
-  const base = store ? RETAILER_SEARCH[store] : undefined;
-  if (base) return base + encodeURIComponent(query.trim());
-  // Fallback: Google Shopping France (french results, never 404s).
-  return `https://www.google.fr/search?tbm=shop&q=${encodeURIComponent(`${query} ${store ?? ""}`.trim())}`;
-}
-
 // Shared "colour the whole bar by Nutri-Score" inline style (border + theme-aware
 // tint via color-mix so text contrast stays high). Returns undefined when unknown.
 export function nutriBarStyle(grade: string | null | undefined): import("react").CSSProperties | undefined {
