@@ -200,6 +200,54 @@ export function stopSpeaking(): void {
   if (ttsSupported()) window.speechSynthesis.cancel();
 }
 
+/**
+ * Preload the French TTS voice so the first spoken response has no cold-start
+ * delay (Web Speech loads voices asynchronously). Call once at app start.
+ */
+export function warmUpVoice(): void {
+  if (isNativeApp() || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+  pickFrenchVoice();
+  window.speechSynthesis.addEventListener?.("voiceschanged", () => pickFrenchVoice());
+}
+
+/**
+ * Semantic haptics so a user never has to look at the screen (WCAG-friendly):
+ *  - success  = one long buzz (confirmation),
+ *  - danger   = staccato buzzes (allergen / warning).
+ * No-ops where unsupported.
+ */
+export function hapticSuccess(): void {
+  if (isNativeApp()) {
+    import("@capacitor/haptics")
+      .then(({ Haptics, NotificationType }) =>
+        Haptics.notification({ type: NotificationType.Success }).catch(() => {}),
+      )
+      .catch(() => {});
+    return;
+  }
+  try {
+    navigator.vibrate?.(400);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function hapticDanger(): void {
+  if (isNativeApp()) {
+    import("@capacitor/haptics")
+      .then(({ Haptics, NotificationType }) =>
+        Haptics.notification({ type: NotificationType.Error }).catch(() => {}),
+      )
+      .catch(() => {});
+    return;
+  }
+  try {
+    navigator.vibrate?.([120, 60, 120, 60, 120]);
+  } catch {
+    /* ignore */
+  }
+}
+
 /** Haptic feedback (no-op where unsupported, e.g. desktop / iOS Safari). */
 export function vibrate(pattern: number | number[]): void {
   if (isNativeApp()) {

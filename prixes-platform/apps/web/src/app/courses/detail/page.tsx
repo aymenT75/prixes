@@ -2,8 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
@@ -15,7 +16,7 @@ import { eur } from "@/lib/format";
 import { shareOrCopy } from "@/lib/share";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
-import { speak, vibrate } from "@/lib/voice";
+import { hapticDanger, hapticSuccess, speak } from "@/lib/voice";
 
 function parseAllergens(s: string | null): string[] {
   return (s ?? "")
@@ -76,18 +77,26 @@ function ProductDetail() {
     mutationFn: () => api.addToList({ barcode }),
     onSuccess: () => {
       setListMsg("Ajouté à votre liste ✓");
+      hapticSuccess();
       qc.invalidateQueries({ queryKey: ["shopping"] });
     },
-    onError: () => setListMsg("Erreur — réessayez."),
+    onError: () => {
+      setListMsg("Erreur — réessayez.");
+      hapticDanger();
+    },
   });
 
   const createAlert = useMutation({
     mutationFn: (target: number | null) => api.createAlert({ barcode, target_price: target }),
     onSuccess: () => {
       setAlertMsg("Alerte activée ✓");
+      hapticSuccess();
       qc.invalidateQueries({ queryKey: ["alerts"] });
     },
-    onError: () => setAlertMsg("Erreur — réessayez."),
+    onError: () => {
+      setAlertMsg("Erreur — réessayez.");
+      hapticDanger();
+    },
   });
 
   function onAddToList() {
@@ -136,25 +145,45 @@ function ProductDetail() {
     ),
   );
 
-  // Spoken announcement on open: always warn about matching allergens (safety);
-  // read the full summary when "lecture automatique" is enabled.
+  // Cheapest same-category alternative that undercuts this product's best price.
+  const cheaperAlt = useMemo(() => {
+    if (!data || data.best_price == null || !alternatives) return null;
+    const under = alternatives.items
+      .filter((a) => a.best_price != null && a.best_price < data.best_price!)
+      .sort((x, y) => x.best_price! - y.best_price!);
+    return under[0] ?? null;
+  }, [data, alternatives]);
+
+  // Voice-first announcement on open (right after a scan). Priority order:
+  //  1) SAFETY — matching allergens are spoken FIRST + danger haptic, and this fires
+  //     even when auto-read is off; we never wait on the alternatives query for it.
+  //  2) When auto-read is on, a CONCISE line: "Nom, prix, [moins cher : alternative]".
+  // Spoken as a single utterance so the order is guaranteed and there is no
+  // cancel-race between two speak() calls (also the lowest-latency path).
   useEffect(() => {
     if (!data || announcedRef.current === barcode) return;
-    const warn = allergenMatches.length
-      ? ` Attention, ce produit contient ${allergenMatches.join(", ")}.`
-      : "";
+    const hasAllergen = allergenMatches.length > 0;
+    // Wait for the alternatives query only to enrich the spoken price comparison —
+    // but a safety alert must never be delayed.
+    if (autoRead && !hasAllergen && alternatives === undefined) return;
+    announcedRef.current = barcode;
+
+    const parts: string[] = [];
+    if (hasAllergen) parts.push(`Attention, ce produit contient ${allergenMatches.join(", ")}.`);
     if (autoRead) {
-      announcedRef.current = barcode;
-      const best = data.best_price != null ? ` Meilleur prix ${eur(data.best_price)}.` : "";
-      speak(`${data.name ?? "Produit"}.${best}${warn}`);
-      if (allergenMatches.length) vibrate([200, 80, 200]);
-    } else if (allergenMatches.length) {
-      announcedRef.current = barcode;
-      speak(`Attention, ce produit contient ${allergenMatches.join(", ")}.`);
-      vibrate([200, 80, 200]);
+      const price = data.best_price != null ? ` à ${eur(data.best_price)}` : "";
+      let line = `${data.name ?? "Produit"}${price}.`;
+      if (cheaperAlt?.best_price != null) {
+        line += ` Moins cher : ${cheaperAlt.name} à ${eur(cheaperAlt.best_price)}.`;
+      }
+      parts.push(line);
     }
+    if (parts.length) speak(parts.join(" "));
+    // Haptic confirmation of the scan: danger buzz if allergen, success buzz otherwise.
+    if (hasAllergen) hapticDanger();
+    else hapticSuccess();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, autoRead, barcode, allergenMatches.length]);
+  }, [data, alternatives, autoRead, barcode, allergenMatches.length, cheaperAlt]);
 
   async function contribute(e: React.FormEvent) {
     e.preventDefault();
@@ -361,6 +390,29 @@ function ProductDetail() {
             <p className="text-label-md">communauté</p>
           </div>
         </section>
+      )}
+
+      {/* Cheaper alternative — voice-first comparator surfaced visually too */}
+      {cheaperAlt?.best_price != null && data.best_price != null && (
+        <Link
+          href={`/courses/detail?barcode=${cheaperAlt.barcode}`}
+          aria-label={`Alternative moins chère : ${cheaperAlt.name} à ${eur(cheaperAlt.best_price)} — voir la fiche produit`}
+          className="mb-6 flex items-center gap-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 transition-colors hover:border-primary"
+        >
+          <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Icon name="savings" fill className="text-[22px]" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-micro uppercase tracking-wider text-primary">Moins cher</p>
+            <p className="truncate text-label-lg text-on-surface">{cheaperAlt.name}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-headline-md text-primary">{eur(cheaperAlt.best_price)}</p>
+            <p className="text-micro text-on-surface-variant">
+              −{eur(data.best_price - cheaperAlt.best_price)}
+            </p>
+          </div>
+        </Link>
       )}
 
       {/* Buy online — after seeing the price, go to the merchant offers */}

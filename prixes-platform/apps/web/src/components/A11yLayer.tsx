@@ -5,12 +5,15 @@ import { useEffect } from "react";
 import { AccessibilityFab } from "@/components/AccessibilityFab";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { useA11y } from "@/lib/useA11y";
+import { warmUpVoice } from "@/lib/voice";
 
 /** Initialises accessibility settings on load and mounts the floating controls. */
 export function A11yLayer() {
   const init = useA11y((s) => s.init);
   useEffect(() => {
     init();
+    // Preload the French TTS voice so the first spoken response is instant.
+    warmUpVoice();
   }, [init]);
 
   return (
