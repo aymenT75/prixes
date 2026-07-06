@@ -32,7 +32,7 @@ router = APIRouter(prefix="/deals", tags=["deals"])
 async def recognize(data: RecognizeIn, user: CurrentUser) -> RecognizeOut:
     """AI vision fallback: identify a product from a photo (barcode is tried
     client-side first). Returns available=False when no vision key is set."""
-    if not settings.anthropic_api_key:
+    if not (settings.openai_api_key or settings.anthropic_api_key):
         return RecognizeOut(available=False)
     name, brand = await recognize_product(data.image, data.media_type)
     return RecognizeOut(available=True, product_name=name, brand=brand)

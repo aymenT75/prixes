@@ -41,7 +41,10 @@ class Settings(BaseSettings):
     firebase_service_account_json: str = ""
 
     # AI product recognition (deal photo → product name). Optional: barcode
-    # detection works without it; this is the vision fallback. Set the key to enable.
+    # detection works without it; this is the vision fallback. Set a key to enable.
+    # OpenAI (GPT-4o) is used when its key is set, else Anthropic (Claude).
+    openai_api_key: str = ""
+    openai_recognition_model: str = "gpt-4o-mini"
     anthropic_api_key: str = ""
     recognition_model: str = "claude-haiku-4-5-20251001"
 
