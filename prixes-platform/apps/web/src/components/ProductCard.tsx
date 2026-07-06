@@ -8,8 +8,19 @@ import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
+import { scoreColor } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import type { Product } from "@/lib/types";
+
+// Plain-language nutritional hint per Nutri-Score, spoken to screen-reader users so
+// the meaning conveyed by colour is never colour-only (WCAG 1.4.1).
+const NUTRI_HINT: Record<string, string> = {
+  a: "bonne qualité nutritionnelle",
+  b: "bonne qualité nutritionnelle",
+  c: "qualité nutritionnelle moyenne",
+  d: "faible qualité nutritionnelle",
+  e: "faible qualité nutritionnelle",
+};
 
 export function ProductCard({ product }: { product: Product }) {
   const { user, openLogin } = useApp();
@@ -30,12 +41,36 @@ export function ProductCard({ product }: { product: Product }) {
     add.mutate();
   }
 
+  // Colour the whole product bar by Nutri-Score for low-vision users: green (A) →
+  // red (E), so an unhealthy product (D/E) reads as orange/red at a glance. A tinted
+  // background (theme-aware via color-mix, so text contrast stays high) plus a strong
+  // border/left accent. The letter badge + spoken hint keep it accessible to blind
+  // users and satisfy "don't rely on colour alone".
+  const nutri = product.nutriscore?.toLowerCase() ?? null;
+  const nutriColor = nutri ? scoreColor[nutri] : null;
+  const nutriHint = nutri ? (NUTRI_HINT[nutri] ?? "") : "";
+  const nutriStyle: React.CSSProperties | undefined = nutriColor
+    ? {
+        borderColor: nutriColor,
+        borderWidth: 2,
+        borderLeftWidth: 6,
+        backgroundColor: `color-mix(in srgb, ${nutriColor} 10%, rgb(var(--color-surface-container-lowest)))`,
+      }
+    : undefined;
+  const linkLabel =
+    `${product.name ?? "Produit"}${product.brand ? `, ${product.brand}` : ""}` +
+    (nutri ? ` — Nutri-Score ${nutri.toUpperCase()}, ${nutriHint}` : "") +
+    " — voir la fiche produit";
+
   // "Stretched link" pattern: the whole card is clickable, but there's exactly one
   // real link (the product name, labelled for screen readers) — the "Ajouter" button
   // sits above the stretched overlay (z-10) so it stays independently operable. This
   // avoids nesting a <button> inside an <a> (invalid + confusing for assistive tech).
   return (
-    <div className="card relative flex items-center gap-4 p-3 transition-shadow hover:shadow-float focus-within:shadow-float">
+    <div
+      style={nutriStyle}
+      className="card relative flex items-center gap-4 p-3 transition-shadow hover:shadow-float focus-within:shadow-float"
+    >
       <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-white">
         {product.image_url ? (
           <Image src={product.image_url} alt="" fill className="object-contain p-1" sizes="64px" />
@@ -49,7 +84,7 @@ export function ProductCard({ product }: { product: Product }) {
         <p className="truncate text-label-lg text-on-surface">
           <Link
             href={`/courses/detail?barcode=${product.barcode}`}
-            aria-label={`${product.name ?? "Produit"}${product.brand ? `, ${product.brand}` : ""} — voir la fiche produit`}
+            aria-label={linkLabel}
             className="after:absolute after:inset-0 after:content-[''] hover:underline focus-visible:underline"
           >
             {product.name ?? "Produit"}
