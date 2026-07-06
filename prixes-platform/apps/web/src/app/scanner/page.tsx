@@ -5,8 +5,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
+import { api } from "@/lib/api";
 import { scanBarcodeNative } from "@/lib/barcode";
 import { isNativeApp } from "@/lib/platform";
+import { useApp } from "@/lib/store";
+import { hapticDanger, hapticSuccess, speak } from "@/lib/voice";
+import { detectBarcodeInFile, downscaleToBase64 } from "@/lib/vision";
 
 declare global {
   interface Window {
@@ -36,6 +40,58 @@ export default function ScannerPage() {
   // markup match — avoids a hydration mismatch on the camera UI.
   const [native, setNative] = useState(false);
   useEffect(() => setNative(isNativeApp()), []);
+
+  // AI "identify by photo" fallback for products with no readable barcode.
+  const { user, openLogin } = useApp();
+  const photoRef = useRef<HTMLInputElement>(null);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiMsg, setAiMsg] = useState<string | null>(null);
+
+  function aiFail(msg: string) {
+    setAiBusy(false);
+    setAiMsg(msg);
+    speak(msg);
+    hapticDanger();
+  }
+
+  async function onIdentifyPhoto(file: File) {
+    setAiBusy(true);
+    setAiMsg("Analyse en cours…");
+    speak("Analyse en cours.");
+    // 1) Barcode on the photo first (offline, instant, precise).
+    const code = await detectBarcodeInFile(file);
+    if (code) {
+      setAiBusy(false);
+      goToProduct(code);
+      return;
+    }
+    // 2) Vision AI (GPT-4o) → product name → search our catalogue.
+    try {
+      const b64 = await downscaleToBase64(file);
+      const r = await api.recognizeDeal(b64, "image/jpeg");
+      if (!r.available) return aiFail("Reconnaissance IA indisponible.");
+      if (!r.product_name) return aiFail("Produit non reconnu. Réessayez ou saisissez le code.");
+      const name = r.product_name;
+      const res = await api.searchProducts(name);
+      setAiBusy(false);
+      if (res.items.length > 0) {
+        hapticSuccess();
+        speak(`${name} trouvé.`);
+        router.push(`/courses/detail?barcode=${res.items[0].barcode}`);
+      } else {
+        hapticSuccess();
+        speak(`${name}. Voici les résultats.`);
+        router.push(`/courses?q=${encodeURIComponent(name)}`);
+      }
+    } catch {
+      aiFail("Échec de l'analyse. Réessayez.");
+    }
+  }
+
+  function onIdentifyClick() {
+    if (!user) return openLogin(true);
+    photoRef.current?.click();
+  }
 
   // Directly open the product as soon as we have a code — the whole point of the
   // scanner. Guarded so overlapping detections can't double-navigate.
@@ -248,6 +304,33 @@ export default function ScannerPage() {
       {status === "scanning" && !native && (
         <p className="mb-4 text-center text-label-md text-on-surface-variant">
           Visez le code-barres du produit…
+        </p>
+      )}
+
+      {/* AI "identify by photo" — for products with no readable barcode */}
+      <input
+        ref={photoRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) onIdentifyPhoto(f);
+          e.target.value = "";
+        }}
+      />
+      <button
+        onClick={onIdentifyClick}
+        disabled={aiBusy}
+        className="mb-4 flex w-full items-center justify-center gap-2 rounded-full border-2 border-dashed border-primary/40 bg-primary/5 py-3 text-label-lg text-primary transition-transform active:scale-[0.99] disabled:opacity-70"
+      >
+        <Icon name={aiBusy ? "hourglass_top" : "photo_camera"} className="text-[20px]" />
+        {aiBusy ? "Analyse…" : "Pas de code-barres ? Identifier par photo"}
+      </button>
+      {aiMsg && (
+        <p role="status" className="mb-4 text-center text-label-md text-on-surface-variant">
+          {aiMsg}
         </p>
       )}
 
