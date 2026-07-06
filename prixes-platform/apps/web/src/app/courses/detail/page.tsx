@@ -78,6 +78,7 @@ function ProductDetail() {
     onSuccess: () => {
       setListMsg("Ajouté à votre liste ✓");
       hapticSuccess();
+      speak("Ajouté à votre liste.");
       qc.invalidateQueries({ queryKey: ["shopping"] });
     },
     onError: () => {
@@ -91,6 +92,7 @@ function ProductDetail() {
     onSuccess: () => {
       setAlertMsg("Alerte activée ✓");
       hapticSuccess();
+      speak("Alerte activée. Vous serez prévenu à la prochaine baisse.");
       qc.invalidateQueries({ queryKey: ["alerts"] });
     },
     onError: () => {
@@ -106,17 +108,9 @@ function ProductDetail() {
 
   function onCreateAlert() {
     if (!user) return openLogin(true);
-    const input = window.prompt(
-      "Prix cible en € (laisser vide pour être alerté à toute baisse) :",
-      data?.best_price != null ? String(data.best_price) : "",
-    );
-    if (input === null) return; // cancelled
-    const target = input.trim() === "" ? null : Number(input.replace(",", "."));
-    if (target !== null && (Number.isNaN(target) || target <= 0)) {
-      setAlertMsg("Prix invalide.");
-      return;
-    }
-    createAlert.mutate(target);
+    // Cognitive simplicity + voice-first: one tap arms an alert on any future drop,
+    // no prompt to read or type. (Target-price alerts stay available via voice search.)
+    createAlert.mutate(null);
   }
 
   const { data, isLoading } = useQuery({

@@ -200,6 +200,19 @@ body {
   outline-offset: 2px;
   border-radius: 6px;
 }
+
+/* WCAG 2.2 (2.4.11 Focus Not Obscured): when a focused control is scrolled into
+   view, keep it clear of the sticky header (top) and fixed bottom nav (bottom). */
+a,
+button,
+input,
+select,
+textarea,
+summary,
+[tabindex] {
+  scroll-margin-top: 5rem;
+  scroll-margin-bottom: 6rem;
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
