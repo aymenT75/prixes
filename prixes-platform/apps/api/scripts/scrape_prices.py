@@ -61,6 +61,8 @@ RETAILER_MATCHERS = {
     "Franprix": ("franprix",),
     "Casino": ("casino",),
     "Cora": ("cora",),
+    "Grand Frais": ("grand frais", "grandfrais"),
+    "H Market": ("h market", "h-market", "hmarket"),
 }
 
 
@@ -92,6 +94,8 @@ STORE_CANON = {
     "super u": "Super U", "hyper u": "Super U", "u express": "Super U", "magasins u": "Super U",
     "monoprix": "Monoprix", "franprix": "Franprix", "casino": "Casino",
     "géant casino": "Casino", "lidl france": "Lidl", "netto": "Netto", "cora": "Cora",
+    "grand frais": "Grand Frais", "grandfrais": "Grand Frais",
+    "h market": "H Market", "h-market": "H Market", "hmarket": "H Market",
 }
 
 

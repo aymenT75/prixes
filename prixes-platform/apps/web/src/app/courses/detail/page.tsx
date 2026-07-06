@@ -12,7 +12,7 @@ import { PriceChart } from "@/components/PriceChart";
 import { ProductCard } from "@/components/ProductCard";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
-import { eur, nutriHint, scoreColor } from "@/lib/format";
+import { eur, nutriHint, scoreColor, storeSearchUrl } from "@/lib/format";
 import { shareOrCopy } from "@/lib/share";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
@@ -441,7 +441,7 @@ function ProductDetail() {
 
       {/* Buy online — after seeing the price, go to the merchant offers */}
       <a
-        href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
+        href={`https://www.google.fr/search?tbm=shop&q=${encodeURIComponent(
           [data.name, data.brand].filter(Boolean).join(" "),
         )}`}
         target="_blank"
@@ -489,6 +489,15 @@ function ProductDetail() {
                     {eur(p.unit_price)} {p.unit_label}
                   </p>
                 )}
+                <a
+                  href={storeSearchUrl(p.store, [data.name, data.brand].filter(Boolean).join(" "))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Voir ${p.store ?? "ce produit"} en ligne (nouvelle fenêtre)`}
+                  className="mt-1 inline-flex items-center gap-1 text-micro text-primary hover:underline focus-visible:underline"
+                >
+                  Voir en ligne <Icon name="open_in_new" className="text-[13px]" />
+                </a>
               </div>
             </div>
           ))}

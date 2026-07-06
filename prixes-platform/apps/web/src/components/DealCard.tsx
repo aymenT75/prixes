@@ -71,7 +71,7 @@ export function DealCard({ deal }: { deal: Deal }) {
   // Google Shopping search for the item so the card is never a dead end.
   const dest =
     deal.link ??
-    `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
+    `https://www.google.fr/search?tbm=shop&q=${encodeURIComponent(
       [deal.title, deal.store].filter(Boolean).join(" "),
     )}`;
   const destLabel = `${deal.title}${deal.store ? `, ${deal.store}` : ""} — ${
