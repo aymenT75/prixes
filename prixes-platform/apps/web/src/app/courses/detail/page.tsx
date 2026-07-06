@@ -12,7 +12,7 @@ import { PriceChart } from "@/components/PriceChart";
 import { ProductCard } from "@/components/ProductCard";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
-import { eur } from "@/lib/format";
+import { eur, nutriHint, scoreColor } from "@/lib/format";
 import { shareOrCopy } from "@/lib/share";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
@@ -148,6 +148,12 @@ function ProductDetail() {
     return under[0] ?? null;
   }, [data, alternatives]);
 
+  // Nutri-Score visuals: colour, plus a readable text colour on it (light grades B/C
+  // need dark text so white-on-yellow doesn't fail contrast).
+  const nutriG = data?.nutriscore?.toLowerCase() ?? null;
+  const nutriColor = nutriG ? (scoreColor[nutriG] ?? "#6e7a71") : null;
+  const nutriOn = nutriG === "b" || nutriG === "c" ? "#1b1c1a" : "#ffffff";
+
   // Voice-first announcement on open (right after a scan). Priority order:
   //  1) SAFETY — matching allergens are spoken FIRST + danger haptic, and this fires
   //     even when auto-read is off; we never wait on the alternatives query for it.
@@ -167,6 +173,8 @@ function ProductDetail() {
     if (autoRead) {
       const price = data.best_price != null ? ` à ${eur(data.best_price)}` : "";
       let line = `${data.name ?? "Produit"}${price}.`;
+      const g = data.nutriscore?.toLowerCase();
+      if (g && nutriHint[g]) line += ` Nutri-Score ${g.toUpperCase()}, ${nutriHint[g]}.`;
       if (cheaperAlt?.best_price != null) {
         line += ` Moins cher : ${cheaperAlt.name} à ${eur(cheaperAlt.best_price)}.`;
       }
@@ -243,6 +251,28 @@ function ProductDetail() {
           <NovaBadge group={data.nova_group} />
         </div>
       </section>
+
+      {/* Nutri-Score banner — colour + letter + plain-language hint. Low-vision users
+          get the colour, everyone gets the letter + wording (never colour-only). */}
+      {nutriG && nutriColor && (
+        <div
+          style={{
+            borderColor: nutriColor,
+            backgroundColor: `color-mix(in srgb, ${nutriColor} 12%, rgb(var(--color-surface-container-lowest)))`,
+          }}
+          className="mb-6 flex items-center gap-3 rounded-xl border-2 border-l-[6px] p-3"
+        >
+          <span
+            style={{ backgroundColor: nutriColor, color: nutriOn }}
+            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full text-label-lg font-bold"
+          >
+            {nutriG.toUpperCase()}
+          </span>
+          <p className="text-label-lg text-on-surface">
+            Nutri-Score {nutriG.toUpperCase()} — {nutriHint[nutriG] ?? ""}
+          </p>
+        </div>
+      )}
 
       {/* Quick actions */}
       <section className="mb-6 grid grid-cols-2 gap-gutter">

@@ -3,10 +3,9 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 
-import { DealCard } from "@/components/DealCard";
-import { Fab } from "@/components/Fab";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
+import { ProductCard } from "@/components/ProductCard";
 import { api } from "@/lib/api";
 
 // Only surface what the bottom tab bar does NOT already cover — Courses, Scanner,
@@ -18,8 +17,10 @@ const SHORTCUTS = [
 ];
 
 export default function HomePage() {
-  const { data } = useQuery({ queryKey: ["deals", "hot"], queryFn: () => api.listDeals("hot") });
-  const top = data?.items.slice(0, 4) ?? [];
+  // Popular products (not deals) so tapping a card opens the in-app product sheet
+  // rather than leaving to an external merchant site.
+  const { data } = useQuery({ queryKey: ["products", "browse"], queryFn: () => api.browseProducts() });
+  const top = data?.items.slice(0, 6) ?? [];
 
   return (
     <div>
@@ -56,26 +57,24 @@ export default function HomePage() {
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-headline-md text-on-surface">
-            <Icon name="local_fire_department" fill className="text-deal-accent" /> Deals populaires
+            <Icon name="trending_up" className="text-primary" /> Produits populaires
           </h2>
-          <Link href="/deals" className="text-label-lg text-primary">
+          <Link href="/courses" className="text-label-lg text-primary">
             Tout voir
           </Link>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3">
           {top.length === 0 && (
             <div className="card flex flex-col items-center gap-2 p-8 text-center text-on-surface-variant">
-              <Icon name="inbox" className="text-[32px] text-outline-variant" />
-              <p className="text-body-md">Aucun deal pour l&apos;instant.</p>
+              <Icon name="grocery" className="text-[32px] text-outline-variant" />
+              <p className="text-body-md">Catalogue en cours de chargement…</p>
             </div>
           )}
-          {top.map((deal) => (
-            <DealCard key={deal.id} deal={deal} />
+          {top.map((p) => (
+            <ProductCard key={p.barcode} product={p} />
           ))}
         </div>
       </section>
-
-      <Fab />
     </div>
   );
 }

@@ -8,19 +8,9 @@ import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
-import { scoreColor } from "@/lib/format";
+import { nutriHint, scoreColor } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import type { Product } from "@/lib/types";
-
-// Plain-language nutritional hint per Nutri-Score, spoken to screen-reader users so
-// the meaning conveyed by colour is never colour-only (WCAG 1.4.1).
-const NUTRI_HINT: Record<string, string> = {
-  a: "bonne qualité nutritionnelle",
-  b: "bonne qualité nutritionnelle",
-  c: "qualité nutritionnelle moyenne",
-  d: "faible qualité nutritionnelle",
-  e: "faible qualité nutritionnelle",
-};
 
 export function ProductCard({ product }: { product: Product }) {
   const { user, openLogin } = useApp();
@@ -48,7 +38,7 @@ export function ProductCard({ product }: { product: Product }) {
   // users and satisfy "don't rely on colour alone".
   const nutri = product.nutriscore?.toLowerCase() ?? null;
   const nutriColor = nutri ? scoreColor[nutri] : null;
-  const nutriHint = nutri ? (NUTRI_HINT[nutri] ?? "") : "";
+  const hint = nutri ? (nutriHint[nutri] ?? "") : "";
   const nutriStyle: React.CSSProperties | undefined = nutriColor
     ? {
         borderColor: nutriColor,
@@ -59,7 +49,7 @@ export function ProductCard({ product }: { product: Product }) {
     : undefined;
   const linkLabel =
     `${product.name ?? "Produit"}${product.brand ? `, ${product.brand}` : ""}` +
-    (nutri ? ` — Nutri-Score ${nutri.toUpperCase()}, ${nutriHint}` : "") +
+    (nutri ? ` — Nutri-Score ${nutri.toUpperCase()}, ${hint}` : "") +
     " — voir la fiche produit";
 
   // "Stretched link" pattern: the whole card is clickable, but there's exactly one

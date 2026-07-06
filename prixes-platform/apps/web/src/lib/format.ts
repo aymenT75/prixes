@@ -20,3 +20,13 @@ export const scoreColor: Record<string, string> = {
   d: "#ee8100",
   e: "#e63e11",
 };
+
+// Plain-language nutritional hint per Nutri-Score, spoken/announced so the meaning
+// conveyed by colour is never colour-only (WCAG 1.4.1).
+export const nutriHint: Record<string, string> = {
+  a: "bonne qualité nutritionnelle",
+  b: "bonne qualité nutritionnelle",
+  c: "qualité nutritionnelle moyenne",
+  d: "faible qualité nutritionnelle",
+  e: "faible qualité nutritionnelle",
+};
