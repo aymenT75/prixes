@@ -468,7 +468,14 @@ function ProductDetail() {
             <p className="text-body-md text-on-surface-variant">Aucun prix relevé. Ajoutez le vôtre 👇</p>
           )}
           {data.prices.map((p, i) => (
-            <div key={i} className="card flex items-center justify-between p-4">
+            <a
+              key={i}
+              href={`https://prices.openfoodfacts.org/products/${barcode}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`${p.store ?? "Magasin"} : ${eur(p.price)} — voir ce relevé sur Open Prices (nouvelle fenêtre)`}
+              className="card flex items-center justify-between p-4 transition-shadow hover:shadow-float focus-visible:shadow-float"
+            >
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-headline-md text-primary">
                   {(p.store ?? "?").charAt(0).toUpperCase()}
@@ -487,17 +494,11 @@ function ProductDetail() {
                     {eur(p.unit_price)} {p.unit_label}
                   </p>
                 )}
-                <a
-                  href={`https://prices.openfoodfacts.org/products/${barcode}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`Voir ce relevé de prix sur Open Prices (nouvelle fenêtre)`}
-                  className="mt-1 inline-flex items-center gap-1 text-micro text-primary hover:underline focus-visible:underline"
-                >
+                <span className="mt-1 inline-flex items-center gap-1 text-micro text-primary">
                   Voir sur Open Prices <Icon name="open_in_new" className="text-[13px]" />
-                </a>
+                </span>
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </section>
