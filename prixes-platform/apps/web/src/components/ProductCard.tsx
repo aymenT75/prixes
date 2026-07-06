@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
-import { nutriHint, scoreColor } from "@/lib/format";
+import { nutriBarStyle, nutriHint } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import type { Product } from "@/lib/types";
 
@@ -37,16 +37,8 @@ export function ProductCard({ product }: { product: Product }) {
   // border/left accent. The letter badge + spoken hint keep it accessible to blind
   // users and satisfy "don't rely on colour alone".
   const nutri = product.nutriscore?.toLowerCase() ?? null;
-  const nutriColor = nutri ? scoreColor[nutri] : null;
   const hint = nutri ? (nutriHint[nutri] ?? "") : "";
-  const nutriStyle: React.CSSProperties | undefined = nutriColor
-    ? {
-        borderColor: nutriColor,
-        borderWidth: 2,
-        borderLeftWidth: 6,
-        backgroundColor: `color-mix(in srgb, ${nutriColor} 10%, rgb(var(--color-surface-container-lowest)))`,
-      }
-    : undefined;
+  const nutriStyle = nutriBarStyle(product.nutriscore);
   const linkLabel =
     `${product.name ?? "Produit"}${product.brand ? `, ${product.brand}` : ""}` +
     (nutri ? ` — Nutri-Score ${nutri.toUpperCase()}, ${hint}` : "") +

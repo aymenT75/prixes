@@ -21,6 +21,7 @@ async def _enrich(db: DbSession, alerts: list) -> list[AlertOut]:
         dto.name = product.name if product else None
         dto.image_url = product.image_url if product else None
         dto.current_best = await service.current_best(db, a.barcode)
+        dto.nutriscore = product.nutriscore if product else None
         out.append(dto)
     return out
 

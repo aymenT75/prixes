@@ -35,6 +35,7 @@ async def _enrich(db: DbSession, items: list) -> list[ShoppingItemOut]:
         dto = ShoppingItemOut.model_validate(it)
         dto.image_url = product.image_url if product else None
         dto.best_price = best
+        dto.nutriscore = product.nutriscore if product else None
         out.append(dto)
     return out
 

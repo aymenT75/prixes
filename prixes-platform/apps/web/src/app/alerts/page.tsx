@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
-import { eur } from "@/lib/format";
+import { eur, nutriBarStyle, nutriHint } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import type { PriceAlert } from "@/lib/types";
 
@@ -104,6 +104,8 @@ function AlertRow({
 }) {
   return (
     <div
+      // Keep the "price dropped" highlight when triggered; otherwise tint by Nutri.
+      style={triggered ? undefined : nutriBarStyle(alert.nutriscore)}
       className={`card flex items-center gap-3 p-3 ${
         triggered ? "border-2 border-primary bg-primary-container/20" : ""
       }`}
@@ -125,7 +127,11 @@ function AlertRow({
         <p className="truncate text-label-lg text-on-surface">
           <Link
             href={`/courses/detail?barcode=${alert.barcode}`}
-            aria-label={`${alert.name ?? alert.barcode} — voir la fiche produit`}
+            aria-label={`${alert.name ?? alert.barcode}${
+              alert.nutriscore && nutriHint[alert.nutriscore.toLowerCase()]
+                ? ` — Nutri-Score ${alert.nutriscore.toUpperCase()}, ${nutriHint[alert.nutriscore.toLowerCase()]}`
+                : ""
+            } — voir la fiche produit`}
             className="hover:underline focus-visible:underline"
           >
             {alert.name ?? alert.barcode}

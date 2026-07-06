@@ -27,6 +27,7 @@ class ShoppingItemOut(BaseModel):
     name: str | None
     image_url: str | None = None
     best_price: Decimal | None = None
+    nutriscore: str | None = None
 
 
 class ShoppingListOut(BaseModel):

@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
-import { eur } from "@/lib/format";
+import { eur, nutriBarStyle, nutriHint } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import type { OptimizeResult, ShoppingItem } from "@/lib/types";
 
@@ -142,7 +142,10 @@ function ListRow({
   onRemove: () => void;
 }) {
   return (
-    <div className={`card flex items-center gap-3 p-3 ${item.checked ? "opacity-50" : ""}`}>
+    <div
+      style={nutriBarStyle(item.nutriscore)}
+      className={`card flex items-center gap-3 p-3 ${item.checked ? "opacity-50" : ""}`}
+    >
       <button onClick={onToggle} aria-label="Cocher" className="flex-shrink-0">
         <Icon
           name={item.checked ? "check_circle" : "radio_button_unchecked"}
@@ -165,7 +168,11 @@ function ListRow({
         <p className={`truncate text-label-lg text-on-surface ${item.checked ? "line-through" : ""}`}>
           <Link
             href={`/courses/detail?barcode=${item.barcode}`}
-            aria-label={`${item.name ?? item.barcode} — voir la fiche produit`}
+            aria-label={`${item.name ?? item.barcode}${
+              item.nutriscore && nutriHint[item.nutriscore.toLowerCase()]
+                ? ` — Nutri-Score ${item.nutriscore.toUpperCase()}, ${nutriHint[item.nutriscore.toLowerCase()]}`
+                : ""
+            } — voir la fiche produit`}
             className="hover:underline focus-visible:underline"
           >
             {item.name ?? item.barcode}

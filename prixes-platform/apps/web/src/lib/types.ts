@@ -103,6 +103,7 @@ export interface ShoppingItem {
   name: string | null;
   image_url: string | null;
   best_price: number | null;
+  nutriscore: string | null;
 }
 
 export interface ShoppingList {
@@ -139,6 +140,7 @@ export interface PriceAlert {
   name: string | null;
   image_url: string | null;
   current_best: number | null;
+  nutriscore: string | null;
 }
 
 export interface AlertList {

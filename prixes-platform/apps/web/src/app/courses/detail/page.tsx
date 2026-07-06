@@ -470,23 +470,15 @@ function ProductDetail() {
             <p className="text-body-md text-on-surface-variant">Aucun prix relevé. Ajoutez le vôtre 👇</p>
           )}
           {data.prices.map((p, i) => (
-            <a
-              key={i}
-              href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
-                [data.name, p.store].filter(Boolean).join(" "),
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="card flex items-center justify-between p-4 transition-shadow hover:shadow-float"
-            >
+            <div key={i} className="card flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-headline-md text-primary">
                   {(p.store ?? "?").charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <p className="text-label-lg text-on-surface">{p.store ?? "Magasin"}</p>
-                  <p className="flex items-center gap-1 text-micro uppercase text-on-surface-variant">
-                    {p.source} <Icon name="open_in_new" className="text-[13px]" />
+                  <p className="text-micro uppercase text-on-surface-variant">
+                    {p.source === "community" ? "Communauté" : "Prix relevé"}
                   </p>
                 </div>
               </div>
@@ -498,7 +490,7 @@ function ProductDetail() {
                   </p>
                 )}
               </div>
-            </a>
+            </div>
           ))}
         </div>
       </section>

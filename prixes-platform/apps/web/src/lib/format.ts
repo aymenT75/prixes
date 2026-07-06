@@ -30,3 +30,17 @@ export const nutriHint: Record<string, string> = {
   d: "faible qualité nutritionnelle",
   e: "faible qualité nutritionnelle",
 };
+
+// Shared "colour the whole bar by Nutri-Score" inline style (border + theme-aware
+// tint via color-mix so text contrast stays high). Returns undefined when unknown.
+export function nutriBarStyle(grade: string | null | undefined): import("react").CSSProperties | undefined {
+  const g = grade?.toLowerCase();
+  const c = g ? scoreColor[g] : undefined;
+  if (!c) return undefined;
+  return {
+    borderColor: c,
+    borderWidth: 2,
+    borderLeftWidth: 6,
+    backgroundColor: `color-mix(in srgb, ${c} 10%, rgb(var(--color-surface-container-lowest)))`,
+  };
+}

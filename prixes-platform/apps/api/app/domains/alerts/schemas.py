@@ -28,6 +28,7 @@ class AlertOut(BaseModel):
     name: str | None = None
     image_url: str | None = None
     current_best: Decimal | None = None
+    nutriscore: str | None = None
 
 
 class AlertListOut(BaseModel):
