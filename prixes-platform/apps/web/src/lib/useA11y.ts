@@ -47,6 +47,7 @@ interface A11yState {
   allergens: string[];
   diets: string[];
   autoRead: boolean;
+  naturalVoice: boolean;
   ready: boolean;
   voiceOpen: boolean;
   setVoiceOpen: (v: boolean) => void;
@@ -62,6 +63,7 @@ interface A11yState {
   toggleAllergen: (a: string) => void;
   toggleDiet: (d: string) => void;
   setAutoRead: (v: boolean) => void;
+  setNaturalVoice: (v: boolean) => void;
 }
 
 function apply(state: { fontScale: FontScale; highContrast: boolean; dark: boolean }) {
@@ -86,6 +88,7 @@ function persist(get: () => A11yState) {
         allergens: s.allergens,
         diets: s.diets,
         autoRead: s.autoRead,
+        naturalVoice: s.naturalVoice,
       }),
     );
   } catch {
@@ -100,6 +103,7 @@ export const useA11y = create<A11yState>((set, get) => ({
   allergens: [],
   diets: [],
   autoRead: false,
+  naturalVoice: false,
   ready: false,
   voiceOpen: false,
   setVoiceOpen: (voiceOpen) => set({ voiceOpen }),
@@ -130,6 +134,7 @@ export const useA11y = create<A11yState>((set, get) => ({
       allergens: Array.isArray(saved.allergens) ? saved.allergens : [],
       diets: Array.isArray(saved.diets) ? saved.diets : [],
       autoRead: !!saved.autoRead,
+      naturalVoice: !!saved.naturalVoice,
       ready: true,
     });
   },
@@ -172,6 +177,10 @@ export const useA11y = create<A11yState>((set, get) => ({
   },
   setAutoRead(autoRead) {
     set({ autoRead });
+    persist(get);
+  },
+  setNaturalVoice(naturalVoice) {
+    set({ naturalVoice });
     persist(get);
   },
 }));

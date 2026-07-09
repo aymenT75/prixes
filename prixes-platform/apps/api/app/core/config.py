@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     recognition_model: str = "claude-haiku-4-5-20251001"
 
+    # Natural text-to-speech for the voice assistant (OpenAI). Reuses openai_api_key;
+    # falls back to on-device/browser TTS when the key is absent.
+    openai_tts_model: str = "gpt-4o-mini-tts"
+    openai_tts_voice: str = "nova"
+
     # Object storage
     s3_endpoint_url: str = ""
     s3_bucket: str = "prixes-photos"

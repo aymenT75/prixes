@@ -180,7 +180,9 @@ function ProductDetail() {
       }
       parts.push(line);
     }
-    if (parts.length) speak(parts.join(" "));
+    // A safety allergen warning must be spoken instantly (on-device) — never wait on a
+    // network round-trip for the natural voice.
+    if (parts.length) speak(parts.join(" "), undefined, { instant: hasAllergen });
     // Haptic confirmation of the scan: danger buzz if allergen, success buzz otherwise.
     if (hasAllergen) hapticDanger();
     else hapticSuccess();
@@ -460,46 +462,61 @@ function ProductDetail() {
         </section>
       )}
 
-      {/* Store comparison */}
+      {/* Store comparison — tapping a store opens the map of its nearest branch. */}
       <section className="mb-6">
-        <h3 className="mb-3 text-headline-md text-on-surface">Comparatif magasins</h3>
+        <h3 className="mb-1 text-headline-md text-on-surface">Comparatif magasins</h3>
+        {data.prices.length > 0 && (
+          <p className="mb-3 flex items-center gap-1 text-body-md text-on-surface-variant">
+            <Icon name="map" className="text-[16px]" /> Touchez un magasin pour voir le plus proche sur la carte.
+          </p>
+        )}
         <div className="space-y-3">
           {data.prices.length === 0 && (
             <p className="text-body-md text-on-surface-variant">Aucun prix relevé. Ajoutez le vôtre 👇</p>
           )}
-          {data.prices.map((p, i) => (
-            <a
-              key={i}
-              href={`https://prices.openfoodfacts.org/products/${barcode}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`${p.store ?? "Magasin"} : ${eur(p.price)} — voir ce relevé sur Open Prices (nouvelle fenêtre)`}
-              className="card flex items-center justify-between p-4 transition-shadow hover:shadow-float focus-visible:shadow-float"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-headline-md text-primary">
-                  {(p.store ?? "?").charAt(0).toUpperCase()}
+          {data.prices.map((p, i) => {
+            const cheapest = data.best_price != null && p.price === data.best_price;
+            return (
+              <Link
+                key={i}
+                href={`/stores/map?store=${encodeURIComponent(p.store ?? "")}`}
+                aria-label={`${p.store ?? "Magasin"} : ${eur(p.price)} — voir le ${p.store ?? "magasin"} le plus proche sur la carte`}
+                className={`card flex items-center justify-between p-4 transition-shadow hover:shadow-float focus-visible:shadow-float ${
+                  cheapest ? "border-l-4 border-primary" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-container text-headline-md text-primary">
+                    {(p.store ?? "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="flex items-center gap-1.5 text-label-lg text-on-surface">
+                      {p.store ?? "Magasin"}
+                      {cheapest && (
+                        <span className="rounded bg-primary px-1.5 py-0.5 text-micro text-on-primary">
+                          Le moins cher
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-micro uppercase text-on-surface-variant">
+                      {p.source === "community" ? "Communauté" : "Prix relevé"}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-label-lg text-on-surface">{p.store ?? "Magasin"}</p>
-                  <p className="text-micro uppercase text-on-surface-variant">
-                    {p.source === "community" ? "Communauté" : "Prix relevé"}
-                  </p>
+                <div className="text-right">
+                  <p className="text-headline-md text-on-surface">{eur(p.price)}</p>
+                  {p.unit_price != null && (
+                    <p className="text-micro text-on-surface-variant">
+                      {eur(p.unit_price)} {p.unit_label}
+                    </p>
+                  )}
+                  <span className="mt-1 inline-flex items-center gap-1 text-micro text-primary">
+                    Voir sur la carte <Icon name="map" className="text-[13px]" />
+                  </span>
                 </div>
-              </div>
-              <div className="text-right">
-                <p className="text-headline-md text-on-surface">{eur(p.price)}</p>
-                {p.unit_price != null && (
-                  <p className="text-micro text-on-surface-variant">
-                    {eur(p.unit_price)} {p.unit_label}
-                  </p>
-                )}
-                <span className="mt-1 inline-flex items-center gap-1 text-micro text-primary">
-                  Voir sur Open Prices <Icon name="open_in_new" className="text-[13px]" />
-                </span>
-              </div>
-            </a>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </section>
 

@@ -1,6 +1,9 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
+
 import { Icon } from "@/components/Icon";
+import { api } from "@/lib/api";
 import { ALL_ALLERGENS, ALL_DIETS, useA11y, type FontScale } from "@/lib/useA11y";
 import { useDialog } from "@/lib/useDialog";
 
@@ -18,17 +21,21 @@ export function AccessibilityFab() {
     allergens,
     diets,
     autoRead,
+    naturalVoice,
     setFontScale,
     toggleContrast,
     toggleDark,
     toggleAllergen,
     toggleDiet,
     setAutoRead,
+    setNaturalVoice,
     setVoiceOpen,
     a11yOpen: open,
     setA11yOpen: setOpen,
   } = useA11y();
   const dialogRef = useDialog(open, () => setOpen(false));
+  // Only offer the natural voice when the backend can synthesize it.
+  const { data: meta } = useQuery({ queryKey: ["meta"], queryFn: () => api.meta() });
 
   // The launcher lives in the top header (PageHeader) now; this component only
   // renders the sheet, opened via the shared store.
@@ -125,6 +132,15 @@ export function AccessibilityFab() {
               on={autoRead}
               onToggle={() => setAutoRead(!autoRead)}
             />
+            {meta?.tts_enabled && (
+              <ToggleRow
+                icon="graphic_eq"
+                title="Voix naturelle"
+                subtitle="Voix plus humaine (nécessite une connexion)"
+                on={naturalVoice}
+                onToggle={() => setNaturalVoice(!naturalVoice)}
+              />
+            )}
 
             {/* Allergen profile */}
             <fieldset className="mt-5">

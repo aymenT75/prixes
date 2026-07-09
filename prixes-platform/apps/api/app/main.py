@@ -21,6 +21,7 @@ from app.domains.moderation.router import router as moderation_router
 from app.domains.products.router import router as products_router
 from app.domains.shopping.router import router as shopping_router
 from app.domains.stores.router import router as stores_router
+from app.domains.tts.router import router as tts_router
 from app.domains.uploads.router import router as uploads_router
 from app.domains.users.router import router as users_router
 
@@ -68,7 +69,11 @@ async def meta() -> dict[str, object]:
     uploads_enabled = bool(
         settings.s3_access_key_id and settings.s3_secret_access_key and settings.s3_public_base_url
     )
-    return {"uploads_enabled": uploads_enabled, "environment": settings.environment}
+    return {
+        "uploads_enabled": uploads_enabled,
+        "tts_enabled": bool(settings.openai_api_key),
+        "environment": settings.environment,
+    }
 
 
 app.include_router(auth_router, prefix=API_V1)
@@ -77,6 +82,7 @@ app.include_router(deals_router, prefix=API_V1)
 app.include_router(products_router, prefix=API_V1)
 app.include_router(fuel_router, prefix=API_V1)
 app.include_router(stores_router, prefix=API_V1)
+app.include_router(tts_router, prefix=API_V1)
 app.include_router(uploads_router, prefix=API_V1)
 app.include_router(moderation_router, prefix=API_V1)
 app.include_router(shopping_router, prefix=API_V1)

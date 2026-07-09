@@ -106,7 +106,26 @@ export const api = {
     }),
 
   // ── Meta ──
-  meta: () => request<{ uploads_enabled: boolean; environment: string }>("/meta"),
+  meta: () =>
+    request<{ uploads_enabled: boolean; tts_enabled: boolean; environment: string }>("/meta"),
+
+  // ── Text-to-speech (natural voice) ──
+  // Returns an object URL for the MP3, or null when TTS is unavailable (caller then
+  // falls back to on-device speech synthesis). Bypasses `request()` since the body is
+  // audio, not JSON.
+  ttsAudioUrl: async (text: string, voice?: string): Promise<string | null> => {
+    try {
+      const res = await fetch(`${API}/tts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, voice }),
+      });
+      if (!res.ok) return null;
+      return URL.createObjectURL(await res.blob());
+    } catch {
+      return null;
+    }
+  },
 
   // ── Products ──
   browseProducts: (limit = 40) =>

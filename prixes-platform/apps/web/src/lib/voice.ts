@@ -154,14 +154,84 @@ function pickFrenchVoice(): SpeechSynthesisVoice | null {
   if (!ttsSupported()) return null;
   if (_frVoice) return _frVoice;
   const voices = window.speechSynthesis.getVoices();
+  const fr = voices.filter((v) => v.lang?.toLowerCase().startsWith("fr"));
+  // Prefer modern neural voices (Edge/Chrome ship free "Natural"/"Online" French
+  // voices that sound far less robotic than the legacy default) before falling back.
+  const isNeural = (v: SpeechSynthesisVoice) =>
+    /natural|online|neural|enhanced|premium/i.test(v.name);
   _frVoice =
-    voices.find((v) => /fr[-_]FR/i.test(v.lang)) ||
-    voices.find((v) => v.lang?.toLowerCase().startsWith("fr")) ||
+    fr.find((v) => /fr[-_]FR/i.test(v.lang) && isNeural(v)) ||
+    fr.find(isNeural) ||
+    fr.find((v) => /fr[-_]FR/i.test(v.lang)) ||
+    fr[0] ||
     null;
   return _frVoice;
 }
 
-export function speak(text: string, onEnd?: () => void): void {
+// Natural (OpenAI) TTS is opt-in and configured at runtime from `/meta` + the user's
+// "voix naturelle" setting. When off (or offline, or on a safety-critical utterance)
+// we use instant on-device / browser speech synthesis instead.
+let _naturalTts = false;
+let _ttsVoice: string | undefined;
+export function setNaturalTts(enabled: boolean, voice?: string): void {
+  _naturalTts = enabled;
+  _ttsVoice = voice;
+}
+
+let _audio: HTMLAudioElement | null = null;
+
+export interface SpeakOpts {
+  // Force instant on-device speech (never the network TTS). Use for safety-critical
+  // announcements (allergen warnings) that must not wait on a round-trip.
+  instant?: boolean;
+}
+
+export function speak(text: string, onEnd?: () => void, opts?: SpeakOpts): void {
+  const useNatural =
+    _naturalTts &&
+    !opts?.instant &&
+    !isNativeApp() &&
+    typeof navigator !== "undefined" &&
+    navigator.onLine !== false;
+
+  if (useNatural) {
+    // Try the natural voice; fall back to on-device TTS on any failure.
+    void speakNatural(text, onEnd).catch(() => speakLocal(text, onEnd));
+    return;
+  }
+  speakLocal(text, onEnd);
+}
+
+async function speakNatural(text: string, onEnd?: () => void): Promise<void> {
+  const { api } = await import("./api");
+  const url = await api.ttsAudioUrl(text, _ttsVoice);
+  if (!url) {
+    speakLocal(text, onEnd);
+    return;
+  }
+  stopSpeaking();
+  const audio = new Audio(url);
+  _audio = audio;
+  const done = () => {
+    URL.revokeObjectURL(url);
+    if (_audio === audio) _audio = null;
+    onEnd?.();
+  };
+  audio.onended = done;
+  audio.onerror = () => {
+    URL.revokeObjectURL(url);
+    if (_audio === audio) _audio = null;
+    speakLocal(text, onEnd);
+  };
+  await audio.play().catch(() => {
+    // Autoplay blocked or decode error → on-device fallback.
+    URL.revokeObjectURL(url);
+    if (_audio === audio) _audio = null;
+    speakLocal(text, onEnd);
+  });
+}
+
+function speakLocal(text: string, onEnd?: () => void): void {
   if (isNativeApp()) {
     (async () => {
       try {
@@ -191,6 +261,10 @@ export function speak(text: string, onEnd?: () => void): void {
 }
 
 export function stopSpeaking(): void {
+  if (_audio) {
+    _audio.pause();
+    _audio = null;
+  }
   if (isNativeApp()) {
     import("@capacitor-community/text-to-speech")
       .then(({ TextToSpeech }) => TextToSpeech.stop().catch(() => {}))
