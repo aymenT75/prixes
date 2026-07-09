@@ -10,10 +10,11 @@ import { api } from "@/lib/api";
 
 // Only surface what the bottom tab bar does NOT already cover — Courses, Scanner,
 // Carburant and Deals are permanent tabs, so putting them here too is redundant.
-// These two personal tools have no tab, so this is their quick access.
+// These personal tools have no tab, so this is their quick access.
 const SHORTCUTS = [
   { href: "/list", label: "Ma liste", icon: "list_alt", box: "bg-primary/10 text-primary" },
   { href: "/alerts", label: "Alertes", icon: "notifications_active", box: "bg-secondary/10 text-secondary" },
+  { href: "/stores", label: "Magasins", icon: "store", box: "bg-tertiary/10 text-tertiary" },
 ];
 
 export default function HomePage() {

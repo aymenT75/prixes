@@ -13,6 +13,7 @@ import type {
   Product,
   ShoppingItem,
   ShoppingList,
+  StoresNearbyResult,
   TokenPair,
   User,
 } from "./types";
@@ -127,6 +128,12 @@ export const api = {
     request<FuelNearbyResult>(
       `/fuel/nearby?lat=${lat}&lon=${lon}&radius_km=${radiusKm}` +
         (fuelType ? `&fuel_type=${fuelType}` : ""),
+    ),
+
+  // ── Stores ──
+  storesNearby: (lat: number, lon: number, radiusKm = 10, limit = 20) =>
+    request<StoresNearbyResult>(
+      `/stores/nearby?lat=${lat}&lon=${lon}&radius_km=${radiusKm}&limit=${limit}`,
     ),
 
   // ── Shopping list ──

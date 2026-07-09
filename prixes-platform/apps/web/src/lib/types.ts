@@ -164,3 +164,17 @@ export interface FuelNearbyResult {
   fuel_type: string | null;
   items: FuelStation[];
 }
+
+export interface Store {
+  id: number;
+  name: string;
+  brand: string | null;
+  address: string | null;
+  lat: number;
+  lon: number;
+  distance_km: number;
+}
+
+export interface StoresNearbyResult {
+  items: Store[];
+}

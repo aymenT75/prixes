@@ -20,6 +20,7 @@ from app.domains.fuel.router import router as fuel_router
 from app.domains.moderation.router import router as moderation_router
 from app.domains.products.router import router as products_router
 from app.domains.shopping.router import router as shopping_router
+from app.domains.stores.router import router as stores_router
 from app.domains.uploads.router import router as uploads_router
 from app.domains.users.router import router as users_router
 
@@ -75,6 +76,7 @@ app.include_router(users_router, prefix=API_V1)
 app.include_router(deals_router, prefix=API_V1)
 app.include_router(products_router, prefix=API_V1)
 app.include_router(fuel_router, prefix=API_V1)
+app.include_router(stores_router, prefix=API_V1)
 app.include_router(uploads_router, prefix=API_V1)
 app.include_router(moderation_router, prefix=API_V1)
 app.include_router(shopping_router, prefix=API_V1)
