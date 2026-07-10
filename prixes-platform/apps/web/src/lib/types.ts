@@ -178,3 +178,28 @@ export interface Store {
 export interface StoresNearbyResult {
   items: Store[];
 }
+
+export interface FeedbackItem {
+  id: string;
+  rating: number | null;
+  message: string;
+  email: string | null;
+  page: string | null;
+  user_id: string | null;
+  created_at: string;
+}
+
+export interface FeedbackList {
+  items: FeedbackItem[];
+  total: number;
+  average_rating: number | null;
+  rating_counts: Record<number, number>;
+}
+
+export interface AnalyticsSummary {
+  days: number;
+  total_events: number;
+  unique_sessions: number;
+  top_paths: { path: string; count: number }[];
+  by_event: { event: string; count: number }[];
+}

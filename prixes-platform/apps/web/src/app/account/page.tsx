@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 
 import { Icon } from "@/components/Icon";
@@ -156,6 +157,23 @@ export default function AccountPage() {
           </div>
         ))}
       </section>
+
+      {/* Admin — feedback & usage stats (moderators/admins only) */}
+      {(user.role === "admin" || user.role === "moderator") && (
+        <section className="card mb-6 p-2">
+          <Link href="/admin/feedback" className="block w-full">
+            <Row icon="reviews" title="Avis reçus" subtitle="Retours des utilisateurs">
+              <Icon name="chevron_right" className="text-outline-variant" />
+            </Row>
+          </Link>
+          <Hr />
+          <Link href="/admin/analytics" className="block w-full">
+            <Row icon="bar_chart" title="Statistiques d'usage" subtitle="Écrans vus, actions">
+              <Icon name="chevron_right" className="text-outline-variant" />
+            </Row>
+          </Link>
+        </section>
+      )}
 
       {/* Settings */}
       <section className="card p-2">

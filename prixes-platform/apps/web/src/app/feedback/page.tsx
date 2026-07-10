@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
+import { track } from "@/lib/analytics";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/store";
 import { hapticSuccess } from "@/lib/voice";
@@ -23,7 +24,10 @@ export default function FeedbackPage() {
         email: email.trim() || undefined,
         page: "/feedback",
       }),
-    onSuccess: () => hapticSuccess(),
+    onSuccess: () => {
+      hapticSuccess();
+      track("feedback_submit", "/feedback");
+    },
   });
 
   function onSubmit(e: React.FormEvent) {

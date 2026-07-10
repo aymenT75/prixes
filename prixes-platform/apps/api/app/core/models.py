@@ -1,6 +1,7 @@
 """Import all ORM models so Alembic autogenerate + Base.metadata see them."""
 from app.core.db import Base
 from app.domains.alerts.models import PriceAlert
+from app.domains.analytics.models import AnalyticsEvent
 from app.domains.deals.models import Deal, Report, Vote
 from app.domains.devices.models import Device
 from app.domains.feedback.models import Feedback
@@ -22,4 +23,5 @@ __all__ = [
     "PriceAlert",
     "Device",
     "Feedback",
+    "AnalyticsEvent",
 ]

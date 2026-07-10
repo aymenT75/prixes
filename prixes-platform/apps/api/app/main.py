@@ -13,6 +13,7 @@ from app.core.config import settings
 from app.core.http import close_http_client
 from app.core.redis import redis_client
 from app.domains.alerts.router import router as alerts_router
+from app.domains.analytics.router import router as analytics_router
 from app.domains.auth.router import router as auth_router
 from app.domains.deals.router import router as deals_router
 from app.domains.devices.router import router as devices_router
@@ -90,3 +91,4 @@ app.include_router(shopping_router, prefix=API_V1)
 app.include_router(alerts_router, prefix=API_V1)
 app.include_router(devices_router, prefix=API_V1)
 app.include_router(feedback_router, prefix=API_V1)
+app.include_router(analytics_router, prefix=API_V1)

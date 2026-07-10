@@ -3,7 +3,9 @@ import { tokenStore } from "./tokens";
 import type {
   AlertList,
   AlternativesResult,
+  AnalyticsSummary,
   Deal,
+  FeedbackList,
   FeedPage,
   FuelNearbyResult,
   OptimizeResult,
@@ -184,6 +186,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  listFeedback: (limit = 100) => request<FeedbackList>(`/feedback?limit=${limit}`),
+
+  // ── Analytics (admin read) ──
+  analyticsSummary: (days = 14) => request<AnalyticsSummary>(`/analytics/summary?days=${days}`),
 
   // ── Uploads ──
   presign: (contentType: string) =>
