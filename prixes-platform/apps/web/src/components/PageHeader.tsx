@@ -47,7 +47,7 @@ export function PageHeader({
           </button>
         )}
         {pathname === "/" ? (
-          <LogoLockup />
+          <LogoLockup heading />
         ) : (
           <h1 className="truncate text-headline-xl-mobile tracking-tight text-primary">{title}</h1>
         )}

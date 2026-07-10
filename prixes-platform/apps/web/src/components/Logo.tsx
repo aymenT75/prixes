@@ -3,9 +3,15 @@
 // fixed brand green + yellow. Set the colour via the wrapper (see LogoLockup).
 const ARROW_POINTS = "152,0 78,-50 78,-29 -78,-29 -78,-50 -152,0 -78,50 -78,29 78,29 78,50";
 
-export function LogoMark({ className }: { className?: string }) {
+export function LogoMark({ className, decorative }: { className?: string; decorative?: boolean }) {
   return (
-    <svg viewBox="0 0 512 512" className={className} role="img" aria-label="Prixes">
+    <svg
+      viewBox="0 0 512 512"
+      className={className}
+      {...(decorative
+        ? { "aria-hidden": true, focusable: false }
+        : { role: "img", "aria-label": "Prixes" })}
+    >
       <polygon points={ARROW_POINTS} transform="translate(256 256) rotate(45)" fill="currentColor" />
       <polygon points={ARROW_POINTS} transform="translate(256 256) rotate(-45)" fill="currentColor" />
       <g transform="translate(150 150) rotate(-28) scale(1.12)">
@@ -26,12 +32,21 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
-/** The mark + "Prixes" wordmark, brand-navy in light and light-blue in dark. */
-export function LogoLockup({ className = "" }: { className?: string }) {
+/** The mark + "Prixes" wordmark, brand-navy in light and light-blue in dark.
+ * On the home screen pass `heading` so the wordmark is the page's <h1> (the mark is
+ * decorative there, so it isn't announced twice by screen readers). */
+export function LogoLockup({
+  className = "",
+  heading = false,
+}: {
+  className?: string;
+  heading?: boolean;
+}) {
+  const Word = heading ? "h1" : "span";
   return (
     <span className={`flex items-center gap-2 text-[#15245c] dark:text-[#89ceff] ${className}`}>
-      <LogoMark className="h-8 w-8" />
-      <span className="text-headline-xl-mobile font-bold tracking-tight">Prixes</span>
+      <LogoMark className="h-8 w-8" decorative={heading} />
+      <Word className="text-headline-xl-mobile font-bold tracking-tight">Prixes</Word>
     </span>
   );
 }
