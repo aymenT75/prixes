@@ -73,7 +73,9 @@ function initDiagnostic() {
     const v = engine.getVerse(id);
     return `
       <div class="diag-verse">
-        <div class="diag-verse-text">${v.meaning}</div>
+        <div class="diag-verse-arabic" dir="rtl" lang="ar" style="font-size: 24px; font-weight: bold; margin-bottom: 8px; color: #0058be;">${v.arabic}</div>
+        <div class="diag-verse-translit" style="font-size: 14px; color: #666; margin-bottom: 6px; font-style: italic;">${v.translit}</div>
+        <div class="diag-verse-text" style="font-size: 13px; color: #999; margin-bottom: 12px;">${v.meaning}</div>
         <button class="diag-verse-btn" data-id="${id}">🔊 Écouter</button>
         <input type="range" min="0" max="100" value="75" class="diag-accuracy" data-id="${id}" style="width: 100%; margin-top: 8px;" />
         <span class="diag-accuracy-text" data-id="${id}" style="font-size: 0.8rem;">Précision: 75%</span>

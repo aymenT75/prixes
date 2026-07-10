@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pratique — Ihsan إحسان</title>
+  <meta name="theme-color" content="#0058be" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/practice.css" />
+</head>
+<body>
+  <!-- En-tête -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-fr">Ihsan</span>
+      <span class="brand-ar" dir="rtl" lang="ar">إحسان</span>
+    </div>
+    <div class="hud">
+      <div class="hud-pill">⭐ <b id="hasanat">0</b></div>
+      <div class="hud-pill"><b id="streak">0</b> 🔥</div>
+    </div>
+  </header>
+
+  <!-- Barre de jauge 1000 reps -->
+  <div class="progress-bar-wrapper">
+    <div class="progress-label">Excellence en Arabe</div>
+    <div class="progress-bar">
+      <div id="progress-fill" class="progress-fill"></div>
+      <span id="progress-text" class="progress-text">0/1000 reps</span>
+    </div>
+  </div>
+
+  <!-- Zone principale -->
+  <main id="practice-app"></main>
+
+  <!-- Scripts -->
+  <script type="module">
+    // Import des modules Étape 2
+    import { engine } from "./js/engine.js";
+    import { createPracticeSession } from "./js/practiceEngine.js";
+    import { PracticeUI } from "./js/practiceUI.js";
+    import { VERSES } from "./js/data.js";
+
+    // Initialise la session de pratique
+    async function initPractice() {
+      // Pour les tests : utilise le premier verset
+      const verse = VERSES[0]; // fatiha:1
+
+      // Récupère les infos de l'engine
+      const level = engine.getLevel();
+      const reciterId = engine.getReciter().id;
+
+      // Crée une session
+      const practiceSession = createPracticeSession(verse, level, reciterId, engine);
+
+      // Crée l'UI
+      const ui = new PracticeUI("practice-app", practiceSession);
+      ui.render();
+
+      // Mets à jour l'en-tête
+      document.getElementById("hasanat").textContent = engine.getPoints();
+      document.getElementById("streak").textContent = engine.getStreak().days;
+      const progress = engine.getProgressTo1000();
+      document.getElementById("progress-fill").style.width = `${progress.ratio * 100}%`;
+      document.getElementById("progress-text").textContent = `${progress.reps}/1000 reps`;
+
+      console.log("✅ Session de pratique initialisée", {
+        verse: verse.id,
+        level: level,
+        granules: practiceSession.granules.length,
+      });
+    }
+
+    // Lance au chargement
+    document.addEventListener("DOMContentLoaded", initPractice);
+  </script>
+
+  <!-- Service Worker -->
+  <script>
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+  </script>
+</body>
+</html>
