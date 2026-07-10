@@ -3,6 +3,7 @@ from app.core.db import Base
 from app.domains.alerts.models import PriceAlert
 from app.domains.deals.models import Deal, Report, Vote
 from app.domains.devices.models import Device
+from app.domains.feedback.models import Feedback
 from app.domains.fuel.models import FuelStation
 from app.domains.products.models import PricePoint, Product
 from app.domains.shopping.models import ShoppingItem
@@ -20,4 +21,5 @@ __all__ = [
     "ShoppingItem",
     "PriceAlert",
     "Device",
+    "Feedback",
 ]

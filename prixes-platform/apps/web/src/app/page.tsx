@@ -15,6 +15,7 @@ const SHORTCUTS = [
   { href: "/list", label: "Ma liste", icon: "list_alt", box: "bg-primary/10 text-primary" },
   { href: "/alerts", label: "Alertes", icon: "notifications_active", box: "bg-secondary/10 text-secondary" },
   { href: "/stores", label: "Magasins", icon: "store", box: "bg-tertiary/10 text-tertiary" },
+  { href: "/feedback", label: "Mon avis", icon: "reviews", box: "bg-primary/10 text-primary" },
 ];
 
 export default function HomePage() {
@@ -32,7 +33,7 @@ export default function HomePage() {
           <Icon name="savings" className="text-[120px]" />
         </div>
         <div className="relative z-10">
-          <h2 className="text-headline-lg">Économisez sur tout 💚</h2>
+          <h2 className="text-headline-lg">Économisez sur tout 💙</h2>
           <p className="mt-1 max-w-xs text-body-md opacity-90">
             Comparez les prix des courses et carburants, partagez les meilleures offres.
           </p>

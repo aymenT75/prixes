@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#006b47",
+  themeColor: "#006591",
   width: "device-width",
   initialScale: 1,
   // Allow pinch-zoom up to 5x — required for low-vision accessibility (WCAG 1.4.4).

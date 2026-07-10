@@ -16,6 +16,7 @@ from app.domains.alerts.router import router as alerts_router
 from app.domains.auth.router import router as auth_router
 from app.domains.deals.router import router as deals_router
 from app.domains.devices.router import router as devices_router
+from app.domains.feedback.router import router as feedback_router
 from app.domains.fuel.router import router as fuel_router
 from app.domains.moderation.router import router as moderation_router
 from app.domains.products.router import router as products_router
@@ -88,3 +89,4 @@ app.include_router(moderation_router, prefix=API_V1)
 app.include_router(shopping_router, prefix=API_V1)
 app.include_router(alerts_router, prefix=API_V1)
 app.include_router(devices_router, prefix=API_V1)
+app.include_router(feedback_router, prefix=API_V1)

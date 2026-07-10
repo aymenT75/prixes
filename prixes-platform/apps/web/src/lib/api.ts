@@ -178,6 +178,13 @@ export const api = {
   unregisterDevice: (token: string) =>
     request<void>(`/devices/${encodeURIComponent(token)}`, { method: "DELETE" }),
 
+  // ── Feedback ──
+  submitFeedback: (body: { message: string; rating?: number | null; email?: string; page?: string }) =>
+    request<{ id: string; ok: boolean }>("/feedback", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
   // ── Uploads ──
   presign: (contentType: string) =>
     request<{ upload_url: string; public_url: string; key: string }>(
