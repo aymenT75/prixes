@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Ihsan إحسان — Master the Quran</title>
+  <meta name="theme-color" content="#0058be" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <!-- En-tête -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-fr">Ihsan</span>
+      <span class="brand-ar" dir="rtl" lang="ar">إحسان</span>
+    </div>
+    <div class="hud">
+      <div class="hud-pill">⭐ <b id="hasanat">0</b></div>
+      <div class="hud-pill"><b id="streak">0</b> 🔥</div>
+    </div>
+  </header>
+
+  <!-- Barre de jauge 1000 reps -->
+  <div class="progress-bar-wrapper">
+    <div class="progress-label">Excellence en Arabe</div>
+    <div class="progress-bar">
+      <div id="progress-fill" class="progress-fill"></div>
+      <span id="progress-text" class="progress-text">0/1000 reps</span>
+    </div>
+  </div>
+
+  <main id="app">
+    <!-- Accueil -->
+    <section class="tab" data-tab="home" hidden>
+      <h2>As-salamu alaykum 👋</h2>
+      <p id="welcome-name"></p>
+      <p class="level-display" id="level-display"></p>
+      <div id="home-content"></div>
+    </section>
+
+    <!-- Apprendre -->
+    <section class="tab" data-tab="learn" hidden>
+      <h2>Apprendre — Sourates</h2>
+      <div id="surahs-content"></div>
+    </section>
+
+    <!-- Vidéos -->
+    <section class="tab" data-tab="videos" hidden>
+      <h2>Vidéos — Récompenses</h2>
+      <div id="videos-content"></div>
+    </section>
+
+    <!-- Progrès -->
+    <section class="tab" data-tab="progress" hidden>
+      <h2>Progression</h2>
+      <div id="progress-content"></div>
+    </section>
+  </main>
+
+  <!-- Barre de navigation -->
+  <nav class="bottomnav">
+    <button class="nav-item active" data-tab="home">🏠 Accueil</button>
+    <button class="nav-item" data-tab="learn">📖 Apprendre</button>
+    <button class="nav-item" data-tab="videos">▶️ Vidéos</button>
+    <button class="nav-item" data-tab="progress">📊 Progrès</button>
+  </nav>
+
+  <!-- Modal : Onboarding -->
+  <dialog id="onboard" class="onboard">
+    <div class="onboard-content">
+      <h1>As-salamu alaykum! 👋</h1>
+      <p>Bienvenue dans <b>Ihsan</b> (إحسان) — « Master the Quran »</p>
+
+      <div class="onboard-step">
+        <label for="ob-name">Quel est ton prénom?</label>
+        <input id="ob-name" type="text" placeholder="ex. Aymen" maxlength="30" />
+      </div>
+
+      <div class="onboard-step">
+        <label for="ob-reciter">Qui sera ton maître de récitation?</label>
+        <select id="ob-reciter"></select>
+        <p id="ob-reciter-desc" class="onboard-desc"></p>
+      </div>
+
+      <div class="onboard-step">
+        <p class="onboard-info">
+          📖 <b>Apprendre le Coran</b> par la voix, verset par verset.<br>
+          🎯 <b>Mémorisation</b> via la spaced repetition (révisions espacées).<br>
+          ⭐ <b>Hasanat</b> (حسنات) gagnées à chaque verset.<br>
+          🎬 <b>Vidéos débloquées</b> au fur et à mesure (histoires des Prophètes).
+        </p>
+      </div>
+
+      <button id="ob-start" class="btn-start" disabled>Commencer! 🚀</button>
+    </div>
+  </dialog>
+
+  <!-- Modal : Test de Diagnostic -->
+  <dialog id="diagnostic" class="diagnostic">
+    <div class="diagnostic-content">
+      <h1>Test de niveau 📊</h1>
+      <p>Écoute et essaie de reproduire ces 3 versets pour trouver ton niveau.</p>
+
+      <div id="diag-verses"></div>
+
+      <div class="diagnostic-scores">
+        <h3>Tes résultats :</h3>
+        <ul id="diag-results"></ul>
+      </div>
+
+      <div id="diag-level-result" class="level-result" hidden></div>
+
+      <button id="diag-finish" class="btn-start">Commencer à apprendre! 🎓</button>
+    </div>
+  </dialog>
+
+  <!-- Modal : Pratique (sera remplie dynamiquement) -->
+  <dialog id="practice-modal" class="practice-modal" hidden>
+    <div class="practice-top">
+      <button id="practice-close" class="close-btn">✕</button>
+    </div>
+    <div class="practice-body">
+      <div id="practice-content"></div>
+    </div>
+  </dialog>
+
+  <script type="module" src="js/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+    }
+  </script>
+</body>
+</html>
