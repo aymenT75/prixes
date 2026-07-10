@@ -9,6 +9,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { Icon } from "@/components/Icon";
+import { LogoMark } from "@/components/Logo";
 import { api } from "@/lib/api";
 import { auth, googleProvider, nativeSignIn } from "@/lib/firebase";
 import { isNativeApp, nativePlatform } from "@/lib/platform";
@@ -131,10 +132,13 @@ export function AuthModal() {
         className="w-full max-w-md rounded-t-xl bg-surface-container-lowest p-6 shadow-float sm:rounded-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-headline-md text-on-surface">
-            {mode === "login" ? "Bon retour 👋" : "Créer un compte"}
-          </h2>
+        <div className="mb-5 flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <LogoMark className="h-10 w-10 text-[#15245c] dark:text-[#89ceff]" />
+            <h2 className="text-headline-md text-on-surface">
+              {mode === "login" ? "Bon retour 👋" : "Créer un compte"}
+            </h2>
+          </div>
           <button onClick={() => openLogin(false)} aria-label="Fermer" className="text-on-surface-variant">
             <Icon name="close" />
           </button>

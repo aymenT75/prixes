@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 import { Icon } from "@/components/Icon";
+import { LogoLockup } from "@/components/Logo";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
 
@@ -45,7 +46,11 @@ export function PageHeader({
             <Icon name="arrow_back" />
           </button>
         )}
-        <h1 className="truncate text-headline-xl-mobile tracking-tight text-primary">{title}</h1>
+        {pathname === "/" ? (
+          <LogoLockup />
+        ) : (
+          <h1 className="truncate text-headline-xl-mobile tracking-tight text-primary">{title}</h1>
+        )}
         {/* Voice + accessibility — small, next to the title, so they never cover content. */}
         <button
           onClick={() => setVoiceOpen(true)}
