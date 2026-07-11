@@ -6,11 +6,11 @@ import { usePathname } from "next/navigation";
 import { Icon } from "@/components/Icon";
 
 const TABS = [
-  { href: "/", label: "Accueil", icon: "home" },
-  { href: "/courses", label: "Courses", icon: "shopping_basket" },
-  { href: "/fuel", label: "Carburant", icon: "local_gas_station" },
-  { href: "/deals", label: "Deals", icon: "sell" },
-  { href: "/scanner", label: "Scanner", icon: "qr_code_scanner" },
+  { href: "/", label: "Accueil", icon: "home", tour: undefined },
+  { href: "/courses", label: "Courses", icon: "shopping_basket", tour: "nav-courses" },
+  { href: "/fuel", label: "Carburant", icon: "local_gas_station", tour: "nav-fuel" },
+  { href: "/deals", label: "Deals", icon: "sell", tour: "nav-deals" },
+  { href: "/scanner", label: "Scanner", icon: "qr_code_scanner", tour: "nav-scanner" },
 ];
 
 export function BottomNav() {
@@ -23,6 +23,7 @@ export function BottomNav() {
           <Link
             key={t.href}
             href={t.href}
+            data-tour={t.tour}
             className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-3 py-1 transition-all duration-200 active:scale-90 ${
               active ? "bg-primary-container/20 text-primary" : "text-on-surface-variant"
             }`}

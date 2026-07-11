@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/BottomNav";
 import { AuthModal } from "@/components/AuthModal";
 import { NativeSetup } from "@/components/NativeSetup";
 import { PostDealModal } from "@/components/PostDealModal";
+import { ProductTour } from "@/components/ProductTour";
 import { Providers } from "@/components/Providers";
 
 const jakarta = Plus_Jakarta_Sans({
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PostDealModal />
           <A11yLayer />
           <NativeSetup />
+          <ProductTour />
         </Providers>
       </body>
     </html>

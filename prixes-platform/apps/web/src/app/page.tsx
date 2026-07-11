@@ -33,10 +33,22 @@ export default function HomePage() {
           <Icon name="savings" className="text-[120px]" />
         </div>
         <div className="relative z-10">
-          <h2 className="text-headline-lg">Économisez sur tout 💙</h2>
-          <p className="mt-1 max-w-xs text-body-md opacity-90">
-            Comparez les prix des courses et carburants, partagez les meilleures offres.
+          <h2 className="text-headline-lg">Ne payez jamais le prix fort 💙</h2>
+          <p className="mt-1 max-w-sm text-body-md opacity-90">
+            Prixes compare le même produit entre les magasins et stations-service près de chez
+            vous, et vous montre en un instant où il coûte le moins cher.
           </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-label-sm font-medium">
+              <Icon name="search" className="text-[16px]" /> Comparateur de prix
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-label-sm font-medium">
+              <Icon name="location_on" className="text-[16px]" /> Magasins proches
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-label-sm font-medium">
+              <Icon name="notifications_active" className="text-[16px]" /> Alertes de baisse
+            </span>
+          </div>
         </div>
       </section>
 
@@ -46,7 +58,12 @@ export default function HomePage() {
         </h2>
         <div className="grid grid-cols-2 gap-gutter">
           {SHORTCUTS.map((s) => (
-            <Link key={s.href} href={s.href} className="card flex items-center gap-3 p-4 active:scale-95">
+            <Link
+              key={s.href}
+              href={s.href}
+              data-tour={s.href === "/stores" ? "shortcut-stores" : undefined}
+              className="card flex items-center gap-3 p-4 active:scale-95"
+            >
               <span className={`flex h-11 w-11 items-center justify-center rounded-lg ${s.box}`}>
                 <Icon name={s.icon} fill className="text-[22px]" />
               </span>

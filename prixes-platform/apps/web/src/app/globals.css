@@ -258,3 +258,19 @@ summary,
            focus:border-primary focus:bg-surface-container-lowest;
   }
 }
+
+/* Guided tour tooltip entrance (respects prefers-reduced-motion via the global
+   animation-duration override above). */
+@keyframes tour-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-tour-in {
+  animation: tour-in 220ms ease-out;
+}

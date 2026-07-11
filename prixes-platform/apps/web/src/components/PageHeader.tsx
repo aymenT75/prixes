@@ -55,6 +55,7 @@ export function PageHeader({
         <button
           onClick={() => setVoiceOpen(true)}
           aria-label="Assistant vocal"
+          data-tour="voice-btn"
           className="ml-1 grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-primary/10 text-primary transition-transform active:scale-90"
         >
           <Icon name="mic" fill className="text-[20px]" />
@@ -62,6 +63,7 @@ export function PageHeader({
         <button
           onClick={() => setA11yOpen(true)}
           aria-label="Options d'accessibilité"
+          data-tour="a11y-btn"
           className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full text-on-surface-variant transition-transform hover:bg-surface-container-high active:scale-90"
         >
           <Icon name="accessibility_new" className="text-[20px]" />

@@ -1,11 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
+import { track } from "@/lib/analytics";
 import { ALL_ALLERGENS, ALL_DIETS, useA11y, type FontScale } from "@/lib/useA11y";
 import { useDialog } from "@/lib/useDialog";
+import { useTour } from "@/lib/useTour";
 
 const SIZES: { key: FontScale; label: string; cls: string }[] = [
   { key: "normal", label: "A", cls: "text-[16px]" },
@@ -36,6 +39,17 @@ export function AccessibilityFab() {
   const dialogRef = useDialog(open, () => setOpen(false));
   // Only offer the natural voice when the backend can synthesize it.
   const { data: meta } = useQuery({ queryKey: ["meta"], queryFn: () => api.meta() });
+  const router = useRouter();
+  const startTour = useTour((s) => s.start);
+
+  function replayTour() {
+    setOpen(false);
+    // The tour spotlights home-only elements (shortcuts) — go there first so
+    // every step has something real to point at.
+    router.push("/");
+    track("tour_start", "/");
+    setTimeout(() => startTour(), 400);
+  }
 
   // The launcher lives in the top header (PageHeader) now; this component only
   // renders the sheet, opened via the shared store.
@@ -87,6 +101,15 @@ export function AccessibilityFab() {
                   Parlez pour chercher, comparer, naviguer
                 </span>
               </span>
+            </button>
+
+            {/* Replay the guided tour */}
+            <button
+              onClick={replayTour}
+              className="btn-tonal mb-5 w-full justify-start gap-3 !py-3"
+            >
+              <Icon name="explore" className="text-primary" />
+              Revoir la visite guidée
             </button>
 
             {/* Text size */}
