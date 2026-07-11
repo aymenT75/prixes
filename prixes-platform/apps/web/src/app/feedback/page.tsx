@@ -40,7 +40,7 @@ export default function FeedbackPage() {
     return (
       <div>
         <PageHeader title="Votre avis" back />
-        <div className="flex flex-col items-center gap-4 py-16 text-center">
+        <div className="animate-fade-in-up flex flex-col items-center gap-4 py-16 text-center">
           <span className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Icon name="favorite" fill className="text-[40px]" />
           </span>
@@ -123,7 +123,10 @@ export default function FeedbackPage() {
         )}
 
         {submit.isError && (
-          <p className="flex items-center gap-2 rounded-xl bg-error-container p-3 text-label-md text-on-error-container">
+          <p
+            role="alert"
+            className="animate-fade-in-up flex items-center gap-2 rounded-xl bg-error-container p-3 text-label-md text-on-error-container"
+          >
             <Icon name="error" className="text-[18px]" /> Échec de l&apos;envoi. Réessayez.
           </p>
         )}

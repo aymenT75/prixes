@@ -274,3 +274,20 @@ summary,
 .animate-tour-in {
   animation: tour-in 220ms ease-out;
 }
+
+/* Generic entrance for inline banners (errors, empty states, success confirmations) —
+   a subtler version of the tour's entrance (no scale, since it looks odd on a
+   full-width bar). Respects prefers-reduced-motion via the global override above. */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-fade-in-up {
+  animation: fade-in-up 200ms ease-out;
+}

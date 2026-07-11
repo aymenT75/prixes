@@ -223,7 +223,7 @@ export function AuthModal() {
             required
           />
           {error && (
-            <p role="alert" className="text-label-md text-error">
+            <p role="alert" className="animate-fade-in-up text-label-md text-error">
               {error}
             </p>
           )}

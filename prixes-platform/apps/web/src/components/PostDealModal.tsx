@@ -305,7 +305,7 @@ export function PostDealModal() {
             onChange={(e) => setForm({ ...form, link: e.target.value })}
           />
           {error && (
-            <p role="alert" className="text-label-md text-error">
+            <p role="alert" className="animate-fade-in-up text-label-md text-error">
               {error}
             </p>
           )}

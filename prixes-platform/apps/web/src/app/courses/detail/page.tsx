@@ -301,7 +301,7 @@ function ProductDetail() {
         {allergenMatches.length > 0 && (
           <div
             role="alert"
-            className="mb-3 flex items-start gap-3 rounded-xl border-2 border-error bg-error-container p-4 text-on-error-container"
+            className="animate-fade-in-up mb-3 flex items-start gap-3 rounded-xl border-2 border-error bg-error-container p-4 text-on-error-container"
           >
             <Icon name="warning" fill className="mt-0.5 text-[28px] text-error" />
             <div>
