@@ -118,11 +118,9 @@ export const useA11y = create<A11yState>((set, get) => ({
     } catch {
       /* ignore */
     }
-    // Honour the OS preference for dark mode on first visit.
-    const dark =
-      typeof saved.dark === "boolean"
-        ? saved.dark
-        : window.matchMedia?.("(prefers-color-scheme: dark)").matches || false;
+    // Always open in light mode by default — only switch to dark once the user
+    // explicitly turns it on (no auto-detecting the OS/browser preference).
+    const dark = typeof saved.dark === "boolean" ? saved.dark : false;
     const next = {
       fontScale: (saved.fontScale as FontScale) || "normal",
       highContrast: !!saved.highContrast,
