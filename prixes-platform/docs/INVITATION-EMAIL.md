@@ -8,7 +8,7 @@ Copie-colle ce texte et personnalise `[TON_NOM]` et les dates.
 
 Salut [PRENOM],
 
-Je développe **Prixes**, une app pour comparer les prix des courses en France et trouver les meilleures offres (et les stations essence les moins chères).
+Je développe **Prixes**, une app pour comparer les prix des courses en France et trouver les meilleures offres.
 
 **Je cherche des testeurs** pour l'essayer et me dire ce que t'en penses. Tu serais dispo pour une session d'environ **30 minutes** ?
 

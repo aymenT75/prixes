@@ -18,9 +18,8 @@ On cherche à répondre à 4 questions :
 
 | Profil | Nombre | Pourquoi |
 |--------|--------|----------|
-| Acheteur·se du quotidien (budget serré, famille) | 2–3 | Cœur de cible |
+| Acheteur·se du quotidien (budget serré, famille) | 3–4 | Cœur de cible |
 | Personne âgée / malvoyante / usage vocal | 2 | Différenciateur accessibilité |
-| Automobiliste (module Carburant) | 1–2 | Vérifier ce parcours spécifique |
 
 > 5 personnes bien choisies révèlent ~80 % des problèmes. Inutile d'en recruter 20.
 
@@ -42,11 +41,10 @@ Pour chaque tâche, noter : **réussie ✅ / avec aide 🟡 / échec ❌**, le t
 2. « Vous voulez l'acheter aujourd'hui : trouvez le **magasin le plus proche** qui le vend et l'itinéraire. »
    *(fiche → carte → itinéraire — nouvelle fonctionnalité)*
 3. « Scannez le **code-barres** d'un produit que vous avez sous la main. »
-4. « Trouvez la **station essence la moins chère** près de chez vous. »
-5. « Faites en sorte d'être **prévenu·e si le prix baisse** sur un produit. » *(alerte de prix)*
-6. « Ajoutez 2 produits à votre **liste de courses**. »
-7. **Accessibilité** — « Le texte est trop petit : **agrandissez-le**. » puis « Utilisez la **voix** pour chercher un produit. »
-8. « Laissez-nous **votre avis** sur l'app. » *(formulaire /feedback)*
+4. « Faites en sorte d'être **prévenu·e si le prix baisse** sur un produit. » *(alerte de prix)*
+5. « Ajoutez 2 produits à votre **liste de courses**. »
+6. **Accessibilité** — « Le texte est trop petit : **agrandissez-le**. » puis « Utilisez la **voix** pour chercher un produit. »
+7. « Laissez-nous **votre avis** sur l'app. » *(formulaire /feedback)*
 
 ## 5. Grille d'observation (à remplir en direct)
 
@@ -55,11 +53,10 @@ Pour chaque tâche, noter : **réussie ✅ / avec aide 🟡 / échec ❌**, le t
 | 1 Prix le moins cher | | | | |
 | 2 Magasin proche + itinéraire | | | | |
 | 3 Scanner | | | | |
-| 4 Carburant | | | | |
-| 5 Alerte prix | | | | |
-| 6 Liste de courses | | | | |
-| 7 Accessibilité (texte + voix) | | | | |
-| 8 Donner un avis | | | | |
+| 4 Alerte prix | | | | |
+| 5 Liste de courses | | | | |
+| 6 Accessibilité (texte + voix) | | | | |
+| 7 Donner un avis | | | | |
 
 ## 6. Questionnaire SUS (System Usability Scale) — fin de session
 

@@ -38,7 +38,7 @@ Pour **toi**, avant et pendant chaque session avec un testeur.
 - [ ] « Que ferais-tu en premier ? »
 - **Écoute**, n'aide pas
 
-### 3. Les 8 tâches (18 min)
+### 3. Les 7 tâches (18 min)
 Pour **chaque tâche** :
 - [ ] Lis l'objectif clairement : « Trouve le prix le moins cher pour un café »
 - [ ] **N'aide pas** sauf si blocage > 1 min
@@ -49,11 +49,10 @@ Pour **chaque tâche** :
 1. ☐ Prix moins cher (café)
 2. ☐ Magasin proche + itinéraire
 3. ☐ Scanner code-barres
-4. ☐ Station essence moins chère
-5. ☐ Créer alerte prix
-6. ☐ Ajouter à liste de courses
-7. ☐ Accessibilité (texte + voix)
-8. ☐ Laisser avis (formulaire)
+4. ☐ Créer alerte prix
+5. ☐ Ajouter à liste de courses
+6. ☐ Accessibilité (texte + voix)
+7. ☐ Laisser avis (formulaire)
 
 ### 4. Questionnaire SUS (5 min)
 - [ ] 10 questions, scale 1–5

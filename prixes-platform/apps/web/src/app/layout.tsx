@@ -19,7 +19,7 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Prixes — Comparez & Partagez",
   description:
-    "Comparez les prix des courses et carburants, partagez les meilleures offres. Accessible à tous.",
+    "Comparez les prix des courses, partagez les meilleures offres. Accessible à tous.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Prixes" },
 };

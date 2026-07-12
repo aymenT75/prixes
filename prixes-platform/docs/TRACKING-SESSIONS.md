@@ -10,7 +10,7 @@ Copie ce tableau dans Google Sheets ou Excel pour tracker tous tes testeurs.
 |---|-----|-------|--------|------|-------|--------|-----|--------------|-------|
 | 1 | Alice | alice@... | Budget serré | 2025-08-18 | 14h | ✅ Fait | 72 | Search pas évidente | Cherchait les filtres |
 | 2 | Bob | bob@... | Senior | 2025-08-19 | 10h | ✅ Fait | 68 | Buttons trop petits | Vision faible |
-| 3 | Clara | clara@... | Chauffeur | 2025-08-20 | 15h | ⏳ Prévu | — | — | Fuel module test |
+| 3 | Clara | clara@... | Budget serré | 2025-08-20 | 15h | ⏳ Prévu | — | — | — |
 | 4 | David | david@... | Étudiant | 2025-08-21 | 11h | ❌ Annulé | — | — | Plus de nouvelles |
 | 5 | Eva | eva@... | Mom | 2025-08-22 | 16h | ⏳ Prévu | — | — | — |
 
@@ -23,7 +23,7 @@ Télécharge ou copie dans Google Sheets :
 ```
 Statut : ⏳ Prévu | ✅ Fait | ❌ Annulé | 🔄 Reporter
 
-Profil : Acheteur quotidien | Senior | Automobiliste | Autre
+Profil : Acheteur quotidien | Senior | Autre
 
 SUS : [score /100]
 

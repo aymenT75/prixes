@@ -9,7 +9,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { api } from "@/lib/api";
 
 // Only surface what the bottom tab bar does NOT already cover — Courses, Scanner,
-// Carburant and Deals are permanent tabs, so putting them here too is redundant.
+// and Deals are permanent tabs, so putting them here too is redundant.
 // These personal tools have no tab, so this is their quick access.
 const SHORTCUTS = [
   { href: "/list", label: "Ma liste", icon: "list_alt", box: "bg-primary/10 text-primary" },
@@ -35,8 +35,8 @@ export default function HomePage() {
         <div className="relative z-10">
           <h2 className="text-headline-lg">Ne payez jamais le prix fort 💙</h2>
           <p className="mt-1 max-w-sm text-body-md opacity-90">
-            Prixes compare le même produit entre les magasins et stations-service près de chez
-            vous, et vous montre en un instant où il coûte le moins cher.
+            Prixes compare le même produit entre les magasins près de chez vous, et vous montre
+            en un instant où il coûte le moins cher.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-label-sm font-medium">

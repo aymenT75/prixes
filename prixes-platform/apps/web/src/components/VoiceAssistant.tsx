@@ -244,7 +244,7 @@ export function VoiceAssistant() {
 
                 {/* Example commands */}
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {["Cherche du lait", "Carburant le moins cher", "Les bons plans", "Agrandis le texte"].map(
+                  {["Cherche du lait", "Les bons plans", "Agrandis le texte"].map(
                     (ex) => (
                       <button
                         key={ex}

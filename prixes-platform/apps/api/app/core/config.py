@@ -63,7 +63,6 @@ class Settings(BaseSettings):
     # Upstream open-data
     off_base_url: str = "https://world.openfoodfacts.org"
     openprices_base_url: str = "https://prices.openfoodfacts.org/api"
-    fuel_data_url: str = "https://donnees.roulez-eco.fr/opendata/instantane"
 
     # Observability
     sentry_dsn: str = ""

@@ -1,4 +1,4 @@
-"""Shared async HTTP client for upstream open-data APIs (OFF, OpenPrices, fuel)."""
+"""Shared async HTTP client for upstream open-data APIs (OFF, OpenPrices)."""
 from __future__ import annotations
 
 from collections.abc import AsyncIterator

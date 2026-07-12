@@ -148,23 +148,6 @@ export interface AlertList {
   total: number;
 }
 
-export interface FuelStation {
-  id: number;
-  brand: string | null;
-  address: string | null;
-  city: string | null;
-  postal_code: string | null;
-  lat: number;
-  lon: number;
-  distance_km: number | null;
-  prices: Record<string, number>;
-}
-
-export interface FuelNearbyResult {
-  fuel_type: string | null;
-  items: FuelStation[];
-}
-
 export interface Store {
   id: number;
   name: string;

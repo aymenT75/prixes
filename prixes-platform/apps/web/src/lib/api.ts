@@ -7,7 +7,6 @@ import type {
   Deal,
   FeedbackList,
   FeedPage,
-  FuelNearbyResult,
   OptimizeResult,
   PriceAlert,
   PriceHistory,
@@ -143,13 +142,6 @@ export const api = {
     request<AlternativesResult>(`/products/${barcode}/alternatives`),
   contributePrice: (barcode: string, body: { store: string; price: number; location?: string }) =>
     request(`/products/${barcode}/prices`, { method: "POST", body: JSON.stringify(body) }),
-
-  // ── Fuel ──
-  fuelNearby: (lat: number, lon: number, fuelType?: string, radiusKm = 10) =>
-    request<FuelNearbyResult>(
-      `/fuel/nearby?lat=${lat}&lon=${lon}&radius_km=${radiusKm}` +
-        (fuelType ? `&fuel_type=${fuelType}` : ""),
-    ),
 
   // ── Stores ──
   storesNearby: (lat: number, lon: number, radiusKm = 10, limit = 20) =>

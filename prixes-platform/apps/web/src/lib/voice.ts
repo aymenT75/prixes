@@ -360,15 +360,14 @@ function strip(s: string): string {
 const NAV = [
   { path: "/", say: "J'ouvre l'accueil.", words: ["accueil", "maison", "page d'accueil", "menu principal"] },
   { path: "/courses", say: "J'ouvre les courses.", words: ["course", "produit", "epicerie", "supermarche", "aliment"] },
-  { path: "/fuel", say: "J'ouvre les carburants.", words: ["carburant", "essence", "gazole", "diesel", "station", "gasoil", "sp95", "sp98"] },
   { path: "/deals", say: "J'ouvre les bons plans.", words: ["promo", "deal", "bon plan", "offre", "reduction", "soldes"] },
   { path: "/scanner", say: "J'ouvre le scanner.", words: ["scan", "scanner", "code barre", "code-barres"] },
   { path: "/account", say: "J'ouvre votre compte.", words: ["compte", "profil", "mon compte", "parametre", "reglage"] },
 ];
 
 const HELP_TEXT =
-  "Vous pouvez me demander d'ouvrir l'accueil, les courses, les carburants ou les bons plans. " +
-  "Dites par exemple : cherche du lait. Ou : trouve l'essence la moins chère. " +
+  "Vous pouvez me demander d'ouvrir l'accueil, les courses ou les bons plans. " +
+  "Dites par exemple : cherche du lait. " +
   "Je peux aussi agrandir le texte, activer le mode sombre ou le fort contraste, et lire la page.";
 
 export function parseIntent(raw: string): Intent {
@@ -400,12 +399,7 @@ export function parseIntent(raw: string): Intent {
   // Search: "cherche X", "trouve X", "recherche X", "je veux X", "prix du X"
   const m = t.match(/\b(?:cherche|chercher|trouve|trouver|recherche|rechercher|je veux|je cherche|prix d[eu]s?|combien coute|trouvez)\s+(.*)/);
   if (m && m[1]) {
-    // If they said "trouve l'essence", treat as fuel navigation.
     const q = m[1].replace(/^(l'|la |le |les |du |de la |des |un |une )/, "").trim();
-    const fuelNav = NAV.find((n) => n.path === "/fuel");
-    if (fuelNav && fuelNav.words.some((w) => q.includes(w))) {
-      return { type: "navigate", path: "/fuel", say: fuelNav.say };
-    }
     if (q.length > 1) return { type: "search", query: q, say: `Je cherche ${q}.` };
   }
 

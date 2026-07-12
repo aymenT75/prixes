@@ -32,12 +32,6 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Visez le code-barres d'un produit en rayon pour voir son prix instantanément.",
   },
   {
-    id: "fuel",
-    target: '[data-tour="nav-fuel"]',
-    title: "Carburant le moins cher",
-    body: "Trouvez la station essence la moins chère près de vous (Diesel, SP95-E10, E85).",
-  },
-  {
     id: "deals",
     target: '[data-tour="nav-deals"]',
     title: "Bons plans",

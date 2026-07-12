@@ -15,18 +15,17 @@ Bienvenue ! Tu vas nous aider à améliorer l'app en l'essayant et en nous donna
 - **Comment :** je vais te donner des tâches et tu essaies de les faire
 - **Important :** il n'y a **pas de mauvaise réponse** — on teste l'app, pas toi !
 
-## 🎯 Les 8 tâches
+## 🎯 Les 7 tâches
 
 Je vais te demander de faire ça (dans l'ordre) :
 
 1. « Trouvez le **prix le moins cher** pour un paquet de café »
 2. « Trouvez le **magasin le plus proche** qui le vend et l'itinéraire »
 3. « Scannez un **code-barres** d'un produit »
-4. « Trouvez la **station essence la moins chère** près de chez vous »
-5. « Créez une **alerte de prix** sur un produit »
-6. « Ajoutez 2 produits à votre **liste de courses** »
-7. **Accessibilité :** « Agrandissez le texte » puis « utilisez la voix »
-8. « Laissez-nous **votre avis** sur l'app »
+4. « Créez une **alerte de prix** sur un produit »
+5. « Ajoutez 2 produits à votre **liste de courses** »
+6. **Accessibilité :** « Agrandissez le texte » puis « utilisez la voix »
+7. « Laissez-nous **votre avis** sur l'app »
 
 ## 💭 Pendant la session
 
@@ -37,7 +36,7 @@ Je vais te demander de faire ça (dans l'ordre) :
 
 C'est normal de **bloquer** ou **se tromper** — c'est justement ce qu'on cherche à savoir !
 
-## ✅ Après les 8 tâches
+## ✅ Après les 7 tâches
 
 Je te pose **10 petites questions** rapides pour noter mon impression. Ça prend 2–3 min.
 
