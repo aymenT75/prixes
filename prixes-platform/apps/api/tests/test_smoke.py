@@ -34,6 +34,8 @@ def test_openapi_contains_domains() -> None:
     paths = app.openapi()["paths"]
     assert "/api/v1/auth/login" in paths
     assert "/api/v1/deals" in paths
-    assert "/api/v1/fuel/nearby" in paths
+    assert "/api/v1/stores/nearby" in paths
     assert "/api/v1/users/me/export" in paths  # GDPR
     assert "/api/v1/moderation/reports" in paths
+    # The fuel domain was removed (too many bugs) — make sure it stays gone.
+    assert "/api/v1/fuel/nearby" not in paths

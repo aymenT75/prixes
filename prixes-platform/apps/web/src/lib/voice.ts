@@ -382,9 +382,13 @@ export function parseIntent(raw: string): Intent {
   // Settings
   if (/\b(mode sombre|sombre|nuit|noir)\b/.test(t)) return { type: "setting", action: "dark", say: "Mode sombre activé." };
   if (/\b(mode clair|clair|jour|blanc)\b/.test(t)) return { type: "setting", action: "light", say: "Mode clair activé." };
-  if (/\b(agrandi|agrandir|plus grand|grossir|grand texte|grosse ecriture|augmente)\b/.test(t))
+  // \b(agrandi)\b alone would miss "agrandis" ("tu" imperative, e.g. the
+  // "Agrandis le texte" example command) — \b requires a boundary right after
+  // "agrandi", but the following "s" is a word char, so no boundary there.
+  // List the inflected forms explicitly instead of relying on the stem alone.
+  if (/\b(agrandi|agrandis|agrandir|plus grand|grossir|grand texte|grosse ecriture|augmente)\b/.test(t))
     return { type: "setting", action: "bigger", say: "J'agrandis le texte." };
-  if (/\b(reduire|plus petit|diminue|petit texte|reduit)\b/.test(t))
+  if (/\b(reduire|reduis|reduit|plus petit|diminue|petit texte)\b/.test(t))
     return { type: "setting", action: "smaller", say: "Je réduis le texte." };
   if (/\b(contraste)\b/.test(t)) return { type: "setting", action: "contrast", say: "Je change le contraste." };
 
