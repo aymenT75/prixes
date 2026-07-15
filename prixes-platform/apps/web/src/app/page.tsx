@@ -2,11 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { api } from "@/lib/api";
+import { useApp } from "@/lib/store";
 
 // Only surface what the bottom tab bar does NOT already cover — Courses, Scanner,
 // and Deals are permanent tabs, so putting them here too is redundant.
@@ -19,10 +22,20 @@ const SHORTCUTS = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+  const { user } = useApp();
+  const [query, setQuery] = useState("");
+
   // Popular products (not deals) so tapping a card opens the in-app product sheet
   // rather than leaving to an external merchant site.
   const { data } = useQuery({ queryKey: ["products", "browse"], queryFn: () => api.browseProducts() });
   const top = data?.items.slice(0, 6) ?? [];
+
+  function onSearch(e: React.FormEvent) {
+    e.preventDefault();
+    const q = query.trim();
+    router.push(q ? `/courses?q=${encodeURIComponent(q)}` : "/courses");
+  }
 
   return (
     <div>
@@ -52,6 +65,33 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Greeting */}
+      <section className="mb-6">
+        <h2 className="text-headline-xl-mobile font-bold tracking-tight text-on-surface">
+          Bonjour{user ? `, ${user.username}` : ""}&nbsp;👋
+        </h2>
+        <p className="mt-0.5 text-body-md text-on-surface-variant">
+          Prêt à optimiser vos achats aujourd&apos;hui&nbsp;?
+        </p>
+      </section>
+
+      {/* Search — jumps straight into the product comparison flow */}
+      <form
+        onSubmit={onSearch}
+        role="search"
+        className="mb-8 flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container-lowest px-4 py-3 shadow-card focus-within:border-primary"
+      >
+        <Icon name="search" className="text-on-surface-variant" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="flex-1 bg-transparent text-body-md outline-none"
+          placeholder="Rechercher un produit, une marque…"
+          aria-label="Rechercher un produit"
+          enterKeyHint="search"
+        />
+      </form>
+
       <section className="mb-8">
         <h2 className="mb-3 flex items-center gap-2 text-headline-md text-on-surface">
           <Icon name="apps" className="text-primary" /> Mes outils
@@ -62,10 +102,10 @@ export default function HomePage() {
               key={s.href}
               href={s.href}
               data-tour={s.href === "/stores" ? "shortcut-stores" : undefined}
-              className="card flex items-center gap-3 p-4 active:scale-95"
+              className="card flex flex-col items-center gap-3 p-5 text-center active:scale-95"
             >
-              <span className={`flex h-11 w-11 items-center justify-center rounded-lg ${s.box}`}>
-                <Icon name={s.icon} fill className="text-[22px]" />
+              <span className={`flex h-14 w-14 items-center justify-center rounded-full ${s.box}`}>
+                <Icon name={s.icon} fill className="text-[28px]" />
               </span>
               <span className="text-label-lg text-on-surface">{s.label}</span>
             </Link>
