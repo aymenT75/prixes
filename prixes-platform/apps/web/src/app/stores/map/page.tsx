@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/PageHeader";
 import type { MapStore } from "@/components/StoreMap";
 import { api } from "@/lib/api";
 import { getCurrentPosition } from "@/lib/geo";
-import type { Store } from "@/lib/types";
+import { pickBranch } from "@/lib/stores";
 
 // Leaflet is client-only (touches window); never SSR it.
 const StoreMap = dynamic(() => import("@/components/StoreMap"), {
@@ -21,31 +21,6 @@ const StoreMap = dynamic(() => import("@/components/StoreMap"), {
     </div>
   ),
 });
-
-// Normalise for loose brand matching: lowercase, strip accents + punctuation.
-function norm(s: string): string {
-  return s
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-// Pick the nearest store (already distance-sorted) whose name/brand shares a
-// significant token with the searched store name; fall back to the closest of all.
-function pickBranch(stores: Store[], wanted: string): Store | null {
-  if (stores.length === 0) return null;
-  const wantTokens = new Set(norm(wanted).split(" ").filter((t) => t.length >= 3));
-  if (wantTokens.size > 0) {
-    const match = stores.find((s) => {
-      const hay = new Set(norm(`${s.name} ${s.brand ?? ""}`).split(" "));
-      return [...wantTokens].some((t) => hay.has(t));
-    });
-    if (match) return match;
-  }
-  return stores[0];
-}
 
 export default function StoreMapPage() {
   return (

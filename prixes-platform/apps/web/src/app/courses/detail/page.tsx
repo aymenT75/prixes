@@ -13,8 +13,10 @@ import { ProductCard } from "@/components/ProductCard";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
 import { eur, nutriHint, scoreColor } from "@/lib/format";
+import { getCurrentPosition } from "@/lib/geo";
 import { shareOrCopy } from "@/lib/share";
 import { useApp } from "@/lib/store";
+import { pickBranch } from "@/lib/stores";
 import { useA11y } from "@/lib/useA11y";
 import { hapticDanger, hapticSuccess, speak } from "@/lib/voice";
 
@@ -130,6 +132,39 @@ function ProductDetail() {
     queryFn: () => api.getAlternatives(barcode),
     enabled: !!data,
   });
+
+  // The store carrying this product at its best (or first known) price — the one
+  // we'll locate automatically below, no tap required.
+  const targetStore = useMemo(() => {
+    if (!data || data.prices.length === 0) return null;
+    if (data.best_price != null) {
+      const match = data.prices.find((p) => p.price === data.best_price && p.store);
+      if (match?.store) return match.store;
+    }
+    return data.prices.find((p) => p.store)?.store ?? null;
+  }, [data]);
+
+  // Auto-locate the nearest branch as soon as we know which store to look for —
+  // same geolocation prompt the store map already asks for, just surfaced here
+  // immediately instead of requiring an extra tap into the price list.
+  const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  useEffect(() => {
+    if (!targetStore) return;
+    getCurrentPosition()
+      .then(setCoords)
+      .catch(() => {
+        /* denied/unsupported — the store comparison list below still works without it */
+      });
+  }, [targetStore]);
+
+  const { data: nearby, isFetching: nearbyFetching } = useQuery({
+    queryKey: ["stores", "nearby-for-product", coords],
+    queryFn: () => api.storesNearby(coords!.lat, coords!.lon, 15, 50),
+    enabled: !!coords && !!targetStore,
+  });
+
+  const nearestBranch = nearby && targetStore ? pickBranch(nearby.items, targetStore) : null;
+  const locatingBranch = !!targetStore && (!coords || nearbyFetching);
 
   const dietList = parseAllergens(data?.diets ?? null);
   const allergenList = parseAllergens(data?.allergens ?? null);
@@ -459,6 +494,57 @@ function ProductDetail() {
             <h3 className="text-headline-md text-on-surface">Historique des prix</h3>
           </div>
           <PriceChart points={history.points} lowest={history.lowest} highest={history.highest} />
+        </section>
+      )}
+
+      {/* Nearest branch — shown automatically as soon as we have a position, no tap
+          needed (unlike the full comparison list below, which is opt-in per store). */}
+      {targetStore && (locatingBranch || nearestBranch) && (
+        <section className="card mb-6 p-4">
+          <p className="mb-2 flex items-center gap-1.5 text-micro font-semibold uppercase tracking-wide text-on-surface-variant">
+            <Icon name="near_me" className="text-[16px] text-primary" /> Magasin le plus proche
+          </p>
+          {locatingBranch && (
+            <p className="flex items-center gap-2 text-body-md text-on-surface-variant">
+              <Icon name="progress_activity" className="animate-spin text-[18px]" />
+              Recherche du magasin le plus proche…
+            </p>
+          )}
+          {!locatingBranch && coords && nearestBranch && (
+            <>
+              <div className="flex items-center gap-3">
+                <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Icon name="storefront" className="text-[24px]" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-label-lg font-semibold text-on-surface">
+                    {nearestBranch.name}
+                  </p>
+                  <p className="truncate text-micro text-on-surface-variant">
+                    {nearestBranch.distance_km != null ? `${nearestBranch.distance_km.toFixed(1)} km` : ""}
+                    {nearestBranch.address ? ` · ${nearestBranch.address}` : ""}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 flex gap-2">
+                <Link
+                  href={`/stores/map?store=${encodeURIComponent(targetStore)}&lat=${coords.lat}&lon=${coords.lon}`}
+                  className="btn-outline flex-1 justify-center py-2 text-label-md"
+                >
+                  <Icon name="map" className="text-[16px]" /> Voir sur la carte
+                </Link>
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&origin=${coords.lat},${coords.lon}&destination=${nearestBranch.lat},${nearestBranch.lon}&travelmode=driving`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Itinéraire vers ${nearestBranch.name} (nouvelle fenêtre)`}
+                  className="btn-primary flex-1 justify-center py-2 text-label-md"
+                >
+                  <Icon name="directions" className="text-[16px]" /> Itinéraire
+                </a>
+              </div>
+            </>
+          )}
         </section>
       )}
 
