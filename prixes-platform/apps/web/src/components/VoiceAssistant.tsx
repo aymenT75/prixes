@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Icon } from "@/components/Icon";
+import { api } from "@/lib/api";
 import { useA11y } from "@/lib/useA11y";
 import { useDialog } from "@/lib/useDialog";
 import {
@@ -45,16 +46,85 @@ export function VoiceAssistant() {
     openRef.current = open;
   }, [open]);
 
+  const close = useCallback(() => {
+    try {
+      recRef.current?.stop();
+    } catch {
+      /* ignore */
+    }
+    stopSpeaking();
+    setOpen(false);
+    setPhase("idle");
+  }, [setOpen]);
+
+  // Runs a product search, retrying with a shorter phrase if nothing matches
+  // ("du lait bio" -> "du lait" -> "du"), then falls back to a few popular
+  // products so the user is never left with a dead end.
+  const runSearch = useCallback(async (query: string) => {
+    let q = query;
+    let result: { items: { name: string | null }[]; total: number } | null = null;
+    try {
+      result = await api.searchProducts(q);
+    } catch {
+      result = null;
+    }
+    while (result && result.total === 0 && q.trim().includes(" ")) {
+      q = q.trim().split(" ").slice(0, -1).join(" ");
+      try {
+        result = await api.searchProducts(q);
+      } catch {
+        result = null;
+      }
+    }
+
+    if (result && result.total > 0) {
+      return {
+        say:
+          result.total === 1
+            ? `Un produit trouvé pour ${q}.`
+            : `${result.total} produits trouvés pour ${q}.`,
+        path: `/courses?q=${encodeURIComponent(q)}`,
+      };
+    }
+
+    let suggestions: string[] = [];
+    try {
+      const popular = await api.browseProducts(3);
+      suggestions = popular.items.map((p) => p.name).filter((n): n is string => !!n);
+    } catch {
+      /* ignore — say the no-results line without suggestions */
+    }
+    return {
+      say:
+        suggestions.length > 0
+          ? `Aucun résultat pour ${query}. Essayez plutôt : ${suggestions.join(", ")}.`
+          : `Aucun résultat pour ${query}.`,
+      path: "/courses",
+    };
+  }, []);
+
   const act = useCallback(
     (text: string) => {
       const intent = parseIntent(text);
+
+      if (intent.type === "search") {
+        setResponse("");
+        setPhase("responding");
+        vibrate(30);
+        void runSearch(intent.query).then(({ say, path }) => {
+          setResponse(say);
+          router.push(path);
+          // The search is answered — disappear instead of waiting to be dismissed
+          // (and don't restart hands-free listening; the user has their answer).
+          speak(say, close);
+        });
+        return;
+      }
+
       let say = intent.say;
       switch (intent.type) {
         case "navigate":
           router.push(intent.path);
-          break;
-        case "search":
-          router.push(`/courses?q=${encodeURIComponent(intent.query)}`);
           break;
         case "setting":
           if (intent.action === "dark") a11y.setDark(true);
@@ -81,7 +151,7 @@ export function VoiceAssistant() {
         if (handsFreeRef.current && openRef.current) setTimeout(() => startRef.current(), 500);
       });
     },
-    [router, a11y],
+    [router, a11y, runSearch, close],
   );
 
   const startListening = useCallback(() => {
@@ -138,17 +208,6 @@ export function VoiceAssistant() {
       greetedRef.current = false;
     }
   }, [open, startListening]);
-
-  const close = useCallback(() => {
-    try {
-      recRef.current?.stop();
-    } catch {
-      /* ignore */
-    }
-    stopSpeaking();
-    setOpen(false);
-    setPhase("idle");
-  }, [setOpen]);
 
   const dialogRef = useDialog(open, close);
 
