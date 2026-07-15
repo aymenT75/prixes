@@ -42,9 +42,7 @@ def parse_quantity(quantity: str | None) -> tuple[Decimal, str] | None:
     q = quantity.strip().lower()
 
     multiplier = 1
-    if m := _MULTIPACK.search(q):
-        multiplier = int(m.group(1))
-    elif m := _LOT.search(q):
+    if (m := _MULTIPACK.search(q)) or (m := _LOT.search(q)):
         multiplier = int(m.group(1))
 
     if m := _AMOUNT.search(q):

@@ -31,7 +31,7 @@ def create_token(subject: str | uuid.UUID, token_type: TokenType) -> str:
     now = datetime.now(UTC)
     ttl = (
         timedelta(minutes=settings.jwt_access_ttl_minutes)
-        if token_type == "access"
+        if token_type == "access"  # noqa: S105 — a type label ("access"/"refresh"), not a secret
         else timedelta(days=settings.jwt_refresh_ttl_days)
     )
     payload: dict[str, Any] = {

@@ -23,12 +23,14 @@ class WorkerSettings:
     # The price crawl + OFF enrichment can take a couple of minutes; give jobs
     # generous headroom (default is 300s).
     job_timeout = 1200
+    # arq's WorkerCoroutine protocol declares `(ctx, *args, **kwargs)`, but cron
+    # jobs are only ever invoked with `ctx` — the extra params don't apply here.
     cron_jobs = [
         # Real supermarket prices — refresh every ~5 hours (background, no API latency).
-        cron(refresh_prices, hour={0, 5, 10, 15, 20}, minute=20),
+        cron(refresh_prices, hour={0, 5, 10, 15, 20}, minute=20),  # type: ignore[arg-type]
         # Re-check price alerts every 15 minutes (picks up new lows shortly after
         # each refresh).
-        cron(evaluate_price_alerts, minute={0, 15, 30, 45}),
+        cron(evaluate_price_alerts, minute={0, 15, 30, 45}),  # type: ignore[arg-type]
         # GDPR data minimisation — prune old anonymous analytics events daily.
-        cron(prune_analytics, hour=4, minute=10),
+        cron(prune_analytics, hour=4, minute=10),  # type: ignore[arg-type]
     ]

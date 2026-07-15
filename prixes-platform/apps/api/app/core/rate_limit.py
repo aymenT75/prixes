@@ -18,7 +18,7 @@ def _client_id(request: Request, creds: HTTPAuthorizationCredentials | None) -> 
     if creds is not None:
         try:
             return f"u:{decode_token(creds.credentials, 'access')}"
-        except Exception:  # noqa: BLE001 — fall back to IP on any token error
+        except Exception:  # noqa: BLE001, S110 — fall back to IP on any token error
             pass
     fwd = request.headers.get("x-forwarded-for")
     ip = fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "?")
@@ -36,7 +36,7 @@ class RateLimit:
     async def __call__(
         self,
         request: Request,
-        creds: HTTPAuthorizationCredentials | None = Depends(_bearer),
+        creds: HTTPAuthorizationCredentials | None = Depends(_bearer),  # noqa: B008 — FastAPI DI pattern
     ) -> None:
         key = f"rl:{self.bucket}:{_client_id(request, creds)}"
         count = await redis_client.incr(key)

@@ -25,10 +25,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import os
 import sys
 from datetime import UTC, date, datetime, timedelta
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
 
@@ -80,7 +81,7 @@ OFF_FIELDS = (
 )
 
 DEMO_EMAIL = "demo@prixes.app"
-DEMO_PASSWORD = "demo1234"
+DEMO_PASSWORD = "demo1234"  # noqa: S105 — local dev/demo account, documented in DEPLOY.md
 
 # Canonicalise common French retailer brand spellings from OSM tags.
 STORE_CANON = {
@@ -239,7 +240,9 @@ async def crawl_open_prices(client: httpx.AsyncClient, pages: int) -> list[dict]
 
 async def enrich_from_off(client: httpx.AsyncClient, barcode: str) -> dict | None:
     try:
-        r = await client.get(OFF_PRODUCT.format(barcode), params={"fields": OFF_FIELDS}, timeout=15.0)
+        r = await client.get(
+            OFF_PRODUCT.format(barcode), params={"fields": OFF_FIELDS}, timeout=15.0
+        )
         if r.status_code != 200:
             return None
         data = r.json()
@@ -252,9 +255,12 @@ async def enrich_from_off(client: httpx.AsyncClient, barcode: str) -> dict | Non
             "brand": (p.get("brands") or "").split(",")[0].strip() or None,
             "image_url": p.get("image_front_url") or p.get("image_url"),
             "quantity": p.get("quantity"),
-            "nutriscore": (p.get("nutriscore_grade") or p.get("nutrition_grades") or "")[:1] or None,
+            "nutriscore": (p.get("nutriscore_grade") or p.get("nutrition_grades") or "")[:1]
+            or None,
             "ecoscore": (p.get("ecoscore_grade") or "")[:1] or None,
-            "nova_group": int(nova) if isinstance(nova, (int, str)) and str(nova).isdigit() else None,
+            "nova_group": int(nova)
+            if isinstance(nova, (int, str)) and str(nova).isdigit()
+            else None,
             "categories": p.get("categories"),
         }
     except Exception:  # noqa: BLE001
@@ -276,7 +282,8 @@ def _pdate(s: str | None) -> datetime:
 async def main(pages: int, enrich_cap: int, n_deals: int,
                per_retailer: int, prices_per_loc: int) -> None:
     now = datetime.now(UTC).replace(microsecond=0)
-    async with httpx.AsyncClient(headers={"User-Agent": "Prixes/2.0 (real-price-ingest)"}) as client:
+    headers = {"User-Agent": "Prixes/2.0 (real-price-ingest)"}
+    async with httpx.AsyncClient(headers=headers) as client:
         print("Recuperation des prix reels par enseigne (Open Prices, France)...")
         rows = await crawl_by_location(client, per_retailer, prices_per_loc)
         # Top up with recent FR prices for extra product variety.
@@ -291,7 +298,9 @@ async def main(pages: int, enrich_cap: int, n_deals: int,
 
         async with SessionLocal() as db:
             # demo user
-            demo = (await db.execute(select(User).where(User.email == DEMO_EMAIL))).scalar_one_or_none()
+            demo = (
+                await db.execute(select(User).where(User.email == DEMO_EMAIL))
+            ).scalar_one_or_none()
             if demo is None:
                 demo = User(
                     email=DEMO_EMAIL, username="Demo Prixes", initials="DP",
@@ -307,7 +316,9 @@ async def main(pages: int, enrich_cap: int, n_deals: int,
             enriched = 0
             seeded: list[Product] = []
             for barcode, prices in by_code.items():
-                meta = next((p["product"] for p in prices if p["product"]), None) or {"barcode": barcode}
+                meta = next((p["product"] for p in prices if p["product"]), None) or {
+                    "barcode": barcode
+                }
                 product = await db.get(Product, barcode)
                 if product is None:
                     product = Product(barcode=barcode, fetched_at=now)
@@ -359,9 +370,13 @@ async def main(pages: int, enrich_cap: int, n_deals: int,
                 # Pick products that have >=2 stores so a comparison/deal is meaningful
                 candidates = []
                 for product in seeded:
-                    prices = (await db.execute(
-                        select(PricePoint.price, PricePoint.store).where(PricePoint.barcode == product.barcode)
-                    )).all()
+                    prices = (
+                        await db.execute(
+                            select(PricePoint.price, PricePoint.store).where(
+                                PricePoint.barcode == product.barcode
+                            )
+                        )
+                    ).all()
                     stores = {s for _, s in prices}
                     if product.name and len(stores) >= 2:
                         cheapest = min(pr for pr, _ in prices)
@@ -395,16 +410,19 @@ async def main(pages: int, enrich_cap: int, n_deals: int,
 
             await db.commit()
 
-            rows_deals = (await db.execute(select(Deal).where(Deal.status == "active"))).scalars().all()
+            rows_deals = (
+                await db.execute(select(Deal).where(Deal.status == "active"))
+            ).scalars().all()
             if rows_deals:
                 await redis_client.zadd(FEED_HOT, {str(d.id): float(d.score) for d in rows_deals})
-                await redis_client.zadd(FEED_NEW, {str(d.id): d.created_at.timestamp() for d in rows_deals})
+                await redis_client.zadd(
+                    FEED_NEW, {str(d.id): d.created_at.timestamp() for d in rows_deals}
+                )
                 print(f"  -> Redis feeds warmed ({len(rows_deals)} deals)")
 
-    try:
+    # Redis close timing out just means the script exits anyway — not worth surfacing.
+    with contextlib.suppress(Exception):
         await asyncio.wait_for(redis_client.aclose(), timeout=2.0)
-    except (asyncio.TimeoutError, Exception):  # noqa: BLE001
-        pass
     print("\nOK Donnees reelles ingerees. Login: demo@prixes.app / demo1234")
 
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import DateTime, ForeignKey, Numeric, SmallInteger, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -32,7 +33,7 @@ class Product(Base, TimestampMixin):
     # Comma-separated FR diet labels the product SATISFIES (e.g. "végan, bio").
     diets: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    raw_off: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    raw_off: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 

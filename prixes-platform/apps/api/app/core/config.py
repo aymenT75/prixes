@@ -4,7 +4,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, PostgresDsn, RedisDsn
+from pydantic import PostgresDsn, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,7 +15,7 @@ class Settings(BaseSettings):
 
     # App
     environment: Literal["local", "staging", "production"] = "local"
-    secret_key: str = "change-me"
+    secret_key: str = "change-me"  # noqa: S105 — placeholder default, real value from env (see DEPLOY.md)
     api_base_url: str = "http://localhost:8000"
     web_base_url: str = "http://localhost:3000"
     cors_origins: str = "http://localhost:3000"
@@ -83,7 +83,7 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()  # type: ignore[call-arg]
+    return Settings()
 
 
 settings = get_settings()

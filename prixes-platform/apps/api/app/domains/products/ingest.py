@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 from decimal import ROUND_HALF_UP, Decimal
+from typing import Any
 
 import httpx
 from sqlalchemy import func, select
@@ -93,7 +94,7 @@ def _match_retailer(name: str | None) -> str | None:
     return None
 
 
-def _canon_store(loc: dict) -> str | None:
+def _canon_store(loc: dict[str, Any]) -> str | None:
     raw = (loc.get("osm_brand") or loc.get("osm_name") or "").strip()
     if not raw:
         return None
@@ -112,7 +113,7 @@ def _pdate(s: str | None) -> datetime:
             return datetime.now(UTC)
 
 
-def _norm_embedded(p: dict) -> dict | None:
+def _norm_embedded(p: dict[str, Any]) -> dict[str, Any] | None:
     """Normalise the product object Open Prices embeds in each price."""
     code = p.get("code")
     if not code:
@@ -138,9 +139,11 @@ def _norm_embedded(p: dict) -> dict | None:
     }
 
 
-async def _enrich_from_off(client: httpx.AsyncClient, barcode: str) -> dict | None:
+async def _enrich_from_off(client: httpx.AsyncClient, barcode: str) -> dict[str, Any] | None:
     try:
-        r = await client.get(OFF_PRODUCT.format(barcode), params={"fields": OFF_FIELDS}, timeout=12.0)
+        r = await client.get(
+            OFF_PRODUCT.format(barcode), params={"fields": OFF_FIELDS}, timeout=12.0
+        )
         if r.status_code != 200:
             return None
         data = r.json()
@@ -153,9 +156,12 @@ async def _enrich_from_off(client: httpx.AsyncClient, barcode: str) -> dict | No
             "brand": (p.get("brands") or "").split(",")[0].strip() or None,
             "image_url": p.get("image_front_url") or p.get("image_url"),
             "quantity": p.get("quantity"),
-            "nutriscore": (p.get("nutriscore_grade") or p.get("nutrition_grades") or "")[:1] or None,
+            "nutriscore": (p.get("nutriscore_grade") or p.get("nutrition_grades") or "")[:1]
+            or None,
             "ecoscore": (p.get("ecoscore_grade") or "")[:1] or None,
-            "nova_group": int(nova) if isinstance(nova, (int, str)) and str(nova).isdigit() else None,
+            "nova_group": int(nova)
+            if isinstance(nova, (int, str)) and str(nova).isdigit()
+            else None,
             "categories": p.get("categories"),
         }
     except Exception:  # noqa: BLE001
@@ -164,15 +170,15 @@ async def _enrich_from_off(client: httpx.AsyncClient, barcode: str) -> dict | No
 
 async def _find_retailer_locations(
     client: httpx.AsyncClient, per_retailer: int, max_pages: int = 12
-) -> dict[str, list[dict]]:
-    found: dict[str, list[dict]] = {r: [] for r in RETAILER_MATCHERS}
+) -> dict[str, list[dict[str, Any]]]:
+    found: dict[str, list[dict[str, Any]]] = {r: [] for r in RETAILER_MATCHERS}
     for page in range(1, max_pages + 1):
         params = {"size": "100", "page": str(page), "order_by": "-price_count"}
         try:
             r = await client.get(OP_LOCATIONS, params=params, timeout=30.0)
             r.raise_for_status()
             items = r.json().get("items", [])
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S112 — skip this page, keep crawling
             continue
         if not items:
             break
@@ -187,18 +193,22 @@ async def _find_retailer_locations(
     return {k: v for k, v in found.items() if v}
 
 
-async def _crawl(client: httpx.AsyncClient, per_retailer: int, prices_per_loc: int, pages: int) -> list[dict]:
+async def _crawl(
+    client: httpx.AsyncClient, per_retailer: int, prices_per_loc: int, pages: int
+) -> list[dict[str, Any]]:
     """Pull REAL prices per retailer's busiest French stores, plus recent FR prices."""
-    out: list[dict] = []
+    out: list[dict[str, Any]] = []
     locs = await _find_retailer_locations(client, per_retailer)
     for retailer, stores in locs.items():
         for st in stores:
-            params = {"location_id": str(st["id"]), "size": str(prices_per_loc), "order_by": "-date"}
+            params = {
+                "location_id": str(st["id"]), "size": str(prices_per_loc), "order_by": "-date"
+            }
             try:
                 r = await client.get(OP_PRICES, params=params, timeout=30.0)
                 r.raise_for_status()
                 items = r.json().get("items", [])
-            except Exception:  # noqa: BLE001
+            except Exception:  # noqa: BLE001, S112 — skip this store, keep crawling
                 continue
             for it in items:
                 code, price = it.get("product_code"), it.get("price")
@@ -216,7 +226,7 @@ async def _crawl(client: httpx.AsyncClient, per_retailer: int, prices_per_loc: i
             r = await client.get(OP_PRICES, params=params, timeout=30.0)
             r.raise_for_status()
             items = r.json().get("items", [])
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S112 — skip this page, keep crawling
             continue
         if not items:
             break
@@ -244,13 +254,15 @@ async def refresh_prices(
 
     async with httpx.AsyncClient(headers={"User-Agent": USER_AGENT}) as client:
         rows = await _crawl(client, per_retailer, prices_per_loc, pages)
-        by_code: dict[str, list[dict]] = {}
+        by_code: dict[str, list[dict[str, Any]]] = {}
         for r in rows:
             by_code.setdefault(r["barcode"], []).append(r)
 
         async with SessionLocal() as db:
             for i, (barcode, prices) in enumerate(by_code.items(), start=1):
-                meta = next((p["product"] for p in prices if p["product"]), None) or {"barcode": barcode}
+                meta = next((p["product"] for p in prices if p["product"]), None) or {
+                    "barcode": barcode
+                }
                 product = await db.get(Product, barcode)
                 if product is None:
                     product = Product(barcode=barcode, fetched_at=now)

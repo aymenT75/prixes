@@ -9,9 +9,9 @@ import redis.asyncio as aioredis
 
 from app.core.config import settings
 
-redis_client: aioredis.Redis = aioredis.from_url(
+redis_client: aioredis.Redis = aioredis.from_url(  # type: ignore[no-untyped-call]
     str(settings.redis_url), encoding="utf-8", decode_responses=True
-)
+)  # redis-py wraps from_url in a decorator that erases its type annotations
 
 # Redis Sorted-Set keys for ranked feeds (see ARCHITECTURE.md §7)
 FEED_HOT = "deals:feed:hot"

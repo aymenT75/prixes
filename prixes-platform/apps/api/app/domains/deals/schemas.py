@@ -21,7 +21,7 @@ class DealCreate(BaseModel):
     expires_at: datetime | None = None
 
     @model_validator(mode="after")
-    def _check_discount(self) -> "DealCreate":
+    def _check_discount(self) -> DealCreate:
         if self.price_now >= self.price_before:
             raise ValueError("price_now must be lower than price_before")
         return self

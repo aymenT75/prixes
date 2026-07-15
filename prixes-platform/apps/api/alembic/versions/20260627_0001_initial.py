@@ -7,7 +7,6 @@ Create Date: 2026-06-27
 from __future__ import annotations
 
 from alembic import op
-
 from app.core.models import Base
 
 revision = "0001_initial"

@@ -113,7 +113,7 @@ async def fetch_off_product(barcode: str) -> dict[str, Any] | None:
 async def search_off(query: str, page: int = 1, page_size: int = 20) -> list[dict[str, Any]]:
     """Full-text product search on OpenFoodFacts (French market)."""
     url = f"{settings.off_base_url}/cgi/search.pl"
-    params = {
+    params: dict[str, Any] = {
         "search_terms": query,
         "search_simple": 1,
         "action": "process",
@@ -134,7 +134,7 @@ async def search_off(query: str, page: int = 1, page_size: int = 20) -> list[dic
 async def fetch_openprices(barcode: str) -> list[dict[str, Any]]:
     """Fetch community price points for a barcode from OpenPrices."""
     url = f"{settings.openprices_base_url}/v1/prices"
-    params = {"product_code": barcode, "size": 25, "order_by": "-created"}
+    params: dict[str, Any] = {"product_code": barcode, "size": 25, "order_by": "-created"}
     resp = await get_http_client().get(url, params=params)
     if resp.status_code != 200:
         return []

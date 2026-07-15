@@ -89,10 +89,12 @@ async def get_feed(
         ).scalars().all()
         return list(rows), (cursor + limit if len(rows) == limit else None)
 
-    deals = (
-        await db.execute(select(Deal).where(Deal.id.in_([uuid.UUID(i) for i in ids])))
-    ).scalars().all()
+    deals = list(
+        (
+            await db.execute(select(Deal).where(Deal.id.in_([uuid.UUID(i) for i in ids])))
+        ).scalars().all()
+    )
     order = {i: n for n, i in enumerate(ids)}
     deals.sort(key=lambda d: order[str(d.id)])
     next_cursor = cursor + limit if len(ids) == limit else None
-    return list(deals), next_cursor
+    return deals, next_cursor

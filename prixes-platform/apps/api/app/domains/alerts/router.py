@@ -7,13 +7,14 @@ from fastapi import APIRouter, status
 
 from app.core.deps import CurrentUser, DbSession
 from app.domains.alerts import service
+from app.domains.alerts.models import PriceAlert
 from app.domains.alerts.schemas import AlertIn, AlertListOut, AlertOut
 from app.domains.products.models import Product
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
-async def _enrich(db: DbSession, alerts: list) -> list[AlertOut]:
+async def _enrich(db: DbSession, alerts: list[PriceAlert]) -> list[AlertOut]:
     out: list[AlertOut] = []
     for a in alerts:
         product = await db.get(Product, a.barcode)

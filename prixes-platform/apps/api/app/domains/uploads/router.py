@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import uuid
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 import boto3
 from botocore.config import Config
@@ -23,7 +23,7 @@ class PresignOut(BaseModel):
     key: str
 
 
-def _s3():  # noqa: ANN202
+def _s3() -> Any:  # boto3 has no type stubs (see pyproject.toml mypy overrides)
     return boto3.client(
         "s3",
         endpoint_url=settings.s3_endpoint_url or None,

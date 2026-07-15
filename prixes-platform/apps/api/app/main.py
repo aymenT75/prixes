@@ -27,7 +27,9 @@ from app.domains.uploads.router import router as uploads_router
 from app.domains.users.router import router as users_router
 
 if settings.sentry_dsn:
-    sentry_sdk.init(dsn=settings.sentry_dsn, environment=settings.environment, traces_sample_rate=0.1)
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn, environment=settings.environment, traces_sample_rate=0.1
+    )
 
 
 @asynccontextmanager

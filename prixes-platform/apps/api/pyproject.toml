@@ -38,6 +38,8 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# Historical migrations are frozen once applied — don't reformat/relint them.
+extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "ASYNC", "S", "C4", "SIM"]
@@ -47,6 +49,12 @@ ignore = ["S101"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+# boto3/botocore ship no type stubs; installing boto3-stubs is unnecessary
+# overhead for the couple of calls this project makes.
+module = ["boto3.*", "botocore.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

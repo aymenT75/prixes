@@ -9,6 +9,7 @@ from sqlalchemy import select
 from app.core.deps import CurrentUser, DbSession
 from app.domains.products.models import PricePoint, Product
 from app.domains.shopping import service
+from app.domains.shopping.models import ShoppingItem
 from app.domains.shopping.schemas import (
     OptimizeResult,
     ShoppingItemIn,
@@ -20,7 +21,7 @@ from app.domains.shopping.schemas import (
 router = APIRouter(prefix="/shopping", tags=["shopping"])
 
 
-async def _enrich(db: DbSession, items: list) -> list[ShoppingItemOut]:
+async def _enrich(db: DbSession, items: list[ShoppingItem]) -> list[ShoppingItemOut]:
     out: list[ShoppingItemOut] = []
     for it in items:
         product = await db.get(Product, it.barcode)

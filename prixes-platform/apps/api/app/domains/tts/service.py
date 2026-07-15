@@ -8,6 +8,7 @@ can fall back to on-device/browser TTS.
 """
 from __future__ import annotations
 
+import contextlib
 import hashlib
 
 from app.core.config import settings
@@ -45,7 +46,7 @@ async def synthesize(text: str, voice: str | None = None) -> bytes | None:
         cached = None
     if cached is not None:
         # Redis is decode_responses=True (str); audio was stored latin-1-encoded.
-        return cached.encode("latin-1")
+        return str(cached).encode("latin-1")
 
     payload = {"model": model, "voice": voice, "input": text, "response_format": "mp3"}
     headers = {"Authorization": f"Bearer {settings.openai_api_key}"}
@@ -59,8 +60,7 @@ async def synthesize(text: str, voice: str | None = None) -> bytes | None:
     except Exception:  # noqa: BLE001 — never propagate upstream failures
         return None
 
-    try:
+    # Caching is best-effort — a Redis hiccup must never break TTS itself.
+    with contextlib.suppress(Exception):
         await redis_client.set(key, audio.decode("latin-1"), ex=_CACHE_TTL)
-    except Exception:  # noqa: BLE001 — caching is best-effort
-        pass
     return audio

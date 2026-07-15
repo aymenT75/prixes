@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Query
+from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DbSession
 from app.domains.products import service
@@ -22,7 +23,6 @@ from app.domains.products.schemas import (
     ProductSearchResult,
 )
 from app.domains.products.units import unit_price
-from sqlalchemy import select
 
 router = APIRouter(prefix="/products", tags=["products"])
 

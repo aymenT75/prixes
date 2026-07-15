@@ -14,12 +14,13 @@ never cached, and any upstream error yields an empty list rather than a 500.
 from __future__ import annotations
 
 from math import asin, cos, radians, sin, sqrt
-from typing import Any
+from typing import Any, cast
+
+import orjson
 
 from app.core.http import get_http_client
 from app.core.redis import redis_client
 from app.domains.stores.schemas import GeocodeHit, StoreOut
-import orjson
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
@@ -111,7 +112,7 @@ async def _cached_pois(lat: float, lon: float, radius_km: float) -> list[dict[st
     key = f"stores:osm:{round(lat, 3)}:{round(lon, 3)}:{radius_km}"
     cached = await redis_client.get(key)
     if cached is not None:
-        return orjson.loads(cached)
+        return cast("list[dict[str, Any]]", orjson.loads(cached))
     pois = await _fetch_pois(lat, lon, radius_km)
     if pois:  # don't cache empty/failed responses (avoids poisoning during rate-limits)
         await redis_client.set(key, orjson.dumps(pois), ex=_CACHE_TTL)

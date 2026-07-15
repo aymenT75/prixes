@@ -20,9 +20,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import httpx  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 
-from app.domains.products.off import _extract_allergens  # noqa: E402
 from app.core.db import SessionLocal  # noqa: E402
 from app.domains.products.models import Product  # noqa: E402
+from app.domains.products.off import _extract_allergens  # noqa: E402
 
 OFF_PRODUCT = "https://world.openfoodfacts.org/api/v2/product/{}.json"
 FIELDS = "allergens_tags"
@@ -54,7 +54,8 @@ async def main(limit: int | None, concurrency: int) -> None:
     sem = asyncio.Semaphore(concurrency)
     done = 0
     with_allergens = 0
-    async with httpx.AsyncClient(headers={"User-Agent": "Prixes/2.0 (allergen-backfill)"}) as client:
+    headers = {"User-Agent": "Prixes/2.0 (allergen-backfill)"}
+    async with httpx.AsyncClient(headers=headers) as client:
         async def work(bc: str) -> tuple[str, str]:
             async with sem:
                 return bc, await fetch_allergens(client, bc)
