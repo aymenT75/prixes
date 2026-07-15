@@ -10,7 +10,7 @@ from arq import cron
 from arq.connections import RedisSettings
 
 from app.core.config import settings
-from app.worker.tasks import evaluate_price_alerts, refresh_prices
+from app.worker.tasks import evaluate_price_alerts, prune_analytics, refresh_prices
 
 
 async def healthcheck(_: dict[str, Any]) -> str:
@@ -18,7 +18,7 @@ async def healthcheck(_: dict[str, Any]) -> str:
 
 
 class WorkerSettings:
-    functions = [healthcheck, evaluate_price_alerts, refresh_prices]
+    functions = [healthcheck, evaluate_price_alerts, refresh_prices, prune_analytics]
     redis_settings = RedisSettings.from_dsn(str(settings.redis_url))
     # The price crawl + OFF enrichment can take a couple of minutes; give jobs
     # generous headroom (default is 300s).
@@ -29,4 +29,6 @@ class WorkerSettings:
         # Re-check price alerts every 15 minutes (picks up new lows shortly after
         # each refresh).
         cron(evaluate_price_alerts, minute={0, 15, 30, 45}),
+        # GDPR data minimisation — prune old anonymous analytics events daily.
+        cron(prune_analytics, hour=4, minute=10),
     ]

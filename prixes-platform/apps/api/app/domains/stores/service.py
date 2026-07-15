@@ -18,10 +18,15 @@ from typing import Any
 
 from app.core.http import get_http_client
 from app.core.redis import redis_client
-from app.domains.stores.schemas import StoreOut
+from app.domains.stores.schemas import GeocodeHit, StoreOut
 import orjson
 
 OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+
+# Address lookups don't change; cache aggressively to spare the (free, shared)
+# Nominatim usage-policy-limited endpoint.
+_GEOCODE_CACHE_TTL = 7 * 24 * 3600
 
 # shop tags we treat as "supermarket" for this feature.
 _SHOP_TYPES = ("supermarket", "convenience", "grocery")
@@ -132,3 +137,39 @@ async def nearby(
     ]
     stores.sort(key=lambda s: s.distance_km)
     return stores[:limit]
+
+
+async def geocode(query: str) -> list[GeocodeHit]:
+    """Resolve a free-text place (city, street, postcode) to coordinates via
+    Nominatim — lets someone who declines the geolocation prompt still find
+    nearby stores by typing where they are. Empty on any upstream failure."""
+    key = f"stores:geocode:{query.strip().lower()}"
+    cached = await redis_client.get(key)
+    if cached is not None:
+        return [GeocodeHit(**h) for h in orjson.loads(cached)]
+
+    try:
+        resp = await get_http_client().get(
+            NOMINATIM_URL,
+            params={
+                "q": query,
+                "format": "jsonv2",
+                "countrycodes": "fr",
+                "limit": 5,
+            },
+        )
+        resp.raise_for_status()
+        results = resp.json()
+    except Exception:  # noqa: BLE001 — never propagate upstream failures
+        return []
+
+    hits = [
+        GeocodeHit(label=r["display_name"], lat=float(r["lat"]), lon=float(r["lon"]))
+        for r in results
+        if "display_name" in r and "lat" in r and "lon" in r
+    ]
+    if hits:  # don't cache empty/failed responses
+        await redis_client.set(
+            key, orjson.dumps([h.model_dump() for h in hits]), ex=_GEOCODE_CACHE_TTL
+        )
+    return hits

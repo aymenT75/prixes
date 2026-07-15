@@ -192,6 +192,12 @@ export default function AccountPage() {
           </Row>
         </button>
         <Hr />
+        <Link href="/privacy" className="block w-full">
+          <Row icon="privacy_tip" title="Confidentialité" subtitle="Vos données, vos droits">
+            <Icon name="chevron_right" className="text-outline-variant" />
+          </Row>
+        </Link>
+        <Hr />
         <button onClick={logout} className="w-full">
           <Row icon="logout" title="Se déconnecter" subtitle="">
             <Icon name="chevron_right" className="text-outline-variant" />

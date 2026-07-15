@@ -162,6 +162,16 @@ export interface StoresNearbyResult {
   items: Store[];
 }
 
+export interface GeocodeHit {
+  label: string;
+  lat: number;
+  lon: number;
+}
+
+export interface GeocodeResult {
+  items: GeocodeHit[];
+}
+
 export interface FeedbackItem {
   id: string;
   rating: number | null;

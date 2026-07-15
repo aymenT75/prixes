@@ -7,6 +7,7 @@ import type {
   Deal,
   FeedbackList,
   FeedPage,
+  GeocodeResult,
   OptimizeResult,
   PriceAlert,
   PriceHistory,
@@ -148,6 +149,8 @@ export const api = {
     request<StoresNearbyResult>(
       `/stores/nearby?lat=${lat}&lon=${lon}&radius_km=${radiusKm}&limit=${limit}`,
     ),
+  geocodeAddress: (q: string) =>
+    request<GeocodeResult>(`/stores/geocode?q=${encodeURIComponent(q)}`),
 
   // ── Shopping list ──
   getShoppingList: () => request<ShoppingList>("/shopping"),

@@ -1,12 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
 import { getCurrentPosition } from "@/lib/geo";
+import type { GeocodeHit } from "@/lib/types";
 
 const RADII = [1, 5, 10, 25];
 
@@ -14,6 +15,13 @@ export default function StoresPage() {
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [radius, setRadius] = useState(5);
   const [geoError, setGeoError] = useState<string | null>(null);
+
+  // Fallback for anyone who declines the geolocation prompt (or just prefers
+  // typing) — geolocation must never be the *only* way to use this feature.
+  const [showAddressInput, setShowAddressInput] = useState(false);
+  const [addressQuery, setAddressQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<GeocodeHit[]>([]);
+  const [searchingAddress, setSearchingAddress] = useState(false);
 
   async function locate() {
     setGeoError(null);
@@ -25,7 +33,34 @@ export default function StoresPage() {
           ? "Géolocalisation non disponible."
           : "Position refusée. Activez la localisation.",
       );
+      setShowAddressInput(true); // offer the alternative right away
     }
+  }
+
+  // Debounced address search-as-you-type.
+  useEffect(() => {
+    const q = addressQuery.trim();
+    if (q.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    setSearchingAddress(true);
+    const t = setTimeout(() => {
+      api
+        .geocodeAddress(q)
+        .then((r) => setSuggestions(r.items))
+        .catch(() => setSuggestions([]))
+        .finally(() => setSearchingAddress(false));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [addressQuery]);
+
+  function pickAddress(hit: GeocodeHit) {
+    setCoords({ lat: hit.lat, lon: hit.lon });
+    setGeoError(null);
+    setShowAddressInput(false);
+    setSuggestions([]);
+    setAddressQuery("");
   }
 
   const { data, isFetching } = useQuery({
@@ -58,13 +93,71 @@ export default function StoresPage() {
       )}
 
       {!coords && (
-        <button onClick={locate} className="btn-primary mb-4 w-full py-3">
-          <Icon name="my_location" className="text-[18px]" /> Trouver les magasins proches
-        </button>
+        <>
+          <p className="mb-3 text-body-md text-on-surface-variant">
+            On a besoin de savoir où vous êtes pour trouver les magasins les plus proches —
+            uniquement pour cette recherche, rien n&apos;est enregistré.
+          </p>
+          <button onClick={locate} className="btn-primary mb-3 w-full py-3">
+            <Icon name="my_location" className="text-[18px]" /> Utiliser ma position
+          </button>
+          {!showAddressInput && (
+            <button
+              onClick={() => setShowAddressInput(true)}
+              className="mb-4 w-full text-center text-label-lg text-primary underline-offset-2 hover:underline"
+            >
+              Ou saisir une adresse
+            </button>
+          )}
+        </>
       )}
       {geoError && (
         <div className="mb-4 flex items-center gap-2 rounded-xl bg-warning-soft p-3 text-label-md text-secondary">
           <Icon name="warning" className="text-[18px]" /> {geoError}
+        </div>
+      )}
+
+      {!coords && showAddressInput && (
+        <div className="mb-5">
+          <label htmlFor="address-input" className="mb-2 block text-label-lg text-on-surface-variant">
+            Votre ville ou adresse
+          </label>
+          <div className="relative">
+            <input
+              id="address-input"
+              type="text"
+              inputMode="search"
+              autoComplete="off"
+              value={addressQuery}
+              onChange={(e) => setAddressQuery(e.target.value)}
+              placeholder="Ex. Lyon, ou 12 rue de la Paix, Paris"
+              className="input"
+            />
+            {searchingAddress && (
+              <Icon
+                name="progress_activity"
+                className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[18px] text-on-surface-variant"
+              />
+            )}
+          </div>
+          {suggestions.length > 0 && (
+            <ul className="mt-2 space-y-1 rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-1.5">
+              {suggestions.map((s) => (
+                <li key={`${s.lat}-${s.lon}`}>
+                  <button
+                    onClick={() => pickAddress(s)}
+                    className="flex w-full items-start gap-2 rounded-lg p-2.5 text-left text-body-md text-on-surface hover:bg-surface-container"
+                  >
+                    <Icon name="location_on" className="mt-0.5 flex-shrink-0 text-[18px] text-on-surface-variant" />
+                    <span className="truncate">{s.label}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {addressQuery.trim().length >= 3 && !searchingAddress && suggestions.length === 0 && (
+            <p className="mt-2 text-body-md text-on-surface-variant">Aucune adresse trouvée.</p>
+          )}
         </div>
       )}
 

@@ -3,10 +3,11 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 
+from app.core.rate_limit import RateLimit
 from app.domains.stores import service
-from app.domains.stores.schemas import StoresNearbyResult
+from app.domains.stores.schemas import GeocodeResult, StoresNearbyResult
 
 router = APIRouter(prefix="/stores", tags=["stores"])
 
@@ -21,3 +22,17 @@ async def nearby_stores(
     """Supermarkets near the given coordinates, nearest first."""
     items = await service.nearby(lat, lon, radius_km, limit)
     return StoresNearbyResult(items=items)
+
+
+@router.get(
+    "/geocode",
+    response_model=GeocodeResult,
+    dependencies=[Depends(RateLimit("geocode", times=20, window=60))],
+)
+async def geocode_address(
+    q: Annotated[str, Query(min_length=3, max_length=200)],
+) -> GeocodeResult:
+    """Resolve a typed place to coordinates — the fallback for users who
+    decline the geolocation prompt (GDPR: consent must have a real alternative)."""
+    items = await service.geocode(q)
+    return GeocodeResult(items=items)

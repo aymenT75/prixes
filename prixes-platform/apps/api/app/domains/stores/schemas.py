@@ -18,3 +18,16 @@ class StoreOut(BaseModel):
 
 class StoresNearbyResult(BaseModel):
     items: list[StoreOut]
+
+
+class GeocodeHit(BaseModel):
+    """One address match — lets a user who refuses geolocation type a place
+    instead (GDPR: geolocation must not be the only way to use the feature)."""
+
+    label: str = Field(description="Human-readable place name to show in a picker")
+    lat: float
+    lon: float
+
+
+class GeocodeResult(BaseModel):
+    items: list[GeocodeHit]
