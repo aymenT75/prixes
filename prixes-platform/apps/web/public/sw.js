@@ -2,7 +2,10 @@
 // IMPORTANT: navigations + build assets are network-first so a new deploy is
 // never shadowed by a stale cached shell (cache-first there breaks the app
 // after every rebuild — old HTML points at chunks that no longer exist).
-const CACHE = "prixes-v2";
+// Bump this on any release you need to force past a stale cache: the byte change
+// makes the browser install the new SW, whose activate handler deletes every
+// cache that isn't the current name — purging the old shell for all devices.
+const CACHE = "prixes-v3";
 const SHELL = ["/manifest.json"];
 
 self.addEventListener("install", (e) => {
