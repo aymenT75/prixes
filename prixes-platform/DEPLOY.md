@@ -43,6 +43,39 @@ Compte de démo créé par le seed : `demo@prixes.app` / `demo1234`.
 - `https://VOTRE-DOMAINE/health` → `{"status":"ok"}`
 - `https://VOTRE-DOMAINE/` → l'app
 
+## 5. Sauvegardes automatiques (à faire une fois, après le premier déploiement)
+Le serveur de prod étant limité en ressources, les images sont construites en
+local puis envoyées (`docker save` + `scp` + `docker load`), pas buildées sur
+le serveur — voir `scripts/deploy.sh`. Ce script sauvegarde toujours la DB
+avant de déployer. Pour avoir aussi une sauvegarde quotidienne indépendante
+des déploiements :
+```bash
+crontab -e
+# ajouter :
+0 3 * * * cd /opt/prixes-platform && ./scripts/backup-db.sh >> backups/cron.log 2>&1
+```
+
+---
+
+## Mises à jour (déploiement courant)
+Une fois la stack initiale en place, les mises à jour se font en local puis
+via `scripts/deploy.sh` sur le serveur (sauvegarde la DB + garde l'image
+sortante en `:previous` avant de charger la nouvelle) :
+```bash
+# En local : construire + sauvegarder les images
+docker buildx build --platform linux/amd64 -t prixes-platform-web:latest --load apps/web
+docker buildx build --platform linux/amd64 -t prixes-platform-api:latest --load apps/api
+docker save prixes-platform-web:latest | gzip > web.tar.gz
+docker save prixes-platform-api:latest | gzip > api.tar.gz
+scp web.tar.gz api.tar.gz root@SERVEUR:/opt/prixes-platform/
+
+# Sur le serveur :
+cd /opt/prixes-platform && ./scripts/deploy.sh
+```
+En cas de problème après déploiement : `./scripts/rollback-app.sh` (voir
+[docs/ROLLBACK.md](docs/ROLLBACK.md) pour la procédure complète, y compris la
+restauration de la base de données).
+
 ---
 
 ## Options
@@ -58,6 +91,8 @@ Compte de démo créé par le seed : `demo@prixes.app` / `demo1234`.
 - Rate-limiting (login, création de deals), CORS verrouillé sur le domaine.
 - En-têtes de sécurité (HSTS, X-Content-Type-Options, X-Frame-Options) via Caddy.
 - Pages d'erreur / 404 / chargement personnalisées (pas d'écran blanc).
+- Sauvegarde DB avant chaque déploiement + quotidienne (cron), rollback
+  applicatif en un pas — voir [docs/ROLLBACK.md](docs/ROLLBACK.md).
 
 ## Test TLS en local (sans domaine public)
 ```bash
