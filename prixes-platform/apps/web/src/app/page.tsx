@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { DiamondGem } from "@/components/DiamondGem";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
@@ -41,26 +42,37 @@ export default function HomePage() {
     <div>
       <PageHeader title="Prixes" />
 
-      <section className="relative mb-6 overflow-hidden rounded-xl bg-primary-container p-6 text-on-primary-container shadow-card">
-        <div className="absolute -right-4 -bottom-6 opacity-10">
-          <Icon name="savings" className="text-[120px]" />
-        </div>
+      <section
+        className="relative mb-6 overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br
+                   from-white via-[#eef6ff] to-[#cfe6fb] p-6 shadow-float
+                   dark:border-white/10 dark:from-surface-container dark:via-surface-container dark:to-primary-container/40"
+      >
+        {/* 3D crystal, bleeding off the bottom-right like the mockup */}
+        <DiamondGem className="pointer-events-none absolute -bottom-6 -right-5 h-44 w-44 opacity-95 drop-shadow-[0_8px_24px_rgba(56,189,248,0.35)] sm:h-48 sm:w-48" />
+
         <div className="relative z-10">
-          <h2 className="text-headline-lg">Ne payez jamais le prix fort 💙</h2>
-          <p className="mt-1 max-w-sm text-body-md opacity-90">
-            Prixes compare le même produit entre les magasins près de chez vous, et vous montre
-            en un instant où il coûte le moins cher.
+          <h2 className="max-w-[15ch] text-headline-lg font-bold tracking-tight text-on-surface">
+            Ne payez jamais le prix fort&nbsp;💙
+          </h2>
+          <p className="mt-2 max-w-[28ch] text-body-md text-on-surface-variant">
+            Comparez le même produit dans les magasins près de chez vous, et voyez le prix le plus
+            bas en un instant.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-label-sm font-medium">
-              <Icon name="search" className="text-[16px]" /> Comparateur de prix
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-label-sm font-medium">
-              <Icon name="location_on" className="text-[16px]" /> Magasins proches
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1.5 text-label-sm font-medium">
-              <Icon name="notifications_active" className="text-[16px]" /> Alertes de baisse
-            </span>
+            {[
+              { icon: "search", label: "Comparateur de prix" },
+              { icon: "location_on", label: "Magasins proches" },
+              { icon: "notifications_active", label: "Alertes de baisse" },
+            ].map((c) => (
+              <span
+                key={c.label}
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/70
+                           px-3 py-1.5 text-label-sm font-medium text-on-surface shadow-sm backdrop-blur
+                           dark:border-white/10 dark:bg-white/10"
+              >
+                <Icon name={c.icon} className="text-[16px] text-primary" /> {c.label}
+              </span>
+            ))}
           </div>
         </div>
       </section>
