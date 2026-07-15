@@ -72,6 +72,13 @@ function apply(state: { fontScale: FontScale; highContrast: boolean; dark: boole
   // `zoom` scales the entire UI proportionally (text + layout + fixed nav) — the most
   // reliable way to enlarge a px-based design for users who need bigger everything.
   (root.style as CSSStyleDeclaration & { zoom?: string }).zoom = SCALE_ZOOM[state.fontScale];
+  // Also expose the factor as a CSS variable: `zoom` scales an element's rendered
+  // size AFTER any vh-based height is computed, so a sheet capped at e.g. 90vh can
+  // still render taller than the real viewport once zoomed — pushing its header
+  // (and close button) off-screen with no way to scroll back to it. Bottom-sheet
+  // dialogs divide their max-height by this variable to counteract that and always
+  // stay within the true viewport, at any text size.
+  root.style.setProperty("--zoom-scale", SCALE_ZOOM[state.fontScale]);
   root.classList.toggle("contrast", state.highContrast);
   root.classList.toggle("dark", state.dark);
 }

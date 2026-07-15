@@ -66,7 +66,11 @@ export function AccessibilityFab() {
           onClick={() => setOpen(false)}
         >
           <div
-            className="max-h-[90vh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl bg-surface-container-lowest p-6 pb-10 shadow-float sm:rounded-3xl"
+            // `zoom` (see useA11y) enlarges this sheet AFTER its 90vh cap is computed,
+            // so at max text size it can render taller than the real viewport and push
+            // the close button off-screen with no way back. Dividing by --zoom-scale
+            // keeps the *rendered* height within the true viewport at any text size.
+            className="max-h-[calc(90vh/var(--zoom-scale,1))] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl bg-surface-container-lowest p-6 pb-10 shadow-float sm:rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Sticky so the close button stays reachable even when the sheet

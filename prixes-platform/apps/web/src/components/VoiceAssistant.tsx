@@ -166,7 +166,10 @@ export function VoiceAssistant() {
           onClick={close}
         >
           <div
-            className="max-h-[90vh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl bg-surface-container-lowest p-6 pb-10 shadow-float"
+            // See AccessibilityFab: `zoom` enlarges this sheet after its 90vh cap is
+            // computed, so at max text size it can exceed the real viewport and push
+            // the close button off-screen. Dividing by --zoom-scale prevents that.
+            className="max-h-[calc(90vh/var(--zoom-scale,1))] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl bg-surface-container-lowest p-6 pb-10 shadow-float"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="sticky top-0 z-10 -mx-6 -mt-6 mb-4 flex items-center justify-between bg-surface-container-lowest px-6 pb-3 pt-6">
