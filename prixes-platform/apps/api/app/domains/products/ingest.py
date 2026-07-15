@@ -61,9 +61,26 @@ STORE_CANON = {
 
 _BATCH = 200  # commit every N products
 
+# Plausibility bounds for an automatically-ingested grocery price. A supermarket
+# item realistically costs between a few cents and a few hundred euros; anything
+# outside this is almost certainly a data error (decimal/comma slip, wrong
+# currency, a lot priced as a unit) and must never reach the comparison as if it
+# were real. Data-quality risk #1 in the SIT audit.
+_MIN_PRICE = Decimal("0.01")
+_MAX_PRICE = Decimal("1000")
+
 
 def _eur(value: float) -> Decimal:
     return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def is_plausible_price(value: float) -> bool:
+    """True if `value` is a believable grocery price (see bounds above)."""
+    try:
+        price = _eur(value)
+    except (ArithmeticError, ValueError, TypeError):
+        return False
+    return _MIN_PRICE <= price <= _MAX_PRICE
 
 
 def _match_retailer(name: str | None) -> str | None:
@@ -185,7 +202,7 @@ async def _crawl(client: httpx.AsyncClient, per_retailer: int, prices_per_loc: i
                 continue
             for it in items:
                 code, price = it.get("product_code"), it.get("price")
-                if not (code and price):
+                if not (code and price) or not is_plausible_price(float(price)):
                     continue
                 out.append({
                     "barcode": str(code), "store": retailer, "price": float(price),
@@ -208,7 +225,7 @@ async def _crawl(client: httpx.AsyncClient, per_retailer: int, prices_per_loc: i
             if loc.get("osm_address_country") != "France":
                 continue
             code, price, store = it.get("product_code"), it.get("price"), _canon_store(loc)
-            if not (code and price and store):
+            if not (code and price and store) or not is_plausible_price(float(price)):
                 continue
             out.append({
                 "barcode": str(code), "store": store, "price": float(price),

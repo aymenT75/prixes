@@ -52,7 +52,9 @@ class ProductSearchResult(BaseModel):
 
 class PriceContribution(BaseModel):
     store: str = Field(min_length=1, max_length=120)
-    price: Decimal = Field(gt=0)
+    # Upper bound catches the typo case (e.g. 850 for €8.50) — a grocery item
+    # over €1000 is a data-entry slip, not a real price.
+    price: Decimal = Field(gt=0, le=1000)
     currency: str = "EUR"
     location: str | None = None
 

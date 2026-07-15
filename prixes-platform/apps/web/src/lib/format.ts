@@ -12,6 +12,40 @@ export function timeAgo(iso: string): string {
   return `il y a ${d} j`;
 }
 
+export type Confidence = "high" | "medium" | "low";
+
+// How much to trust a displayed price, from its source + age (SIT audit: users
+// must be able to tell an official reading from a community one, and a fresh
+// price from a stale one). Sources: "op"/"off" = read from Open Prices /
+// OpenFoodFacts, "user" = community contribution.
+export function priceConfidence(
+  source: string,
+  createdAt: string,
+): { confidence: Confidence; sourceLabel: string; note: string } {
+  const ageDays = (Date.now() - new Date(createdAt).getTime()) / 86_400_000;
+  const community = source === "user";
+  const sourceLabel = community ? "Communauté" : "Prix relevé";
+
+  let confidence: Confidence;
+  if (ageDays > 90) confidence = "low"; // stale, whatever the source
+  else if (!community && ageDays <= 30) confidence = "high";
+  else confidence = "medium";
+
+  const note =
+    confidence === "high"
+      ? "Fiabilité élevée"
+      : confidence === "medium"
+        ? "Fiabilité moyenne"
+        : "Prix ancien — à vérifier";
+  return { confidence, sourceLabel, note };
+}
+
+export const confidenceColor: Record<Confidence, string> = {
+  high: "#0f6e56", // teal-ish green
+  medium: "#854f0b", // amber
+  low: "#a32d2d", // red
+};
+
 // Nutri/Eco score colour (a..e), ported from the original badge logic.
 export const scoreColor: Record<string, string> = {
   a: "#038141",

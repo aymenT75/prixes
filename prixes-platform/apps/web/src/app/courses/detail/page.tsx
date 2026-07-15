@@ -12,7 +12,7 @@ import { PriceChart } from "@/components/PriceChart";
 import { ProductCard } from "@/components/ProductCard";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
-import { eur, nutriHint, scoreColor } from "@/lib/format";
+import { confidenceColor, eur, nutriHint, priceConfidence, scoreColor, timeAgo } from "@/lib/format";
 import { getCurrentPosition } from "@/lib/geo";
 import { shareOrCopy } from "@/lib/share";
 import { useApp } from "@/lib/store";
@@ -584,9 +584,21 @@ function ProductDetail() {
                         </span>
                       )}
                     </p>
-                    <p className="text-micro uppercase text-on-surface-variant">
-                      {p.source === "community" ? "Communauté" : "Prix relevé"}
-                    </p>
+                    {(() => {
+                      const c = priceConfidence(p.source, p.created_at);
+                      return (
+                        <p className="flex items-center gap-1 text-micro text-on-surface-variant">
+                          <span
+                            className="inline-block h-2 w-2 flex-shrink-0 rounded-full"
+                            style={{ backgroundColor: confidenceColor[c.confidence] }}
+                            aria-hidden
+                          />
+                          <span>
+                            {c.sourceLabel} · {c.note} · {timeAgo(p.created_at)}
+                          </span>
+                        </p>
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="text-right">
