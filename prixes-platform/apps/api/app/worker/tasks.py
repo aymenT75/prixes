@@ -14,6 +14,7 @@ from app.core.db import SessionLocal
 from app.core.redis import redis_client
 from app.domains.alerts import service as alert_service
 from app.domains.analytics.models import AnalyticsEvent
+from app.domains.deals import service as deals_service
 from app.domains.deals.autogen import refresh_auto_deals
 from app.domains.notifications import service as notify_service
 from app.domains.products.ingest import refresh_prices as _refresh_prices
@@ -59,6 +60,15 @@ async def refresh_deals(_: dict[Any, Any]) -> dict[str, int]:
         await db.commit()
     await redis_client.set(_DEALS_LAST_RESET_KEY, now.isoformat())
     return result
+
+
+async def expire_deals(_: dict[Any, Any]) -> dict[str, int]:
+    """Enforce any deal's `expires_at` — community-submitted or auto-generated
+    (see deals/service.py::expire_stale_deals for why this was needed)."""
+    async with SessionLocal() as db:
+        count = await deals_service.expire_stale_deals(db)
+        await db.commit()
+    return {"expired": count}
 
 
 async def prune_analytics(_: dict[Any, Any]) -> dict[str, int]:

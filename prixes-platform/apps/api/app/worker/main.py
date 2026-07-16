@@ -12,6 +12,7 @@ from arq.connections import RedisSettings
 from app.core.config import settings
 from app.worker.tasks import (
     evaluate_price_alerts,
+    expire_deals,
     prune_analytics,
     refresh_deals,
     refresh_prices,
@@ -29,6 +30,7 @@ class WorkerSettings:
         refresh_prices,
         prune_analytics,
         refresh_deals,
+        expire_deals,
     ]
     redis_settings = RedisSettings.from_dsn(str(settings.redis_url))
     # The price crawl + OFF enrichment can take a couple of minutes; give jobs
@@ -50,4 +52,7 @@ class WorkerSettings:
         # populates the Deals tab immediately instead of waiting for the next
         # scheduled check.
         cron(refresh_deals, hour={3, 15}, minute=30, run_at_startup=True),  # type: ignore[arg-type]
+        # General deal-lifecycle enforcement — any deal past its own expires_at
+        # (community-submitted or auto-generated), checked hourly.
+        cron(expire_deals, minute=5, run_at_startup=True),  # type: ignore[arg-type]
     ]

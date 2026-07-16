@@ -5,7 +5,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -98,3 +98,30 @@ async def get_feed(
     deals.sort(key=lambda d: order[str(d.id)])
     next_cursor = cursor + limit if len(ids) == limit else None
     return deals, next_cursor
+
+
+async def expire_stale_deals(db: AsyncSession) -> int:
+    """Move any deal whose `expires_at` has passed from active to expired.
+
+    `expires_at` was accepted at creation and returned by the API, but nothing
+    ever enforced it — a deal stayed "active" forever unless a moderator
+    removed it by hand. Applies to every deal with a set expiry, community-
+    submitted or auto-generated, not just the auto-generated ones (see
+    autogen.py, which resets its own deals on a fixed 48h cadence regardless
+    of this — this is the general-purpose safety net for everyone else's).
+    """
+    now = datetime.now(UTC)
+    ids = (
+        await db.execute(
+            select(Deal.id).where(
+                Deal.status == "active",
+                Deal.expires_at.is_not(None),
+                Deal.expires_at < now,
+            )
+        )
+    ).scalars().all()
+    if ids:
+        await db.execute(update(Deal).where(Deal.id.in_(ids)).values(status="expired"))
+        await redis_client.zrem(FEED_HOT, *[str(i) for i in ids])
+        await redis_client.zrem(FEED_NEW, *[str(i) for i in ids])
+    return len(ids)
