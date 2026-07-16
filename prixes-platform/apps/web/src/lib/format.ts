@@ -88,6 +88,32 @@ export const nutriHint: Record<string, string> = {
   e: "faible qualité nutritionnelle",
 };
 
+// Same idea for Eco-Score (environmental impact, not nutrition) — same a..e
+// letters and the same `scoreColor` palette, different meaning.
+export const ecoHint: Record<string, string> = {
+  a: "faible impact environnemental",
+  b: "faible impact environnemental",
+  c: "impact environnemental moyen",
+  d: "impact environnemental élevé",
+  e: "impact environnemental élevé",
+};
+
+// NOVA classification (1..4) — degree of food processing. Colours ported from
+// the original ScoreBadge/NovaBadge logic.
+export const novaColor: Record<number, string> = {
+  1: "#00b894",
+  2: "#fdcb6e",
+  3: "#e17055",
+  4: "#d63031",
+};
+
+export const novaHint: Record<number, string> = {
+  1: "non transformé ou peu transformé",
+  2: "ingrédient culinaire transformé",
+  3: "aliment transformé",
+  4: "ultra-transformé",
+};
+
 // Shared "colour the whole bar by Nutri-Score" inline style (border + theme-aware
 // tint via color-mix so text contrast stays high). Returns undefined when unknown.
 export function nutriBarStyle(grade: string | null | undefined): import("react").CSSProperties | undefined {

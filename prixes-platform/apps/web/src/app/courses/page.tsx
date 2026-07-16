@@ -8,6 +8,7 @@ import { Suspense, useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
+import { ScoreLegend } from "@/components/ScoreLegend";
 import { api } from "@/lib/api";
 
 export default function CoursesPage() {
@@ -61,11 +62,16 @@ function CoursesInner() {
         </Link>
       </form>
 
-      {!searching && (
-        <h2 className="mb-3 flex items-center gap-2 text-headline-md text-on-surface">
-          <Icon name="trending_up" className="text-primary" /> Produits populaires
-        </h2>
-      )}
+      <div className="mb-3 flex items-center justify-between gap-2">
+        {!searching ? (
+          <h2 className="flex items-center gap-2 text-headline-md text-on-surface">
+            <Icon name="trending_up" className="text-primary" /> Produits populaires
+          </h2>
+        ) : (
+          <span />
+        )}
+        <ScoreLegend />
+      </div>
 
       {isFetching && <p className="py-8 text-center text-on-surface-variant">Chargement…</p>}
 

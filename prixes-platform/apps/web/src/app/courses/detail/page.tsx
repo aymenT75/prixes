@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PriceChart } from "@/components/PriceChart";
 import { ProductCard } from "@/components/ProductCard";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
+import { ScoreLegend } from "@/components/ScoreLegend";
 import { Thermometer } from "@/components/Thermometer";
 import { api } from "@/lib/api";
 import { confidenceColor, eur, nutriHint, priceConfidence, scoreColor, timeAgo } from "@/lib/format";
@@ -295,10 +296,11 @@ function ProductDetail() {
         </div>
         <h2 className="text-center text-headline-lg text-on-surface">{data.name}</h2>
         {data.brand && <p className="text-body-md text-on-surface-variant">{data.brand}</p>}
-        <div className="mt-2 flex flex-wrap justify-center gap-1.5">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
           <ScoreBadge kind="Nutri" grade={data.nutriscore} />
           <ScoreBadge kind="Eco" grade={data.ecoscore} />
           <NovaBadge group={data.nova_group} />
+          {(data.nutriscore || data.ecoscore || data.nova_group) && <ScoreLegend compact />}
         </div>
       </section>
 

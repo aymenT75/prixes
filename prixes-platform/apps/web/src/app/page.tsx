@@ -9,6 +9,7 @@ import { DiamondGem } from "@/components/DiamondGem";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
+import { ScoreLegend } from "@/components/ScoreLegend";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/store";
 
@@ -130,9 +131,12 @@ export default function HomePage() {
           <h2 className="flex items-center gap-2 text-headline-md text-on-surface">
             <Icon name="trending_up" className="text-primary" /> Produits populaires
           </h2>
-          <Link href="/courses" className="text-label-lg text-primary">
-            Tout voir
-          </Link>
+          <div className="flex items-center gap-2">
+            <ScoreLegend compact />
+            <Link href="/courses" className="text-label-lg text-primary">
+              Tout voir
+            </Link>
+          </div>
         </div>
         <div className="space-y-3">
           {top.length === 0 && (
