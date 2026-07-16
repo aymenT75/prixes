@@ -10,6 +10,11 @@ export interface TourStep {
   target: string | null;
   title: string;
   body: string;
+  /** When true, this step can't be dismissed early (no "X", no "Passer", no
+   * Escape) — only "Suivant" moves past it. Reserve for information a new
+   * user genuinely needs (e.g. what the product colours mean), not routine
+   * feature tips. */
+  mandatory?: boolean;
 }
 
 export const TOUR_STEPS: TourStep[] = [
@@ -24,6 +29,13 @@ export const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="nav-courses"]',
     title: "Cherchez & comparez",
     body: "Trouvez n'importe quel produit et comparez son prix entre plusieurs magasins.",
+  },
+  {
+    id: "colors",
+    target: '[data-tour="products-list"]',
+    title: "Pourquoi ces couleurs ? \u{1F3A8}",
+    body: "Chaque produit est coloré selon son Nutri-Score : vert = bonne qualité nutritionnelle, rouge = à limiter. Les badges Eco-Score et NOVA suivent la même logique. Appuyez sur l'icône ℹ️ « Légende des couleurs » à tout moment pour le détail complet.",
+    mandatory: true,
   },
   {
     id: "scanner",

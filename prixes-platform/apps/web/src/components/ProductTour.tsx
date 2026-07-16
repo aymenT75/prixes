@@ -24,7 +24,11 @@ export function ProductTour() {
   const { active, stepIndex, start, next, prev, end } = useTour();
   const [steps, setSteps] = useState(TOUR_STEPS);
   const [rect, setRect] = useState<DOMRect | null>(null);
+  // Escape normally exits the whole tour (useDialog's onClose) — a mandatory
+  // step must not be dismissible that way either, so this becomes a no-op
+  // while one is showing.
   const dialogRef = useDialog<HTMLDivElement>(active, () => {
+    if (steps[stepIndex]?.mandatory) return;
     track("tour_skip", pathname);
     end();
   });
@@ -180,25 +184,31 @@ export function ProductTour() {
             <span className="text-micro font-semibold uppercase tracking-wider text-primary">
               {stepIndex + 1} / {steps.length}
             </span>
-            <button
-              onClick={handleSkip}
-              className="rounded-full p-1 text-on-surface-variant hover:bg-surface-container-high"
-              aria-label="Passer la visite guidée"
-            >
-              <Icon name="close" />
-            </button>
+            {!step.mandatory && (
+              <button
+                onClick={handleSkip}
+                className="rounded-full p-1 text-on-surface-variant hover:bg-surface-container-high"
+                aria-label="Passer la visite guidée"
+              >
+                <Icon name="close" />
+              </button>
+            )}
           </div>
 
           <h2 className="mb-1 text-headline-md text-on-surface">{step.title}</h2>
           <p className="mb-4 text-body-md text-on-surface-variant">{step.body}</p>
 
           <div className="flex items-center justify-between gap-2">
-            <button
-              onClick={handleSkip}
-              className="text-label-md text-on-surface-variant underline-offset-2 hover:underline"
-            >
-              Passer
-            </button>
+            {!step.mandatory ? (
+              <button
+                onClick={handleSkip}
+                className="text-label-md text-on-surface-variant underline-offset-2 hover:underline"
+              >
+                Passer
+              </button>
+            ) : (
+              <span />
+            )}
             <div className="flex gap-2">
               {stepIndex > 0 && (
                 <button onClick={prev} className="btn-outline px-4 py-2 text-label-md">

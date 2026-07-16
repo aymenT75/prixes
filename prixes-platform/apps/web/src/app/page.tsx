@@ -126,7 +126,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section>
+      <section data-tour="products-list">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-headline-md text-on-surface">
             <Icon name="trending_up" className="text-primary" /> Produits populaires
