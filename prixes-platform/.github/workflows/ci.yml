@@ -57,6 +57,62 @@ jobs:
         env:
           NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
 
+  # Browser-level "golden path" checks (SIT audit module 6) — a real API +
+  # Postgres + Redis behind a real `next dev` server, driven by Playwright.
+  # Unauthenticated flows only: login is Firebase-only client-side and there's
+  # no Firebase test project wired into CI (see apps/web/e2e/README.md).
+  e2e:
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: prixes
+          POSTGRES_PASSWORD: prixes
+          POSTGRES_DB: prixes_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U prixes" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      DATABASE_URL: postgresql+asyncpg://prixes:prixes@localhost:5432/prixes_test
+      REDIS_URL: redis://localhost:6379/0
+      SECRET_KEY: test-secret
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv python install 3.12
+        working-directory: apps/api
+      - run: uv sync --all-extras
+        working-directory: apps/api
+      - run: uv run alembic upgrade head
+        working-directory: apps/api
+      - run: uv run python scripts/seed.py
+        working-directory: apps/api
+      - name: Start API in the background
+        working-directory: apps/api
+        run: |
+          uv run uvicorn app.main:app --port 8000 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/health && exit 0
+            sleep 1
+          done
+          echo "API never became healthy" && exit 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+        working-directory: apps/web
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - run: npm run test:e2e
+        working-directory: apps/web
+
   # Verifies the native pipeline: static export → Capacitor sync → Android build.
   # iOS release builds require a macOS runner + signing secrets (see apps/web/MOBILE.md)
   # and are done from Xcode on the Mac, so they are not part of this CI.

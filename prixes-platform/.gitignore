@@ -13,6 +13,11 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 
+# Playwright
+/apps/web/test-results/
+/apps/web/playwright-report/
+/apps/web/blob-report/
+
 # Env & secrets
 .env
 .env.local
