@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
+import { Thermometer } from "@/components/Thermometer";
 import { api } from "@/lib/api";
 import { eur, timeAgo } from "@/lib/format";
 import { shareOrCopy } from "@/lib/share";
@@ -95,8 +96,8 @@ export function DealCard({ deal }: { deal: Deal }) {
             <Icon name="sell" className="text-[32px]" />
           </div>
         )}
-        <div className="absolute left-1.5 top-1.5 rounded bg-deal-accent px-1.5 py-0.5 text-micro text-on-deal-accent">
-          -{deal.discount_pct}%
+        <div className="absolute left-1.5 top-1.5">
+          <Thermometer discountPct={deal.discount_pct} compact />
         </div>
       </a>
 

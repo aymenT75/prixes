@@ -46,6 +46,29 @@ export const confidenceColor: Record<Confidence, string> = {
   low: "#a32d2d", // red
 };
 
+export type Temperature = "cold" | "warm" | "hot";
+
+// How interesting a discount actually is, from its percentage — the "deal
+// thermometer": froid (not worth it) → tiède → chaud (genuinely worth
+// grabbing). Used on deal cards and on a product's own cross-store price
+// spread, so it takes a plain discount % rather than a Deal, keeping both
+// call sites (DealCard, product detail) free of duplicated thresholds.
+export function dealTemperature(discountPct: number): {
+  temperature: Temperature;
+  label: string;
+  icon: string;
+} {
+  if (discountPct >= 30) return { temperature: "hot", label: "Chaud — bon plan", icon: "local_fire_department" };
+  if (discountPct >= 15) return { temperature: "warm", label: "Tiède — correct", icon: "device_thermostat" };
+  return { temperature: "cold", label: "Froid — peu intéressant", icon: "ac_unit" };
+}
+
+export const temperatureColor: Record<Temperature, string> = {
+  hot: "#dc2626", // red
+  warm: "#d97706", // amber
+  cold: "#2563eb", // blue
+};
+
 // Nutri/Eco score colour (a..e), ported from the original badge logic.
 export const scoreColor: Record<string, string> = {
   a: "#038141",

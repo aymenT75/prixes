@@ -10,7 +10,12 @@ from arq import cron
 from arq.connections import RedisSettings
 
 from app.core.config import settings
-from app.worker.tasks import evaluate_price_alerts, prune_analytics, refresh_prices
+from app.worker.tasks import (
+    evaluate_price_alerts,
+    prune_analytics,
+    refresh_deals,
+    refresh_prices,
+)
 
 
 async def healthcheck(_: dict[str, Any]) -> str:
@@ -18,7 +23,13 @@ async def healthcheck(_: dict[str, Any]) -> str:
 
 
 class WorkerSettings:
-    functions = [healthcheck, evaluate_price_alerts, refresh_prices, prune_analytics]
+    functions = [
+        healthcheck,
+        evaluate_price_alerts,
+        refresh_prices,
+        prune_analytics,
+        refresh_deals,
+    ]
     redis_settings = RedisSettings.from_dsn(str(settings.redis_url))
     # The price crawl + OFF enrichment can take a couple of minutes; give jobs
     # generous headroom (default is 300s).
@@ -33,4 +44,10 @@ class WorkerSettings:
         cron(evaluate_price_alerts, minute={0, 15, 30, 45}),  # type: ignore[arg-type]
         # GDPR data minimisation — prune old anonymous analytics events daily.
         cron(prune_analytics, hour=4, minute=10),  # type: ignore[arg-type]
+        # Auto-generated deals actually reset every ~48h (self-throttled inside
+        # the task) — checked twice a day so the reset lands close to on time.
+        # run_at_startup so a fresh deploy (like the one shipping this feature)
+        # populates the Deals tab immediately instead of waiting for the next
+        # scheduled check.
+        cron(refresh_deals, hour={3, 15}, minute=30, run_at_startup=True),  # type: ignore[arg-type]
     ]

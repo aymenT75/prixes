@@ -11,6 +11,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PriceChart } from "@/components/PriceChart";
 import { ProductCard } from "@/components/ProductCard";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
+import { Thermometer } from "@/components/Thermometer";
 import { api } from "@/lib/api";
 import { confidenceColor, eur, nutriHint, priceConfidence, scoreColor, timeAgo } from "@/lib/format";
 import { getCurrentPosition } from "@/lib/geo";
@@ -173,6 +174,18 @@ function ProductDetail() {
       (p) => a.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(a.toLowerCase()),
     ),
   );
+
+  // How much this product's price actually varies store to store — the
+  // "thermometer": a wide spread means shopping around is genuinely worth it
+  // (chaud), a narrow one means any store is fine (froid). Purely a spread
+  // over already-fetched prices, no extra request.
+  const priceSpreadPct = useMemo(() => {
+    if (!data || data.prices.length < 2) return null;
+    const values = data.prices.map((p) => p.price);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+    return max > 0 && max > min ? ((max - min) / max) * 100 : null;
+  }, [data]);
 
   // Cheapest same-category alternative that undercuts this product's best price.
   const cheaperAlt = useMemo(() => {
@@ -551,6 +564,11 @@ function ProductDetail() {
       {/* Store comparison — tapping a store opens the map of its nearest branch. */}
       <section className="mb-6">
         <h3 className="mb-1 text-headline-md text-on-surface">Comparatif magasins</h3>
+        {priceSpreadPct != null && (
+          <div className="card mb-3 p-3">
+            <Thermometer discountPct={priceSpreadPct} />
+          </div>
+        )}
         {data.prices.length > 0 && (
           <p className="mb-3 flex items-center gap-1 text-body-md text-on-surface-variant">
             <Icon name="map" className="text-[16px]" /> Touchez un magasin pour voir le plus proche sur la carte.
