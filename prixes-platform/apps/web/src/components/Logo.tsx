@@ -1,40 +1,28 @@
-// Prixes brand logo — the 4-way "expand" arrows (X) with a green price tag.
-// The arrows use `currentColor` so the mark adapts to light/dark; the tag keeps its
-// fixed brand green + yellow. Set the colour via the wrapper (see LogoLockup).
-const ARROW_POINTS = "152,0 78,-50 78,-29 -78,-29 -78,-50 -152,0 -78,50 -78,29 78,29 78,50";
+// Prixes brand mark — the cart + price-tag artwork supplied directly by the
+// user (public/logo-mark.png, cropped from public/logo-new.png), not a
+// redrawn approximation. The wordmark is already baked into the artwork, so
+// LogoLockup doesn't render a second "Prixes" text label next to it — only a
+// visually-hidden one when it stands in for the page's <h1>.
+import Image from "next/image";
 
 export function LogoMark({ className, decorative }: { className?: string; decorative?: boolean }) {
   return (
-    <svg
-      viewBox="0 0 512 512"
-      className={className}
-      {...(decorative
-        ? { "aria-hidden": true, focusable: false }
-        : { role: "img", "aria-label": "Prixes" })}
-    >
-      <polygon points={ARROW_POINTS} transform="translate(256 256) rotate(45)" fill="currentColor" />
-      <polygon points={ARROW_POINTS} transform="translate(256 256) rotate(-45)" fill="currentColor" />
-      <g transform="translate(150 150) rotate(-28) scale(1.12)">
-        <path
-          d="M-3 2 C -14 -20, 16 -20, 6 2"
-          stroke="currentColor"
-          strokeWidth="9"
-          fill="none"
-          strokeLinecap="round"
-        />
-        <path
-          d="M0 0 L30 20 Q40 27 40 40 L40 98 Q40 112 26 112 L-26 112 Q-40 112 -40 98 L-40 40 Q-40 27 -30 20 Z"
-          fill="#2bd44f"
-        />
-        <circle cx="0" cy="34" r="11" fill="#f5e11a" />
-      </g>
-    </svg>
+    <span className={`relative inline-block overflow-hidden rounded-xl ${className ?? ""}`}>
+      <Image
+        src="/logo-mark.png"
+        alt={decorative ? "" : "Prixes"}
+        fill
+        sizes="64px"
+        className="object-cover"
+        priority
+      />
+    </span>
   );
 }
 
-/** The mark + "Prixes" wordmark, brand-navy in light and light-blue in dark.
- * On the home screen pass `heading` so the wordmark is the page's <h1> (the mark is
- * decorative there, so it isn't announced twice by screen readers). */
+/** The mark alone. Pass `heading` on the home screen so it's wrapped in the
+ * page's <h1> (a visually-hidden "Prixes" label provides the accessible name,
+ * since the mark itself is decorative there — never announced twice). */
 export function LogoLockup({
   className = "",
   heading = false,
@@ -42,11 +30,14 @@ export function LogoLockup({
   className?: string;
   heading?: boolean;
 }) {
-  const Word = heading ? "h1" : "span";
-  return (
-    <span className={`flex items-center gap-2 text-[#15245c] dark:text-[#89ceff] ${className}`}>
-      <LogoMark className="h-8 w-8" decorative={heading} />
-      <Word className="text-headline-xl-mobile font-bold tracking-tight">Prixes</Word>
-    </span>
-  );
+  const mark = <LogoMark className="h-11 w-11" decorative={heading} />;
+  if (heading) {
+    return (
+      <h1 className={`flex items-center ${className}`}>
+        {mark}
+        <span className="sr-only">Prixes</span>
+      </h1>
+    );
+  }
+  return <span className={`flex items-center ${className}`}>{mark}</span>;
 }

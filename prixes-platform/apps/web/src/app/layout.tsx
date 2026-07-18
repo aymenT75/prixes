@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Hanken_Grotesk, JetBrains_Mono, Sora } from "next/font/google";
 
 import "./globals.css";
 import { A11yLayer } from "@/components/A11yLayer";
@@ -10,10 +10,22 @@ import { PostDealModal } from "@/components/PostDealModal";
 import { ProductTour } from "@/components/ProductTour";
 import { Providers } from "@/components/Providers";
 
-const jakarta = Plus_Jakarta_Sans({
+// "Vibrant Glass" design system typography: Hanken Grotesk for body text,
+// Sora for headlines, JetBrains Mono for small technical/data labels.
+const hanken = Hanken_Grotesk({
   subsets: ["latin"],
   weight: ["400", "500", "700", "800"],
-  variable: "--font-jakarta",
+  variable: "--font-hanken",
+});
+const sora = Sora({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  variable: "--font-sora",
+});
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-jetbrains-mono",
 });
 
 export const metadata: Metadata = {
@@ -25,7 +37,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#006591",
+  themeColor: "#0284C7",
   width: "device-width",
   initialScale: 1,
   // Allow pinch-zoom up to 5x — required for low-vision accessibility (WCAG 1.4.4).
@@ -36,7 +48,11 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={jakarta.variable} suppressHydrationWarning>
+    <html
+      lang="fr"
+      className={`${hanken.variable} ${sora.variable} ${jetbrainsMono.variable}`}
+      suppressHydrationWarning
+    >
       <body className="min-h-screen bg-background text-on-surface antialiased">
         <Providers>
           <main

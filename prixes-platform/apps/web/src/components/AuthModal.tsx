@@ -134,7 +134,7 @@ export function AuthModal() {
       >
         <div className="mb-5 flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <LogoMark className="h-10 w-10 text-[#15245c] dark:text-[#89ceff]" />
+            <LogoMark className="h-10 w-10" decorative />
             <h2 className="text-headline-md text-on-surface">
               {mode === "login" ? "Bon retour 👋" : "Créer un compte"}
             </h2>

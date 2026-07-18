@@ -81,7 +81,9 @@ export default {
         md: "16px",
       },
       fontFamily: {
-        sans: ["var(--font-jakarta)", "Plus Jakarta Sans", "system-ui", "sans-serif"],
+        sans: ["var(--font-hanken)", "Hanken Grotesk", "system-ui", "sans-serif"],
+        display: ["var(--font-sora)", "Sora", "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", "JetBrains Mono", "monospace"],
       },
       fontSize: {
         "headline-xl": ["30px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "800" }],

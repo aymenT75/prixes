@@ -5,7 +5,7 @@
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf8ff",
-  "theme_color": "#006591",
+  "theme_color": "#0284C7",
   "lang": "fr",
   "orientation": "portrait-primary",
   "categories": ["shopping", "finance", "utilities"],
