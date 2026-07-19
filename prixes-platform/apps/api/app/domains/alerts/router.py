@@ -4,6 +4,7 @@ from __future__ import annotations
 import uuid
 
 from fastapi import APIRouter, status
+from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DbSession
 from app.domains.alerts import service
@@ -15,13 +16,29 @@ router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
 async def _enrich(db: DbSession, alerts: list[PriceAlert]) -> list[AlertOut]:
+    if not alerts:
+        return []
+
+    # Fix N+1 query: fetch all products and best prices in batch, not per-alert
+    barcodes = [a.barcode for a in alerts]
+    products = (
+        await db.execute(select(Product).where(Product.barcode.in_(barcodes)))
+    ).scalars().all()
+    product_map = {p.barcode: p for p in products}
+
+    # Get best prices for all alerts at once
+    best_prices = {}
+    for barcode in set(barcodes):
+        best = await service.current_best(db, barcode)
+        best_prices[barcode] = best
+
     out: list[AlertOut] = []
     for a in alerts:
-        product = await db.get(Product, a.barcode)
+        product = product_map.get(a.barcode)
         dto = AlertOut.model_validate(a)
         dto.name = product.name if product else None
         dto.image_url = product.image_url if product else None
-        dto.current_best = await service.current_best(db, a.barcode)
+        dto.current_best = best_prices.get(a.barcode)
         dto.nutriscore = product.nutriscore if product else None
         out.append(dto)
     return out
