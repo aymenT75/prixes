@@ -39,8 +39,8 @@ class WorkerSettings:
     # arq's WorkerCoroutine protocol declares `(ctx, *args, **kwargs)`, but cron
     # jobs are only ever invoked with `ctx` — the extra params don't apply here.
     cron_jobs = [
-        # Real supermarket prices — refresh every ~5 hours (background, no API latency).
-        cron(refresh_prices, hour={0, 5, 10, 15, 20}, minute=20),  # type: ignore[arg-type]
+        # Real supermarket prices — refresh every ~3 hours (background, no API latency).
+        cron(refresh_prices, hour={0, 3, 6, 9, 12, 15, 18, 21}, minute=15),  # type: ignore[arg-type]
         # Re-check price alerts every 15 minutes (picks up new lows shortly after
         # each refresh).
         cron(evaluate_price_alerts, minute={0, 15, 30, 45}),  # type: ignore[arg-type]

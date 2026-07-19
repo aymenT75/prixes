@@ -42,9 +42,14 @@ async def evaluate_price_alerts(_: dict[Any, Any]) -> dict[str, int]:
 
 
 async def refresh_prices(_: dict[Any, Any]) -> dict[str, int]:
-    """Scheduled real-price refresh (Open Prices). Runs in the worker so the
-    public API never sees the crawl latency (see products/ingest.py)."""
-    return await _refresh_prices()
+    """Scheduled real-price refresh (Open Prices). Runs every 3h so products stay
+    fresh without API latency. Fetches recent prices + light enrichment (see ingest.py)."""
+    return await _refresh_prices(
+        per_retailer=8,  # More stores per retailer
+        prices_per_loc=50,  # More prices per store
+        pages=8,  # Deeper recent-price pagination
+        enrich_cap=20,  # Light OFF enrichment (focus on freshness, not completeness)
+    )
 
 
 async def refresh_deals(_: dict[Any, Any]) -> dict[str, int]:
