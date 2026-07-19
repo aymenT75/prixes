@@ -1,15 +1,16 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
+import { ApiError } from "@/components/ApiErrorBoundary";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { ScoreLegend } from "@/components/ScoreLegend";
 import { api } from "@/lib/api";
+import { useApiQuery } from "@/lib/useApiQuery";
 
 export default function CoursesPage() {
   return (
@@ -34,7 +35,7 @@ function CoursesInner() {
   }, [params]);
 
   const searching = query.length >= 2;
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, error, refetch } = useApiQuery({
     queryKey: ["products", searching ? query : "browse"],
     queryFn: () => (searching ? api.searchProducts(query) : api.browseProducts()),
   });
@@ -73,21 +74,25 @@ function CoursesInner() {
         <ScoreLegend />
       </div>
 
-      {isFetching && <p className="py-8 text-center text-on-surface-variant">Chargement…</p>}
+      {error && <ApiError error={error} onRetry={() => refetch()} />}
 
-      <div className="space-y-3">
-        {data?.items.map((p) => (
-          <ProductCard key={p.barcode} product={p} />
-        ))}
-        {data?.items.length === 0 && !isFetching && (
-          <div className="card flex flex-col items-center gap-2 p-10 text-center text-on-surface-variant">
-            <Icon name="grocery" className="text-[36px] text-outline-variant" />
-            <p className="text-body-md">
-              {searching ? "Aucun produit trouvé." : "Catalogue vide — lancez le seed des données."}
-            </p>
-          </div>
-        )}
-      </div>
+      {!error && isFetching && <p className="py-8 text-center text-on-surface-variant">Chargement…</p>}
+
+      {!error && (
+        <div className="space-y-3">
+          {data?.items.map((p) => (
+            <ProductCard key={p.barcode} product={p} />
+          ))}
+          {data?.items.length === 0 && !isFetching && (
+            <div className="card flex flex-col items-center gap-2 p-10 text-center text-on-surface-variant">
+              <Icon name="grocery" className="text-[36px] text-outline-variant" />
+              <p className="text-body-md">
+                {searching ? "Aucun produit trouvé." : "Catalogue vide — lancez le seed des données."}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
