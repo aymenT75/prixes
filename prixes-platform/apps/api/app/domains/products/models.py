@@ -52,4 +52,4 @@ class PricePoint(Base):
         ForeignKey("users.id"), nullable=True
     )
     location: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
