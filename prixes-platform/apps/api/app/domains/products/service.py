@@ -1,6 +1,7 @@
 """Product service: cache-aside lookup (Postgres + Redis), search, contributions."""
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
@@ -12,6 +13,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.products import off
 from app.domains.products.models import PricePoint, Product
 from app.domains.products.schemas import PriceContribution
+
+logger = logging.getLogger(__name__)
 
 # Products refresh weekly; prices hourly (ARCHITECTURE.md §8).
 PRODUCT_TTL = timedelta(days=7)
@@ -131,7 +134,14 @@ async def search_products(db: AsyncSession, query: str, page: int) -> list[Produ
     # Fallback: OpenFoodFacts (best-effort — never propagate upstream failures).
     try:
         results = await off.search_off(term, page=page)
-    except Exception:  # noqa: BLE001
+    except TimeoutError:
+        logger.warning(f"OpenFoodFacts search timeout for query: {term}")
+        return []
+    except (ConnectionError, OSError) as e:
+        logger.warning(f"OpenFoodFacts connection error: {e}")
+        return []
+    except Exception as e:
+        logger.error(f"Unexpected error searching OpenFoodFacts: {e}", exc_info=True)
         return []
 
     products: list[Product] = []

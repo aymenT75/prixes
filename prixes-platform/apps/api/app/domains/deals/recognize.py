@@ -7,8 +7,12 @@ otherwise Anthropic (Claude vision) — both via plain HTTPS (no SDK). Returns
 """
 from __future__ import annotations
 
+import logging
+
 from app.core.config import settings
 from app.core.http import get_http_client
+
+logger = logging.getLogger(__name__)
 
 _OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 _ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
@@ -50,9 +54,17 @@ async def _recognize_openai(image_b64: str, media_type: str) -> tuple[str | None
             _OPENAI_URL, json=payload, headers=headers, timeout=20.0
         )
         if resp.status_code != 200:
+            logger.warning(f"OpenAI vision API returned {resp.status_code}")
             return None, None
         text = resp.json()["choices"][0]["message"]["content"]
-    except Exception:  # noqa: BLE001
+    except TimeoutError:
+        logger.warning("OpenAI vision API timeout (20s)")
+        return None, None
+    except (KeyError, ValueError, TypeError) as e:
+        logger.warning(f"OpenAI vision response parsing failed: {e}")
+        return None, None
+    except Exception as e:
+        logger.error(f"Unexpected error in OpenAI vision: {e}", exc_info=True)
         return None, None
     return _parse(text)
 
@@ -84,10 +96,18 @@ async def _recognize_anthropic(image_b64: str, media_type: str) -> tuple[str | N
             _ANTHROPIC_URL, json=payload, headers=headers, timeout=20.0
         )
         if resp.status_code != 200:
+            logger.warning(f"Anthropic vision API returned {resp.status_code}")
             return None, None
         blocks = resp.json().get("content", [])
         text = next((b.get("text", "") for b in blocks if b.get("type") == "text"), "")
-    except Exception:  # noqa: BLE001
+    except TimeoutError:
+        logger.warning("Anthropic vision API timeout (20s)")
+        return None, None
+    except (KeyError, ValueError, TypeError) as e:
+        logger.warning(f"Anthropic vision response parsing failed: {e}")
+        return None, None
+    except Exception as e:
+        logger.error(f"Unexpected error in Anthropic vision: {e}", exc_info=True)
         return None, None
     return _parse(text)
 

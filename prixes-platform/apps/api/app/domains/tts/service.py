@@ -10,10 +10,13 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import logging
 
 from app.core.config import settings
 from app.core.http import get_http_client
 from app.core.redis import redis_client
+
+logger = logging.getLogger(__name__)
 
 _OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech"
 
@@ -40,10 +43,14 @@ async def synthesize(text: str, voice: str | None = None) -> bytes | None:
     model = settings.openai_tts_model
 
     key = _cache_key(model, voice, text)
+    cached = None
     try:
         cached = await redis_client.get(key)
-    except Exception:  # noqa: BLE001 — cache is best-effort; synthesize anyway
-        cached = None
+    except (ConnectionError, TimeoutError) as e:
+        logger.debug(f"Redis cache miss for TTS: {e}")
+    except Exception as e:
+        logger.error(f"Unexpected Redis error in TTS cache: {e}")
+
     if cached is not None:
         # Redis is decode_responses=True (str); audio was stored latin-1-encoded.
         return str(cached).encode("latin-1")
@@ -55,9 +62,17 @@ async def synthesize(text: str, voice: str | None = None) -> bytes | None:
             _OPENAI_TTS_URL, json=payload, headers=headers, timeout=30.0
         )
         if resp.status_code != 200:
+            logger.warning(f"OpenAI TTS returned {resp.status_code}")
             return None
         audio = resp.content
-    except Exception:  # noqa: BLE001 — never propagate upstream failures
+    except TimeoutError:
+        logger.warning(f"OpenAI TTS timeout for text: {text[:50]}")
+        return None
+    except (ConnectionError, OSError) as e:
+        logger.warning(f"OpenAI TTS connection error: {e}")
+        return None
+    except Exception as e:
+        logger.error(f"Unexpected error in OpenAI TTS: {e}", exc_info=True)
         return None
 
     # Caching is best-effort — a Redis hiccup must never break TTS itself.
