@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { DiamondGem } from "@/components/DiamondGem";
 import { Icon } from "@/components/Icon";
+import { LogoMark } from "@/components/Logo";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { ScoreLegend } from "@/components/ScoreLegend";
@@ -17,10 +17,10 @@ import { useApp } from "@/lib/store";
 // and Deals are permanent tabs, so putting them here too is redundant.
 // These personal tools have no tab, so this is their quick access.
 const SHORTCUTS = [
-  { href: "/list", label: "Ma liste", icon: "list_alt", box: "bg-primary/10 text-primary" },
-  { href: "/alerts", label: "Alertes", icon: "notifications_active", box: "bg-secondary/10 text-secondary" },
-  { href: "/stores", label: "Magasins", icon: "store", box: "bg-tertiary/10 text-tertiary" },
-  { href: "/feedback", label: "Mon avis", icon: "reviews", box: "bg-primary/10 text-primary" },
+  { href: "/list", label: "Ma liste", icon: "list_alt", box: "bg-primary-fixed-dim/15 text-primary-fixed-dim" },
+  { href: "/alerts", label: "Alertes", icon: "notifications_active", box: "bg-secondary-fixed-dim/15 text-secondary-fixed-dim" },
+  { href: "/stores", label: "Magasins", icon: "store", box: "bg-primary-fixed-dim/15 text-primary-fixed-dim" },
+  { href: "/feedback", label: "Mon avis", icon: "reviews", box: "bg-secondary-fixed-dim/15 text-secondary-fixed-dim" },
 ];
 
 export default function HomePage() {
@@ -45,11 +45,11 @@ export default function HomePage() {
 
       <section
         className="relative mb-6 overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br
-                   from-white via-[#eef6ff] to-[#cfe6fb] p-6 shadow-float
-                   dark:border-white/10 dark:from-surface-container dark:via-surface-container dark:to-primary-container/40"
+                   from-[#f5fdeb] via-[#e8fcf0] to-[#d8f2ff] p-6 shadow-float
+                   dark:border-white/10 dark:from-surface-container dark:via-[#1a3a2a] dark:to-[#0a2540]"
       >
-        {/* 3D crystal, bleeding off the bottom-right like the mockup */}
-        <DiamondGem className="pointer-events-none absolute -bottom-6 -right-5 h-44 w-44 opacity-95 drop-shadow-[0_8px_24px_rgba(56,189,248,0.35)] sm:h-48 sm:w-48" />
+        {/* Prixes logo, bleeding off the bottom-right */}
+        <LogoMark className="pointer-events-none absolute -bottom-8 -right-8 h-56 w-56 opacity-90 drop-shadow-[0_8px_24px_rgba(157,217,46,0.3)] sm:h-64 sm:w-64" decorative />
 
         <div className="relative z-10">
           <h2 className="max-w-[15ch] text-headline-lg font-bold tracking-tight text-on-surface">
@@ -107,7 +107,7 @@ export default function HomePage() {
 
       <section className="mb-8">
         <h2 className="mb-3 flex items-center gap-2 text-headline-md text-on-surface">
-          <Icon name="apps" className="text-primary" /> Mes outils
+          <Icon name="apps" className="text-primary-fixed-dim" /> Mes outils
         </h2>
         <div className="grid grid-cols-2 gap-gutter">
           {SHORTCUTS.map((s) => (
@@ -129,11 +129,11 @@ export default function HomePage() {
       <section data-tour="products-list">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-headline-md text-on-surface">
-            <Icon name="trending_up" className="text-primary" /> Produits populaires
+            <Icon name="trending_up" className="text-primary-fixed-dim" /> Produits populaires
           </h2>
           <div className="flex items-center gap-2">
             <ScoreLegend compact />
-            <Link href="/courses" className="text-label-lg text-primary">
+            <Link href="/courses" className="text-label-lg font-bold text-primary-fixed-dim hover:text-secondary-fixed-dim transition-colors">
               Tout voir
             </Link>
           </div>
