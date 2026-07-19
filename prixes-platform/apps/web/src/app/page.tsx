@@ -48,10 +48,10 @@ export default function HomePage() {
                    from-[#f5fdeb] via-[#e8fcf0] to-[#d8f2ff] p-6 shadow-float
                    dark:border-white/10 dark:from-surface-container dark:via-[#1a3a2a] dark:to-[#0a2540]"
       >
-        {/* Prixes logo, bleeding off the bottom-right */}
-        <LogoMark className="pointer-events-none absolute -bottom-8 -right-8 h-56 w-56 opacity-90 drop-shadow-[0_8px_24px_rgba(157,217,46,0.3)] sm:h-64 sm:w-64" decorative />
+        {/* Prixes logo, bleeding off the top-right */}
+        <LogoMark className="pointer-events-none absolute -top-16 -right-12 h-56 w-56 opacity-90 drop-shadow-[0_8px_24px_rgba(157,217,46,0.3)] sm:h-64 sm:w-64 sm:-right-16" decorative />
 
-        <div className="relative z-10">
+        <div className="relative z-10 pr-20 sm:pr-24">
           <h2 className="max-w-[15ch] text-headline-lg font-bold tracking-tight text-on-surface">
             Ne payez jamais le prix fort&nbsp;💙
           </h2>
