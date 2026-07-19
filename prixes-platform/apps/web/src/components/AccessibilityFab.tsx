@@ -94,7 +94,7 @@ export function AccessibilityFab() {
                 setOpen(false);
                 setVoiceOpen(true);
               }}
-              className="mb-5 flex w-full items-center gap-3 rounded-2xl bg-primary p-4 text-left text-on-primary shadow-card active:scale-[0.99]"
+              className="mb-5 flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-primary-fixed-dim to-secondary-fixed-dim p-4 text-left text-on-primary-fixed shadow-card active:scale-[0.99]"
             >
               <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
                 <Icon name="mic" fill className="text-[26px]" />
