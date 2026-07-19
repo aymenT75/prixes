@@ -2,6 +2,8 @@
 // parser so the assistant feels like Siri/Google Assistant. On the web it uses the
 // Web Speech API; inside the Capacitor native shell (where WKWebView has no
 // SpeechRecognition) it uses native plugins for STT, TTS and haptics.
+
+import "./web-speech-api";
 import { isNativeApp } from "./platform";
 
 export type Intent =
@@ -15,7 +17,7 @@ export type Intent =
 export function speechSupported(): boolean {
   if (isNativeApp()) return true; // native @capacitor-community/speech-recognition
   if (typeof window === "undefined") return false;
-  return !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
 }
 
 export function ttsSupported(): boolean {
@@ -23,9 +25,9 @@ export function ttsSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
-export function createRecognizer(): any | null {
+export function createRecognizer(): SpeechRecognition | null {
   if (typeof window === "undefined") return null;
-  const Ctor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+  const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!Ctor) return null;
   const rec = new Ctor();
   rec.lang = "fr-FR";
@@ -70,13 +72,14 @@ function webRecognizer(): VoiceRecognizer | null {
       }
     },
   };
-  rec.onresult = (e: any) => {
+  rec.onresult = (e: SpeechRecognitionEvent) => {
     let txt = "";
     for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
     r.onPartial?.(txt);
     if (e.results[e.results.length - 1].isFinal) r.onFinal?.(txt);
   };
-  rec.onerror = (e: any) => r.onError?.(e?.error === "not-allowed" ? "not-allowed" : "other");
+  rec.onerror = (e: SpeechRecognitionErrorEvent) =>
+    r.onError?.(e.error === "not-allowed" ? "not-allowed" : "other");
   rec.onend = () => r.onEnd?.();
   return r;
 }
@@ -110,19 +113,22 @@ function nativeRecognizer(): VoiceRecognizer {
             }
           }
           // Live transcript via partial results (used for the on-screen text).
-          partialHandle = await SpeechRecognition.addListener("partialResults", (data: any) => {
-            const txt: string = data?.matches?.[0] ?? "";
-            if (txt) {
-              lastText = txt;
-              r.onPartial?.(txt);
+          partialHandle = await SpeechRecognition.addListener(
+            "partialResults",
+            (data: { matches?: string[] }) => {
+              const txt: string = data?.matches?.[0] ?? "";
+              if (txt) {
+                lastText = txt;
+                r.onPartial?.(txt);
+              }
             }
-          });
-          const res: any = await SpeechRecognition.start({
+          );
+          const res = await SpeechRecognition.start({
             language: "fr-FR",
             maxResults: 1,
             partialResults: true,
             popup: false,
-          });
+          }) as { matches?: string[] } | undefined;
           // Android resolves start() with the final matches; iOS delivers via listener.
           const finalText: string = res?.matches?.[0] ?? lastText;
           if (finalText) r.onFinal?.(finalText);
