@@ -166,6 +166,7 @@ body {
    tracking) and small technical/data labels use JetBrains Mono — applied
    centrally here so every existing text-headline, text-label-sm and
    text-micro usage across the app picks it up without touching each call site. */
+.text-display-lg,
 .text-headline-xl,
 .text-headline-xl-mobile,
 .text-headline-lg,
@@ -187,11 +188,18 @@ body {
   font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
 }
 
-/* Frosted surfaces follow the theme (light or dark). */
+/* Frosted surfaces follow the theme (light or dark). Vibrant Glass spec:
+   20-40px backdrop blur, ~70% translucent fill, a 1.5px inner stroke to
+   define the edge against bright backgrounds, and an ambient cyan glow. */
 .glass {
-  background: rgb(var(--color-surface) / 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgb(var(--color-surface) / 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1.5px solid rgb(255 255 255 / 0.5);
+  box-shadow: 0px 8px 30px rgba(44, 226, 254, 0.1);
+}
+html.dark .glass {
+  border-color: rgb(255 255 255 / 0.1);
 }
 
 .hide-scrollbar::-webkit-scrollbar {
@@ -248,9 +256,12 @@ summary,
     @apply bg-surface-container-lowest rounded-xl shadow-card border border-outline-variant/10;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5
-           text-label-lg text-on-primary shadow-md transition-all
-           hover:brightness-110 active:scale-95;
+    /* Vibrant Glass spec: lime-to-cyan gradient, bold Sora text, a slight
+       "lift" on hover via an expanded cyan shadow. */
+    @apply inline-flex items-center justify-center gap-2 rounded-full
+           bg-gradient-to-r from-primary to-secondary px-6 py-2.5
+           font-display text-label-lg font-bold text-on-primary shadow-md transition-all
+           hover:-translate-y-0.5 hover:shadow-glow active:scale-95 active:translate-y-0;
   }
   .btn-tonal {
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-surface-container-high
