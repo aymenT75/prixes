@@ -97,18 +97,28 @@ async def price_history(
 @router.get("/{barcode}/alternatives", response_model=AlternativesOut)
 async def alternatives(barcode: str, db: DbSession) -> AlternativesOut:
     products = await service.healthier_alternatives(db, barcode)
+    if not products:
+        return AlternativesOut(items=[])
+
+    # Fix N+1 query: fetch all best prices in ONE query, not per-product
+    from sqlalchemy import func
+    barcodes = [p.barcode for p in products]
+    best_prices = (
+        await db.execute(
+            select(
+                PricePoint.barcode,
+                func.min(PricePoint.price).label("price")
+            )
+            .where(PricePoint.barcode.in_(barcodes))
+            .group_by(PricePoint.barcode)
+        )
+    ).all()
+    price_map = {barcode: price for barcode, price in best_prices}
+
     items: list[AlternativeOut] = []
     for p in products:
-        best = (
-            await db.execute(
-                select(PricePoint.price)
-                .where(PricePoint.barcode == p.barcode)
-                .order_by(PricePoint.price.asc())
-                .limit(1)
-            )
-        ).scalar_one_or_none()
         item = AlternativeOut.model_validate(p)
-        item.best_price = best
+        item.best_price = price_map.get(p.barcode)
         items.append(item)
     return AlternativesOut(items=items)
 
