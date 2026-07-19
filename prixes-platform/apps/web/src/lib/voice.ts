@@ -3,7 +3,7 @@
 // Web Speech API; inside the Capacitor native shell (where WKWebView has no
 // SpeechRecognition) it uses native plugins for STT, TTS and haptics.
 
-import "./web-speech-api";
+// Web Speech API types are declared in web-speech-api.d.ts
 import { isNativeApp } from "./platform";
 
 export type Intent =
@@ -17,7 +17,8 @@ export type Intent =
 export function speechSupported(): boolean {
   if (isNativeApp()) return true; // native @capacitor-community/speech-recognition
   if (typeof window === "undefined") return false;
-  return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  const win = window as any;
+  return !!(win.SpeechRecognition || win.webkitSpeechRecognition);
 }
 
 export function ttsSupported(): boolean {
@@ -25,9 +26,10 @@ export function ttsSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
-export function createRecognizer(): SpeechRecognition | null {
+export function createRecognizer(): any {
   if (typeof window === "undefined") return null;
-  const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const win = window as any;
+  const Ctor = win.SpeechRecognition || win.webkitSpeechRecognition;
   if (!Ctor) return null;
   const rec = new Ctor();
   rec.lang = "fr-FR";
@@ -72,13 +74,13 @@ function webRecognizer(): VoiceRecognizer | null {
       }
     },
   };
-  rec.onresult = (e: SpeechRecognitionEvent) => {
+  rec.onresult = (e: any) => {
     let txt = "";
     for (let i = 0; i < e.results.length; i++) txt += e.results[i][0].transcript;
     r.onPartial?.(txt);
     if (e.results[e.results.length - 1].isFinal) r.onFinal?.(txt);
   };
-  rec.onerror = (e: SpeechRecognitionErrorEvent) =>
+  rec.onerror = (e: any) =>
     r.onError?.(e.error === "not-allowed" ? "not-allowed" : "other");
   rec.onend = () => r.onEnd?.();
   return r;
@@ -155,15 +157,15 @@ function nativeRecognizer(): VoiceRecognizer {
   return r;
 }
 
-let _frVoice: SpeechSynthesisVoice | null = null;
-function pickFrenchVoice(): SpeechSynthesisVoice | null {
+let _frVoice: any = null;
+function pickFrenchVoice(): any {
   if (!ttsSupported()) return null;
   if (_frVoice) return _frVoice;
   const voices = window.speechSynthesis.getVoices();
   const fr = voices.filter((v) => v.lang?.toLowerCase().startsWith("fr"));
   // Prefer modern neural voices (Edge/Chrome ship free "Natural"/"Online" French
   // voices that sound far less robotic than the legacy default) before falling back.
-  const isNeural = (v: SpeechSynthesisVoice) =>
+  const isNeural = (v: any) =>
     /natural|online|neural|enhanced|premium/i.test(v.name);
   _frVoice =
     fr.find((v) => /fr[-_]FR/i.test(v.lang) && isNeural(v)) ||
