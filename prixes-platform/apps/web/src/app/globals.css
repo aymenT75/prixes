@@ -257,10 +257,16 @@ summary,
   }
   .btn-primary {
     /* Vibrant Glass spec: lime-to-cyan gradient, bold Sora text, a slight
-       "lift" on hover via an expanded cyan shadow. */
+       "lift" on hover via an expanded cyan shadow. Uses the -fixed-dim tones
+       (the vivid mid-saturation lime/cyan actually seen in the logo's
+       gradient) rather than the dark, desaturated `primary`/`secondary` —
+       those are accessible text-on-white tones, not surface colours, and
+       looked muddy/olive as a big button fill. Dark charcoal text (not
+       white) keeps contrast against the light gradient, matching the logo's
+       own charcoal-on-gradient look. */
     @apply inline-flex items-center justify-center gap-2 rounded-full
-           bg-gradient-to-r from-primary to-secondary px-6 py-2.5
-           font-display text-label-lg font-bold text-on-primary shadow-md transition-all
+           bg-gradient-to-r from-primary-fixed-dim to-secondary-fixed-dim px-6 py-2.5
+           font-display text-label-lg font-bold text-on-primary-fixed shadow-md transition-all
            hover:-translate-y-0.5 hover:shadow-glow active:scale-95 active:translate-y-0;
   }
   .btn-tonal {
