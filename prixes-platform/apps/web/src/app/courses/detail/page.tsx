@@ -29,6 +29,10 @@ function parseAllergens(s: string | null): string[] {
     .filter(Boolean);
 }
 
+function isValidBarcode(code: string): boolean {
+  return /^\d{8,14}$/.test(code);
+}
+
 // The product barcode is passed as a query param (?barcode=…) rather than a route
 // segment so the page works under Next.js `output: 'export'` (static export has no
 // server to resolve unbounded dynamic segments). Client-side navigation is unchanged.
@@ -48,7 +52,8 @@ export default function ProductDetailPage() {
 }
 
 function ProductDetail() {
-  const barcode = useSearchParams().get("barcode") ?? "";
+  const rawBarcode = useSearchParams().get("barcode") ?? "";
+  const barcode = isValidBarcode(rawBarcode) ? rawBarcode : "";
   const qc = useQueryClient();
   const { user, openLogin } = useApp();
   const { allergens: profile, diets: dietProfile, autoRead } = useA11y();
@@ -247,6 +252,14 @@ function ProductDetail() {
     await qc.invalidateQueries({ queryKey: ["product", barcode] });
   }
 
+  if (rawBarcode && !barcode) {
+    return (
+      <div>
+        <PageHeader title="Produit" back />
+        <p className="py-10 text-center text-error">Code-barres invalide.</p>
+      </div>
+    );
+  }
   if (isLoading) {
     return (
       <div>

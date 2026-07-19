@@ -1,6 +1,8 @@
 // Privacy-light, self-hosted usage analytics. No cookies, no personal data — just a
 // random client id (localStorage) so we can count distinct sessions. Honours the
 // browser's "Do Not Track" and never throws into the UI.
+import { logWarn } from "./logger";
+
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
 
 function doNotTrack(): boolean {
@@ -43,7 +45,7 @@ export function track(event: string, path?: string): void {
         headers: { "Content-Type": "application/json" },
         body,
         keepalive: true,
-      }).catch(() => {});
+      }).catch((e) => logWarn("analytics", `Failed to send event: ${e instanceof Error ? e.message : String(e)}`));
     }
   } catch {
     /* analytics must never break the app */

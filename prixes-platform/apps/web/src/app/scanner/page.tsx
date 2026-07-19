@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
 import { scanBarcodeNative } from "@/lib/barcode";
 import { isNativeApp } from "@/lib/platform";
+import { logWarn } from "@/lib/logger";
 import { useApp } from "@/lib/store";
 import { hapticDanger, hapticSuccess, speak } from "@/lib/voice";
 import { detectBarcodeInFile, downscaleToBase64 } from "@/lib/vision";
@@ -146,14 +147,17 @@ export default function ScannerPage() {
       const video = videoRef.current;
       if (!video) return false;
       video.srcObject = stream;
-      await video.play().catch(() => {});
+      await video.play().catch((e) => logWarn("scanner", `Video.play() failed: ${e instanceof Error ? e.message : String(e)}`));
       const detector = new Detector({
         formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128", "qr_code"],
       });
       const tick = async () => {
         if (cancelled || handledRef.current) return;
         if (video.readyState === 4) {
-          const codes = await detector.detect(video).catch(() => []);
+          const codes = await detector.detect(video).catch((e) => {
+            logWarn("scanner", `BarcodeDetector.detect() failed: ${e instanceof Error ? e.message : String(e)}`);
+            return [];
+          });
           const hit = codes.find((c) => isPlausibleBarcode(c.rawValue));
           if (hit) {
             goToProduct(hit.rawValue);
@@ -344,7 +348,12 @@ export default function ScannerPage() {
         onSubmit={(e) => {
           e.preventDefault();
           const code = manual.trim();
-          if (code) router.push(`/courses/detail?barcode=${code}`);
+          if (code && isPlausibleBarcode(code)) {
+            router.push(`/courses/detail?barcode=${code}`);
+          } else if (code) {
+            setMessage("Code invalide — saisissez 8 à 14 chiffres.");
+            setTimeout(() => setMessage(null), 3000);
+          }
         }}
         className="flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container-lowest px-4 py-2.5 shadow-card focus-within:border-primary"
       >
