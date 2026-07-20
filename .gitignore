@@ -4,6 +4,10 @@
 !.env.example
 !.env.production.example
 !.env.local.example
+# Not a secret: only BUILD_TARGET=mobile + the public API URL. It must be committed
+# because `npm run build:mobile` loads it to emit the static `out/` bundle — without
+# it, CI (and any fresh clone) cannot build the native app at all.
+!.env.mobile
 *.local
 sa.json
 serviceAccount*.json
