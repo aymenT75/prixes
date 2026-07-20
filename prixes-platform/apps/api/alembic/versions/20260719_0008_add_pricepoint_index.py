@@ -19,7 +19,8 @@ depends_on = None
 def upgrade() -> None:
     # Idempotent: check if index already exists before creating
     inspector = inspect(op.get_bind())
-    indexes = {ix.name for ix in inspector.get_indexes("price_points")}
+    # get_indexes() yields dicts, not objects — ix["name"], never ix.name.
+    indexes = {ix["name"] for ix in inspector.get_indexes("price_points")}
 
     if "ix_price_points_created_at" not in indexes:
         op.create_index(
