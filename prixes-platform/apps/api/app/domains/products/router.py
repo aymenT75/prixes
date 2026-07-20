@@ -113,7 +113,7 @@ async def alternatives(barcode: str, db: DbSession) -> AlternativesOut:
             .group_by(PricePoint.barcode)
         )
     ).all()
-    price_map = {barcode: price for barcode, price in best_prices}
+    price_map = {row.barcode: row.price for row in best_prices}
 
     items: list[AlternativeOut] = []
     for p in products:

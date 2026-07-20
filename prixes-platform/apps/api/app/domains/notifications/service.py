@@ -18,7 +18,7 @@ async def notify_price_drops(db: AsyncSession, alerts: list[PriceAlert]) -> int:
 
     # Fix N+1 query: batch fetch all products and tokens
     barcodes = [a.barcode for a in alerts]
-    user_ids = list(set(a.user_id for a in alerts))
+    user_ids = list({a.user_id for a in alerts})
 
     # Fetch all products at once
     products = (
