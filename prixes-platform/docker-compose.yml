@@ -64,8 +64,12 @@ services:
     build:
       context: ./apps/web
       args:
-        # Browser runs on the host, so it calls the host-published API port.
-        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+        # Local dev sets this in .env (http://localhost:8000) so the browser reaches the
+        # host-published API port. The fallback is EMPTY on purpose: an unset var then
+        # yields the relative "/api/v1", which works behind the prod reverse proxy.
+        # Defaulting to localhost:8000 here silently bakes a broken bundle into the
+        # production image — the visitor's browser would call their own machine.
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
     restart: unless-stopped
     depends_on:
       - api
