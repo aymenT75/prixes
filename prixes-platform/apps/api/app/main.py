@@ -45,8 +45,14 @@ app = FastAPI(
     version="0.1.0",
     default_response_class=ORJSONResponse,
     lifespan=lifespan,
-    docs_url="/docs",
-    openapi_url="/openapi.json",
+    # Interactive docs are a dev convenience: they publish the whole API surface.
+    # In production they are currently unreachable only because Caddy proxies /api/*
+    # and nothing else — an accident of routing, not a decision. Turn them off
+    # explicitly so a Caddyfile change (or exposing the API directly) can't publish
+    # them by surprise.
+    docs_url=None if settings.is_production else "/docs",
+    redoc_url=None if settings.is_production else "/redoc",
+    openapi_url=None if settings.is_production else "/openapi.json",
 )
 
 app.add_middleware(
