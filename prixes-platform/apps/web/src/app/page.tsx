@@ -51,11 +51,11 @@ export default function HomePage() {
         {/* Prixes logo, bleeding off the top-right */}
         <LogoMark className="pointer-events-none absolute -top-16 -right-12 h-56 w-56 opacity-90 drop-shadow-[0_8px_24px_rgba(157,217,46,0.3)] sm:h-64 sm:w-64 sm:-right-16" decorative />
 
-        <div className="relative z-10 pr-20 sm:pr-24">
-          <h2 className="max-w-[15ch] text-headline-lg font-bold tracking-tight text-on-surface">
+        <div className="relative z-10 pr-32 sm:pr-40">
+          <h2 className="max-w-[12ch] text-headline-lg font-bold tracking-tight text-on-surface">
             Ne payez jamais le prix fort
           </h2>
-          <p className="mt-2 max-w-[28ch] text-body-md text-on-surface-variant">
+          <p className="mt-2 max-w-[25ch] text-body-md text-on-surface-variant">
             Comparez les prix des produits entre les magasins et trouvez le tarif le plus bas en un instant.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">

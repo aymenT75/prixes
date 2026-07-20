@@ -12,9 +12,10 @@ export function LogoMark({ className, decorative }: { className?: string; decora
         src="/logo-mark.png"
         alt={decorative ? "" : "Prixes"}
         fill
-        sizes="64px"
+        sizes="(max-width: 640px) 224px, 224px"
         className="object-cover"
         priority
+        quality={95}
       />
     </span>
   );
