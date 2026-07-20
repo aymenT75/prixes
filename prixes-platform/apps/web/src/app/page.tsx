@@ -1,12 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
-import { LogoMark } from "@/components/Logo";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { ScoreLegend } from "@/components/ScoreLegend";
@@ -48,10 +48,24 @@ export default function HomePage() {
                    from-[#f5fdeb] via-[#e8fcf0] to-[#d8f2ff] p-6 shadow-float
                    dark:border-white/10 dark:from-surface-container dark:via-[#1a3a2a] dark:to-[#0a2540]"
       >
-        {/* Prixes logo, bleeding off the top-right */}
-        <LogoMark className="pointer-events-none absolute -top-16 -right-12 h-56 w-56 opacity-90 drop-shadow-[0_8px_24px_rgba(157,217,46,0.3)] sm:h-64 sm:w-64 sm:-right-16" decorative />
+        {/* Cart artwork lifted from the brand banner. It sits fully inside the panel:
+            the previous mark bled off-canvas with negative offsets, which is what kept
+            breaking the heading alignment. Purely decorative — the heading below is the
+            real content, so it stays readable by screen readers and the voice assistant. */}
+        <Image
+          src="/hero-cart.webp"
+          alt=""
+          aria-hidden="true"
+          width={440}
+          height={440}
+          priority
+          className="pointer-events-none absolute right-0 top-1/2 h-36 w-36 -translate-y-1/2
+                     select-none object-contain opacity-95 sm:h-48 sm:w-48"
+        />
 
-        <div className="relative z-10 pr-32 sm:pr-40">
+        {/* Right padding clears the artwork (144px / 192px) plus a small gap, so the
+            heading never runs under it at any width. */}
+        <div className="relative z-10 pr-40 sm:pr-52">
           <h2 className="max-w-[12ch] text-headline-lg font-bold tracking-tight text-on-surface">
             Ne payez jamais le prix fort
           </h2>
