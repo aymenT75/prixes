@@ -13,7 +13,8 @@ App id: `software.omnilink.prixes` · App name: `Prixes`
 ## Prerequisites
 
 - **Node** ≥ 20, **npm** ≥ 10.
-- **Android**: Android Studio + JDK 17 (works on Windows/macOS/Linux).
+- **Android**: Android Studio + **JDK 21** (Capacitor 8 compiles against Java 21;
+  JDK 17 fails the Gradle build). Works on Windows/macOS/Linux.
 - **iOS**: a **Mac** with Xcode + CocoaPods (`sudo gem install cocoapods`).
 - **Apple Developer Program** ($99/yr) and **Google Play Developer** ($25 once).
 - **Firebase project** `prixes-b07fb`:

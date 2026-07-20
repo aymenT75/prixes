@@ -129,7 +129,9 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          # Capacitor 8 compiles against Java 21 (@capacitor/android sets
+          # source/targetCompatibility VERSION_21) — Java 17 fails the Gradle build.
+          java-version: "21"
       - run: npm install
       - run: npm run build:mobile
       - run: npx cap sync android
