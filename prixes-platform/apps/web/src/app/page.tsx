@@ -53,26 +53,27 @@ export default function HomePage() {
 
         <div className="relative z-10 pr-20 sm:pr-24">
           <h2 className="max-w-[15ch] text-headline-lg font-bold tracking-tight text-on-surface">
-            Ne payez jamais le prix fort&nbsp;💙
+            Ne payez jamais le prix fort
           </h2>
           <p className="mt-2 max-w-[28ch] text-body-md text-on-surface-variant">
-            Comparez le même produit dans les magasins près de chez vous, et voyez le prix le plus
-            bas en un instant.
+            Comparez les prix des produits entre les magasins et trouvez le tarif le plus bas en un instant.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {[
-              { icon: "search", label: "Comparateur de prix" },
-              { icon: "location_on", label: "Magasins proches" },
-              { icon: "notifications_active", label: "Alertes de baisse" },
+              { path: "/courses", label: "Comparateur" },
+              { path: "/stores", label: "Magasins proches" },
+              { path: "/alerts", label: "Alertes de baisse" },
             ].map((c) => (
-              <span
+              <button
                 key={c.label}
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/70 bg-white/70
-                           px-3 py-1.5 text-label-sm font-medium text-on-surface shadow-sm backdrop-blur
+                onClick={() => router.push(c.path)}
+                className="rounded-full border border-white/70 bg-white/70
+                           px-4 py-2 text-label-md font-medium text-on-surface shadow-sm backdrop-blur
+                           active:scale-95 transition-transform
                            dark:border-white/10 dark:bg-white/10"
               >
-                <Icon name={c.icon} className="text-[16px] text-primary" /> {c.label}
-              </span>
+                {c.label}
+              </button>
             ))}
           </div>
         </div>
