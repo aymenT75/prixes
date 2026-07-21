@@ -59,13 +59,17 @@ export default function HomePage() {
           width={440}
           height={440}
           priority
-          className="pointer-events-none absolute right-0 top-1/2 h-36 w-36 -translate-y-1/2
-                     select-none object-contain opacity-95 sm:h-48 sm:w-48"
+          className="pointer-events-none absolute right-0 top-1/2 hidden h-[88px] w-[88px]
+                     -translate-y-1/2 select-none object-contain opacity-95
+                     [@media(min-width:340px)]:block sm:h-[176px] sm:w-[176px]"
         />
 
-        {/* Right padding clears the artwork (144px / 192px) plus a small gap, so the
-            heading never runs under it at any width. */}
-        <div className="relative z-10 pr-40 sm:pr-52">
+        {/* Padding in PIXELS, not rem, and matched to the artwork (88px / 176px) plus a
+            16px gap. Tailwind's pr-* are rem-based, so with Android's font scale at 2x
+            the padding doubled too and collapsed this column to 63px — heading over six
+            lines, intro over twelve. The artwork is decorative, so it must never win
+            space against the copy: px keeps it fixed while the text grows. */}
+        <div className="relative z-10 pr-[104px] sm:pr-[192px]">
           <h2 className="max-w-[12ch] text-headline-lg font-bold tracking-tight text-on-surface">
             Ne payez jamais le prix fort
           </h2>
