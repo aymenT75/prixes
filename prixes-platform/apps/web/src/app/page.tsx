@@ -43,33 +43,20 @@ export default function HomePage() {
     <div>
       <PageHeader title="Prixes" />
 
+      {/* Flex, not absolute positioning + manual padding. The artwork is decorative, so
+          it must never take room the copy needs: `flex-1 min-w-0` lets the text claim
+          whatever is left, and `shrink-0` with a px size keeps the cart from stretching.
+          Below 30rem — which a large system font scale reaches on any phone — the row
+          becomes a column and the cart drops under the copy, centred, instead of
+          squeezing it into a narrow gutter. */}
       <section
-        className="relative mb-6 overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br
-                   from-[#f5fdeb] via-[#e8fcf0] to-[#d8f2ff] p-6 shadow-float
+        className="mb-6 flex flex-col items-center gap-4 overflow-hidden rounded-2xl border
+                   border-white/60 bg-gradient-to-br from-[#f5fdeb] via-[#e8fcf0] to-[#d8f2ff]
+                   p-6 shadow-float [@media(min-width:30rem)]:flex-row
+                   [@media(min-width:30rem)]:items-center
                    dark:border-white/10 dark:from-surface-container dark:via-[#1a3a2a] dark:to-[#0a2540]"
       >
-        {/* Cart artwork lifted from the brand banner. It sits fully inside the panel:
-            the previous mark bled off-canvas with negative offsets, which is what kept
-            breaking the heading alignment. Purely decorative — the heading below is the
-            real content, so it stays readable by screen readers and the voice assistant. */}
-        <Image
-          src="/hero-cart.webp"
-          alt=""
-          aria-hidden="true"
-          width={440}
-          height={440}
-          priority
-          className="pointer-events-none absolute right-0 top-1/2 hidden h-[88px] w-[88px]
-                     -translate-y-1/2 select-none object-contain opacity-95
-                     [@media(min-width:340px)]:block sm:h-[176px] sm:w-[176px]"
-        />
-
-        {/* Padding in PIXELS, not rem, and matched to the artwork (88px / 176px) plus a
-            16px gap. Tailwind's pr-* are rem-based, so with Android's font scale at 2x
-            the padding doubled too and collapsed this column to 63px — heading over six
-            lines, intro over twelve. The artwork is decorative, so it must never win
-            space against the copy: px keeps it fixed while the text grows. */}
-        <div className="relative z-10 pr-[104px] sm:pr-[192px]">
+        <div className="relative z-10 w-full min-w-0 flex-1">
           <h2 className="max-w-[12ch] text-headline-lg font-bold tracking-tight text-on-surface">
             Ne payez jamais le prix fort
           </h2>
@@ -95,6 +82,21 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+
+        {/* Sized in px on purpose: Tailwind's h-/w-* are rem-based, so at a 2x system
+            font scale the artwork would double and crowd out the copy. Decorative only —
+            aria-hidden, so screen readers and the voice assistant read the heading. */}
+        <Image
+          src="/hero-cart.webp"
+          alt=""
+          aria-hidden="true"
+          width={440}
+          height={440}
+          priority
+          className="pointer-events-none h-[120px] w-[120px] shrink-0 select-none
+                     object-contain opacity-95 [@media(min-width:30rem)]:h-[160px]
+                     [@media(min-width:30rem)]:w-[160px]"
+        />
       </section>
 
       {/* Greeting */}
