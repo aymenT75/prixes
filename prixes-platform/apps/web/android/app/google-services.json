@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "469759036890",
+    "project_id": "prixes-b07fb",
+    "storage_bucket": "prixes-b07fb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:469759036890:android:a9ec092e41fd79beac04e3",
+        "android_client_info": {
+          "package_name": "software.omnilink.prixes"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "469759036890-lmgmv9d3kfu3tomnmfp26qe17rgsjav5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgRh1NSNe1yYhizIHd0F_1TSBQdLtG6WA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "469759036890-lmgmv9d3kfu3tomnmfp26qe17rgsjav5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
