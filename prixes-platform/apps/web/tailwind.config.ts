@@ -100,7 +100,12 @@ export default {
         "label-lg": ["14px", { lineHeight: "16px", fontWeight: "700" }],
         "label-md": ["12px", { lineHeight: "14px", fontWeight: "700" }],
         "label-sm": ["0.6875rem", { lineHeight: "1rem", fontWeight: "500" }],
-        micro: ["10px", { lineHeight: "12px", fontWeight: "700" }],
+        // 12px, not 10px: this is the smallest text in the app (store names, timestamps,
+        // vote counts on the deal cards) and 10px sat below Material's floor for
+        // supporting text. It matters most for someone running a large system font
+        // scale — the WebView zoom is capped, so the smallest sizes are exactly the ones
+        // that stayed unreadable for the people who needed the setting in the first place.
+        micro: ["12px", { lineHeight: "15px", fontWeight: "700" }],
       },
       boxShadow: {
         card: "0px 4px 12px rgba(0, 0, 0, 0.05)",

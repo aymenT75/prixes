@@ -5,7 +5,6 @@ import "./globals.css";
 import { A11yLayer } from "@/components/A11yLayer";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthModal } from "@/components/AuthModal";
-import { LaunchBanner } from "@/components/LaunchBanner";
 import { NativeSetup } from "@/components/NativeSetup";
 import { PostDealModal } from "@/components/PostDealModal";
 import { ProductTour } from "@/components/ProductTour";
@@ -68,8 +67,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <A11yLayer />
           <NativeSetup />
           <ProductTour />
-          {/* Last, so it paints over everything else while it is up. */}
-          <LaunchBanner />
         </Providers>
       </body>
     </html>

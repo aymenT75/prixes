@@ -102,9 +102,15 @@ export function DealCard({ deal }: { deal: Deal }) {
       </a>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center gap-2 text-micro text-on-surface-variant">
-          {deal.store && <span className="font-bold uppercase tracking-wider text-primary">{deal.store}</span>}
-          <span>· {timeAgo(deal.created_at)}</span>
+        {/* Long store names ("E.Leclerc", "Intermarché") split mid-word against the
+            timestamp on a narrow card; keep each part whole and let them wrap as units. */}
+        <div className="flex flex-wrap items-center gap-x-2 text-micro text-on-surface-variant">
+          {deal.store && (
+            <span className="whitespace-nowrap font-bold uppercase tracking-wider text-primary">
+              {deal.store}
+            </span>
+          )}
+          <span className="whitespace-nowrap">· {timeAgo(deal.created_at)}</span>
         </div>
         <h3 className="mt-0.5 line-clamp-2 text-label-lg text-on-surface">
           <a
@@ -122,7 +128,10 @@ export function DealCard({ deal }: { deal: Deal }) {
           <span className="text-label-md text-on-surface-variant/60 line-through">{eur(deal.price_before)}</span>
         </div>
 
-        <div className="mt-auto flex items-center justify-between pt-2">
+        {/* flex-wrap: votes on one side, actions on the other is fine until the card gets
+            narrow — then `justify-between` alone pushes the "Voir" button off the edge
+            instead of letting it drop to the next line. */}
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-y-2 pt-2">
           <div className="flex items-center gap-2">
             <button
               onClick={() => onVote(1)}

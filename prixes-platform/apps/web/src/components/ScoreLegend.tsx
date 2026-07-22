@@ -73,6 +73,16 @@ export function ScoreLegend({ compact = false }: { compact?: boolean }) {
               </button>
             </div>
 
+            {/* Why the colours exist at all. The sections below say what each grade
+                means; without this, a shopper knows the code but not the point of it. */}
+            <p className="mb-5 rounded-xl bg-surface-container-high p-3 text-body-md text-on-surface">
+              Comparer des prix ne dit rien de ce qu&apos;on achète. Ces couleurs vous
+              donnent, d&apos;un seul coup d&apos;œil et sans lire une étiquette, la qualité
+              nutritionnelle, l&apos;impact sur l&apos;environnement et le degré de
+              transformation — pour que le produit le moins cher ne soit pas un mauvais choix
+              sans que vous le sachiez.
+            </p>
+
             <section className="mb-5">
               <h3 className="mb-1 text-label-lg font-semibold text-on-surface">
                 Nutri-Score — fond de la fiche produit
