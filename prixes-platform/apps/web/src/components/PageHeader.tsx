@@ -41,7 +41,7 @@ export function PageHeader({
           <button
             onClick={goBack}
             aria-label="Retour"
-            className="-ml-1 grid h-10 w-10 flex-shrink-0 place-items-center rounded-full text-primary transition-colors hover:bg-surface-container-high active:scale-95"
+            className="-ml-1 grid h-11 w-11 flex-shrink-0 place-items-center rounded-full text-primary transition-colors hover:bg-surface-container-high active:scale-95"
           >
             <Icon name="arrow_back" />
           </button>
@@ -51,12 +51,15 @@ export function PageHeader({
         ) : (
           <h1 className="truncate text-headline-xl-mobile tracking-tight text-primary">{title}</h1>
         )}
-        {/* Voice + accessibility — small, next to the title, so they never cover content. */}
+        {/* Voice + accessibility, next to the title so they never cover content. Sized
+            44x44: measured on-device they were 36x36, under both WCAG 2.5.5 and
+            Android's 48dp guidance — and the voice button is exactly the control a
+            user with motor difficulties reaches for first. */}
         <button
           onClick={() => setVoiceOpen(true)}
           aria-label="Assistant vocal"
           data-tour="voice-btn"
-          className="ml-1 grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-primary/10 text-primary transition-transform active:scale-90"
+          className="ml-1 grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-primary/10 text-primary transition-transform active:scale-90"
         >
           <Icon name="mic" fill className="text-[20px]" />
         </button>
@@ -64,7 +67,7 @@ export function PageHeader({
           onClick={() => setA11yOpen(true)}
           aria-label="Options d'accessibilité"
           data-tour="a11y-btn"
-          className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full text-on-surface-variant transition-transform hover:bg-surface-container-high active:scale-90"
+          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full text-on-surface-variant transition-transform hover:bg-surface-container-high active:scale-90"
         >
           <Icon name="accessibility_new" className="text-[20px]" />
         </button>
