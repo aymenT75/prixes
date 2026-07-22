@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -43,20 +42,15 @@ export default function HomePage() {
     <div>
       <PageHeader title="Prixes" />
 
-      {/* Flex, not absolute positioning + manual padding. The artwork is decorative, so
-          it must never take room the copy needs: `flex-1 min-w-0` lets the text claim
-          whatever is left, and `shrink-0` with a px size keeps the cart from stretching.
-          Below 30rem — which a large system font scale reaches on any phone — the row
-          becomes a column and the cart drops under the copy, centred, instead of
-          squeezing it into a narrow gutter. */}
+      {/* The cart artwork now greets people on the launch screen instead of here, so the
+          panel is copy-only: the heading and the shortcuts get the full width, which is
+          what actually helps at a large system font scale. */}
       <section
-        className="mb-6 flex flex-col items-center gap-4 overflow-hidden rounded-2xl border
-                   border-white/60 bg-gradient-to-br from-[#f5fdeb] via-[#e8fcf0] to-[#d8f2ff]
-                   p-6 shadow-float [@media(min-width:30rem)]:flex-row
-                   [@media(min-width:30rem)]:items-center
+        className="mb-6 overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br
+                   from-[#f5fdeb] via-[#e8fcf0] to-[#d8f2ff] p-6 shadow-float
                    dark:border-white/10 dark:from-surface-container dark:via-[#1a3a2a] dark:to-[#0a2540]"
       >
-        <div className="relative z-10 w-full min-w-0 flex-1">
+        <div className="relative z-10 w-full min-w-0">
           <h2 className="max-w-[12ch] text-headline-lg font-bold tracking-tight text-on-surface">
             Ne payez jamais le prix fort
           </h2>
@@ -82,21 +76,6 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-
-        {/* Sized in px on purpose: Tailwind's h-/w-* are rem-based, so at a 2x system
-            font scale the artwork would double and crowd out the copy. Decorative only —
-            aria-hidden, so screen readers and the voice assistant read the heading. */}
-        <Image
-          src="/hero-cart.webp"
-          alt=""
-          aria-hidden="true"
-          width={440}
-          height={440}
-          priority
-          className="pointer-events-none h-[120px] w-[120px] shrink-0 select-none
-                     object-contain opacity-95 [@media(min-width:30rem)]:h-[160px]
-                     [@media(min-width:30rem)]:w-[160px]"
-        />
       </section>
 
       {/* Greeting */}

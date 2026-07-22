@@ -52,6 +52,10 @@ export function NativeSetup() {
       } catch {
         /* splash already hidden */
       }
+      // The native splash covered the WebView while it booted, so anything that wants
+      // to be *seen* at launch has to start counting from here, not from mount.
+      // LaunchBanner listens for this.
+      window.dispatchEvent(new Event("prixes:native-splash-hidden"));
 
       try {
         const handle = await App.addListener("backButton", ({ canGoBack }) => {
