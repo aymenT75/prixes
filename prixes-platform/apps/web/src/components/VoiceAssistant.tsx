@@ -62,7 +62,10 @@ export function VoiceAssistant() {
   // products so the user is never left with a dead end.
   const runSearch = useCallback(async (query: string) => {
     let q = query;
-    let result: { items: { name: string | null }[]; total: number } | null = null;
+    let result: {
+      items: { name: string | null; barcode: string; nutriscore: string | null }[];
+      total: number;
+    } | null = null;
     try {
       result = await api.searchProducts(q);
     } catch {
@@ -77,29 +80,74 @@ export function VoiceAssistant() {
       }
     }
 
-    if (result && result.total > 0) {
+    if (result && result.total > 0 && result.items[0]) {
+      const top = result.items[0];
+      const name = top.name ?? q;
+      const grade = (top.nutriscore ?? "").toLowerCase();
+
+      // Poor Nutri-Score (D/E): steer to a healthier product rather than just showing
+      // the cheapest bad option. /alternatives returns same-category products with a
+      // strictly better score (best first). Category matching is uneven, so the exact
+      // top result may have none while a sibling does — check the first few D/E hits
+      // (capped, to bound the extra calls) and take the first healthier product found.
+      if (grade === "d" || grade === "e") {
+        for (const item of result.items.slice(0, 3)) {
+          const g = (item.nutriscore ?? "").toLowerCase();
+          if (g !== "d" && g !== "e") continue;
+          try {
+            const alts = await api.getAlternatives(item.barcode);
+            // /alternatives is Nutri-Score order, but "wellness" means preferring the
+            // LEAST processed pick too — sort what's already a healthier shortlist by
+            // NOVA group (1 = unprocessed) ascending, unknowns last.
+            const candidates = alts.items.filter((a) => a.name && a.barcode);
+            const healthier = [...candidates].sort(
+              (a, b) => (a.nova_group ?? 99) - (b.nova_group ?? 99),
+            )[0];
+            if (healthier?.name) {
+              return {
+                say: `${name} a un faible Nutri-Score ${grade.toUpperCase()}. Je vous conseille plutôt ${healthier.name}, meilleur pour la santé.`,
+                path: `/courses/detail?barcode=${encodeURIComponent(healthier.barcode)}`,
+              };
+            }
+          } catch {
+            /* try the next candidate */
+          }
+        }
+        // No healthier product in the catalogue — don't pretend it's a good pick.
+        // Warn about the score, then still show the product (best price is useful).
+        return {
+          say: `${name} a un faible Nutri-Score ${grade.toUpperCase()}. Voici quand même le meilleur prix.`,
+          path: `/courses/detail?barcode=${encodeURIComponent(top.barcode)}`,
+        };
+      }
+
+      // Healthy enough: go to the best match's page, where the best price and nearest
+      // store are shown, and say exactly that.
       return {
-        say:
-          result.total === 1
-            ? `Un produit trouvé pour ${q}.`
-            : `${result.total} produits trouvés pour ${q}.`,
-        path: `/courses?q=${encodeURIComponent(q)}`,
+        say: `Nous avons trouvé le meilleur prix et le magasin le plus proche pour ${name}.`,
+        path: `/courses/detail?barcode=${encodeURIComponent(top.barcode)}`,
       };
     }
 
-    let suggestions: string[] = [];
+    // Nothing matched, even after shortening. Say so plainly and offer a real
+    // alternative the user lands on — not an empty search page. Take one popular
+    // product and route to *its* results, so when the assistant closes there is
+    // something to look at instead of a dead end.
     try {
       const popular = await api.browseProducts(3);
-      suggestions = popular.items.map((p) => p.name).filter((n): n is string => !!n);
+      const alt = popular.items.map((p) => p.name).find((n): n is string => !!n);
+      if (alt) {
+        return {
+          say: `Je n'ai pas trouvé ${query}. Voici une alternative : ${alt}.`,
+          path: `/courses?q=${encodeURIComponent(alt)}`,
+        };
+      }
     } catch {
-      /* ignore — say the no-results line without suggestions */
+      /* ignore — fall through to the plain not-found line */
     }
     return {
-      say:
-        suggestions.length > 0
-          ? `Aucun résultat pour ${query}. Essayez plutôt : ${suggestions.join(", ")}.`
-          : `Aucun résultat pour ${query}.`,
-      path: "/courses",
+      say: `Je n'ai pas trouvé ${query}.`,
+      path: `/courses?q=${encodeURIComponent(query)}`,
     };
   }, []);
 
@@ -113,10 +161,20 @@ export function VoiceAssistant() {
         vibrate(30);
         void runSearch(intent.query).then(({ say, path }) => {
           setResponse(say);
+          // Dismiss the assistant NOW — not when the spoken answer finishes. The
+          // destination product page auto-reads (when that setting is on) and
+          // interrupts our line via TextToSpeech.stop(), so the speak() completion
+          // callback could never fire and the menu stayed open. Stop listening, hide
+          // the overlay, then navigate and announce independently.
+          try {
+            recRef.current?.stop();
+          } catch {
+            /* ignore */
+          }
+          setOpen(false);
+          setPhase("idle");
           router.push(path);
-          // The search is answered — disappear instead of waiting to be dismissed
-          // (and don't restart hands-free listening; the user has their answer).
-          speak(say, close);
+          speak(say);
         });
         return;
       }

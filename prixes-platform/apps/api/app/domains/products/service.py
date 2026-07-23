@@ -7,7 +7,7 @@ from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, or_, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.products import off
@@ -118,12 +118,22 @@ async def search_products(db: AsyncSession, query: str, page: int) -> list[Produ
     if len(term) < 2:
         return []
 
+    # Rank by how well the name matches before falling back to recency: without this,
+    # "Biscuits Nutella Noisettes et Cacao" outranked plain "Nutella" for query
+    # "nutella" whenever it happened to be cached more recently. That is survivable in
+    # a visual result list (the user scans past it) but breaks voice search outright —
+    # the voice assistant auto-opens item #1 with no list to correct from.
+    relevance = case(
+        (func.lower(Product.name) == term.lower(), 0),
+        (Product.name.ilike(f"{term}%"), 1),
+        else_=2,
+    )
     local = list(
         (
             await db.execute(
                 select(Product)
                 .where(Product.name.is_not(None), Product.name.ilike(f"%{term}%"))
-                .order_by(Product.fetched_at.desc())
+                .order_by(relevance, Product.fetched_at.desc())
                 .limit(40)
             )
         ).scalars()
