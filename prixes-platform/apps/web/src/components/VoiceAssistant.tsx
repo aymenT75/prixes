@@ -85,48 +85,43 @@ export function VoiceAssistant() {
       const name = top.name ?? q;
       const grade = (top.nutriscore ?? "").toLowerCase();
 
-      // Poor Nutri-Score (D/E): steer to a healthier product rather than just showing
-      // the cheapest bad option. /alternatives returns same-category products with a
-      // strictly better score (best first). Category matching is uneven, so the exact
-      // top result may have none while a sibling does — check the first few D/E hits
-      // (capped, to bound the extra calls) and take the first healthier product found.
+      const detail = `/courses/detail?barcode=${encodeURIComponent(top.barcode)}`;
+      const found = `Nous avons trouvé le meilleur prix et le magasin le plus proche pour ${name}.`;
+
+      // Poor Nutri-Score (D/E): stay on the product the user asked for, but flag that a
+      // healthier option exists. /alternatives returns same-category products with a
+      // strictly better score; category matching is uneven, so check the first few D/E
+      // hits and mention the least-processed one (NOVA ascending). We do NOT redirect —
+      // the user's own result stays on screen.
       if (grade === "d" || grade === "e") {
         for (const item of result.items.slice(0, 3)) {
           const g = (item.nutriscore ?? "").toLowerCase();
           if (g !== "d" && g !== "e") continue;
           try {
             const alts = await api.getAlternatives(item.barcode);
-            // /alternatives is Nutri-Score order, but "wellness" means preferring the
-            // LEAST processed pick too — sort what's already a healthier shortlist by
-            // NOVA group (1 = unprocessed) ascending, unknowns last.
             const candidates = alts.items.filter((a) => a.name && a.barcode);
             const healthier = [...candidates].sort(
               (a, b) => (a.nova_group ?? 99) - (b.nova_group ?? 99),
             )[0];
             if (healthier?.name) {
               return {
-                say: `${name} a un faible Nutri-Score ${grade.toUpperCase()}. Je vous conseille plutôt ${healthier.name}, meilleur pour la santé.`,
-                path: `/courses/detail?barcode=${encodeURIComponent(healthier.barcode)}`,
+                say: `${found} À noter, son Nutri-Score est faible : ${grade.toUpperCase()}. Une alternative plus saine existe, ${healthier.name}.`,
+                path: detail,
               };
             }
           } catch {
             /* try the next candidate */
           }
         }
-        // No healthier product in the catalogue — don't pretend it's a good pick.
-        // Warn about the score, then still show the product (best price is useful).
+        // No healthier product found — still flag the score, stay on the product.
         return {
-          say: `${name} a un faible Nutri-Score ${grade.toUpperCase()}. Voici quand même le meilleur prix.`,
-          path: `/courses/detail?barcode=${encodeURIComponent(top.barcode)}`,
+          say: `${found} À noter, son Nutri-Score est faible : ${grade.toUpperCase()}.`,
+          path: detail,
         };
       }
 
-      // Healthy enough: go to the best match's page, where the best price and nearest
-      // store are shown, and say exactly that.
-      return {
-        say: `Nous avons trouvé le meilleur prix et le magasin le plus proche pour ${name}.`,
-        path: `/courses/detail?barcode=${encodeURIComponent(top.barcode)}`,
-      };
+      // Healthy enough: best price + nearest store, nothing to flag.
+      return { say: found, path: detail };
     }
 
     // Nothing matched, even after shortening. Say so plainly and offer a real
