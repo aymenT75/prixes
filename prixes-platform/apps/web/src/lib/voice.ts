@@ -88,20 +88,44 @@ function webRecognizer(): VoiceRecognizer | null {
 
 function nativeRecognizer(): VoiceRecognizer {
   let partialHandle: { remove: () => void } | undefined;
+  let stateHandle: { remove: () => void } | undefined;
+  let graceTimer: ReturnType<typeof setTimeout> | undefined;
   let lastText = "";
 
   async function cleanup() {
+    if (graceTimer) clearTimeout(graceTimer);
+    graceTimer = undefined;
     try {
       partialHandle?.remove();
     } catch {
       /* ignore */
     }
+    try {
+      stateHandle?.remove();
+    } catch {
+      /* ignore */
+    }
     partialHandle = undefined;
+    stateHandle = undefined;
+  }
+
+  let finalized = false;
+
+  // Fire onFinal exactly once, then tear everything down. Called when the recognizer
+  // reports it stopped (plus a short grace, see below) or when the caller stops it.
+  async function finalize() {
+    if (finalized) return;
+    finalized = true;
+    const text = lastText;
+    await cleanup();
+    if (text) r.onFinal?.(text);
+    r.onEnd?.();
   }
 
   const r: VoiceRecognizer = {
     start() {
       lastText = "";
+      finalized = false;
       (async () => {
         try {
           const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
@@ -114,7 +138,12 @@ function nativeRecognizer(): VoiceRecognizer {
               return;
             }
           }
-          // Live transcript via partial results (used for the on-screen text).
+
+          // With partialResults: true this plugin resolves start() IMMEDIATELY and
+          // delivers every result — including the final one — through the listener.
+          // So the listener must stay alive for the whole utterance: the old code read
+          // start()'s (empty) return and tore the listener down at once, which is why a
+          // recognised "nutella" reached a removed listener and no search ever ran.
           partialHandle = await SpeechRecognition.addListener(
             "partialResults",
             (data: { matches?: string[] }) => {
@@ -125,18 +154,33 @@ function nativeRecognizer(): VoiceRecognizer {
               }
             }
           );
-          const res = await SpeechRecognition.start({
+
+          // The recogniser signals it stopped BEFORE the last partialResults arrives
+          // (~0.5s earlier, observed on-device), so don't finalise on "stopped"
+          // immediately — wait a short grace for the trailing final result, then commit.
+          stateHandle = await SpeechRecognition.addListener(
+            "listeningState",
+            (data: { status?: string }) => {
+              if (data?.status === "stopped") {
+                if (graceTimer) clearTimeout(graceTimer);
+                graceTimer = setTimeout(() => void finalize(), 700);
+              }
+            }
+          );
+
+          await SpeechRecognition.start({
             language: "fr-FR",
             maxResults: 1,
             partialResults: true,
             popup: false,
-          }) as { matches?: string[] } | undefined;
-          // Android resolves start() with the final matches; iOS delivers via listener.
-          const finalText: string = res?.matches?.[0] ?? lastText;
-          if (finalText) r.onFinal?.(finalText);
+          });
+          // Safety net: if "stopped" never arrives (some devices), finalise anyway so
+          // the mic can't hang open forever.
+          if (!graceTimer && !finalized) {
+            graceTimer = setTimeout(() => void finalize(), 8000);
+          }
         } catch {
           r.onError?.("other");
-        } finally {
           await cleanup();
           r.onEnd?.();
         }
@@ -150,7 +194,11 @@ function nativeRecognizer(): VoiceRecognizer {
         } catch {
           /* ignore */
         }
-        await cleanup();
+        // Give the final partialResults the same grace before committing.
+        if (!finalized) {
+          if (graceTimer) clearTimeout(graceTimer);
+          graceTimer = setTimeout(() => void finalize(), 700);
+        }
       })();
     },
   };
