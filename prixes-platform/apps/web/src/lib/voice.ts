@@ -413,12 +413,18 @@ function strip(s: string): string {
     .trim();
 }
 
+// Order matters: NAV returns the first keyword hit, so the specific pages (list,
+// alerts, stores) sit BEFORE the broad "/courses" — otherwise "liste de courses"
+// would match "course" and open Courses instead of the shopping list.
 const NAV = [
   { path: "/", say: "J'ouvre l'accueil.", words: ["accueil", "maison", "page d'accueil", "menu principal"] },
-  { path: "/courses", say: "J'ouvre les courses.", words: ["course", "produit", "epicerie", "supermarche", "aliment"] },
+  { path: "/list", say: "J'ouvre votre liste.", words: ["ma liste", "liste de course", "liste de courses", "panier", "ma course"] },
+  { path: "/alerts", say: "J'ouvre vos alertes.", words: ["alerte", "alertes", "baisse de prix", "notification"] },
+  { path: "/stores", say: "J'ouvre les magasins.", words: ["magasin", "magasins", "boutique", "magasin proche", "magasins proches", "ou acheter"] },
   { path: "/deals", say: "J'ouvre les bons plans.", words: ["promo", "deal", "bon plan", "offre", "reduction", "soldes"] },
   { path: "/scanner", say: "J'ouvre le scanner.", words: ["scan", "scanner", "code barre", "code-barres"] },
   { path: "/account", say: "J'ouvre votre compte.", words: ["compte", "profil", "mon compte", "parametre", "reglage"] },
+  { path: "/courses", say: "J'ouvre les courses.", words: ["course", "produit", "epicerie", "supermarche", "aliment"] },
 ];
 
 const HELP_TEXT =

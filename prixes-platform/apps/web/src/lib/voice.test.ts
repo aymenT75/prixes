@@ -46,6 +46,15 @@ describe("parseIntent", () => {
   it("navigates to a known screen by keyword", () => {
     expect(parseIntent("ouvre les deals")).toMatchObject({ type: "navigate", path: "/deals" });
     expect(parseIntent("ouvre le scanner")).toMatchObject({ type: "navigate", path: "/scanner" });
+    expect(parseIntent("ouvre ma liste")).toMatchObject({ type: "navigate", path: "/list" });
+    expect(parseIntent("mes alertes")).toMatchObject({ type: "navigate", path: "/alerts" });
+    expect(parseIntent("les magasins proches")).toMatchObject({ type: "navigate", path: "/stores" });
+    expect(parseIntent("va sur l'accueil")).toMatchObject({ type: "navigate", path: "/" });
+  });
+
+  it("routes the shopping list, not Courses, for 'liste de courses'", () => {
+    // "liste de courses" contains "course" — the list target must win over /courses.
+    expect(parseIntent("ma liste de courses")).toMatchObject({ type: "navigate", path: "/list" });
   });
 
   it("no longer navigates to the removed fuel screen", () => {
