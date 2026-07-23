@@ -11,9 +11,9 @@ const NOVA_GROUPS = [1, 2, 3, 4] as const;
 
 function Swatch({ color, label, hint }: { color: string; label: string; hint: string }) {
   return (
-    <li className="flex items-center gap-3">
+    <li className="flex items-center gap-2.5">
       <span
-        className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full text-label-md font-bold text-white"
+        className="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full text-label-md font-bold text-white"
         style={{ backgroundColor: color }}
         aria-hidden
       >
@@ -59,10 +59,10 @@ export function ScoreLegend({ compact = false }: { compact?: boolean }) {
           onClick={() => setOpen(false)}
         >
           <div
-            className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface-container-lowest p-6 pb-10 shadow-float sm:rounded-3xl"
+            className="max-h-[92vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-surface-container-lowest p-5 pb-8 shadow-float sm:max-h-[85vh] sm:rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-3 flex items-center justify-between">
               <h2 className="text-headline-md text-on-surface">Pourquoi ces couleurs ?</h2>
               <button
                 onClick={() => setOpen(false)}
@@ -73,39 +73,38 @@ export function ScoreLegend({ compact = false }: { compact?: boolean }) {
               </button>
             </div>
 
-            {/* Why the colours exist at all. The sections below say what each grade
-                means; without this, a shopper knows the code but not the point of it. */}
-            <p className="mb-5 rounded-xl bg-surface-container-high p-3 text-body-md text-on-surface">
-              Comparer des prix ne dit rien de ce qu&apos;on achète. Ces couleurs vous
-              donnent, d&apos;un seul coup d&apos;œil et sans lire une étiquette, la qualité
-              nutritionnelle, l&apos;impact sur l&apos;environnement et le degré de
-              transformation — pour que le produit le moins cher ne soit pas un mauvais choix
-              sans que vous le sachiez.
+            {/* Why the colours exist at all — kept to two lines so it doesn't fill the
+                screen before the actual legend on a phone. The sections below say what
+                each grade means; this says why any of it is here. */}
+            <p className="mb-4 rounded-xl bg-surface-container-high p-3 text-body-md text-on-surface">
+              Le moins cher n&apos;est pas toujours le meilleur choix. Ces couleurs montrent
+              d&apos;un coup d&apos;œil la qualité nutritionnelle, l&apos;impact
+              environnemental et le degré de transformation.
             </p>
 
-            <section className="mb-5">
+            <section className="mb-4">
               <h3 className="mb-1 text-label-lg font-semibold text-on-surface">
                 Nutri-Score — fond de la fiche produit
               </h3>
-              <p className="mb-3 text-body-md text-on-surface-variant">
+              <p className="mb-2 text-body-md text-on-surface-variant">
                 La couleur de fond de chaque produit reflète sa qualité nutritionnelle, du vert
                 (bonne) au rouge (faible).
               </p>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {GRADES.map((g) => (
                   <Swatch key={g} color={scoreColor[g]} label={g.toUpperCase()} hint={nutriHint[g]} />
                 ))}
               </ul>
             </section>
 
-            <section className="mb-5">
+            <section className="mb-4">
               <h3 className="mb-1 text-label-lg font-semibold text-on-surface">
                 Eco-Score — badge &laquo;&nbsp;Eco&nbsp;&raquo;
               </h3>
-              <p className="mb-3 text-body-md text-on-surface-variant">
+              <p className="mb-2 text-body-md text-on-surface-variant">
                 Même échelle de lettres, mais pour l&apos;impact environnemental du produit.
               </p>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {GRADES.map((g) => (
                   <Swatch key={g} color={scoreColor[g]} label={g.toUpperCase()} hint={ecoHint[g]} />
                 ))}
@@ -116,10 +115,10 @@ export function ScoreLegend({ compact = false }: { compact?: boolean }) {
               <h3 className="mb-1 text-label-lg font-semibold text-on-surface">
                 NOVA — badge &laquo;&nbsp;NOVA&nbsp;&raquo;
               </h3>
-              <p className="mb-3 text-body-md text-on-surface-variant">
+              <p className="mb-2 text-body-md text-on-surface-variant">
                 Le degré de transformation de l&apos;aliment, de 1 (brut) à 4 (ultra-transformé).
               </p>
-              <ul className="space-y-2">
+              <ul className="space-y-1.5">
                 {NOVA_GROUPS.map((n) => (
                   <Swatch key={n} color={novaColor[n]} label={String(n)} hint={novaHint[n]} />
                 ))}
