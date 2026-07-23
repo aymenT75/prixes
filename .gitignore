@@ -10,6 +10,11 @@
 !.env.mobile
 *.local
 sa.json
+
+# ── Android release signing (NEVER commit — losing OR leaking the keystore is fatal) ──
+*.keystore
+*.jks
+keystore.properties
 serviceAccount*.json
 dump.json
 
