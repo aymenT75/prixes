@@ -143,8 +143,6 @@ export const api = {
     request<PriceHistory>(`/products/${barcode}/history?days=${days}`),
   getAlternatives: (barcode: string) =>
     request<AlternativesResult>(`/products/${barcode}/alternatives`),
-  contributePrice: (barcode: string, body: { store: string; price: number; location?: string }) =>
-    request(`/products/${barcode}/prices`, { method: "POST", body: JSON.stringify(body) }),
 
   // ── Stores ──
   storesNearby: (lat: number, lon: number, radiusKm = 10, limit = 20) =>
