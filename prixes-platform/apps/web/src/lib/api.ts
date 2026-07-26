@@ -137,6 +137,8 @@ export const api = {
       `/products/search?q=${encodeURIComponent(q)}&page=${page}`,
     ),
   getProduct: (barcode: string) => request<ProductDetail>(`/products/${barcode}`),
+  createProduct: (body: { barcode: string; name: string; brand?: string }) =>
+    request<Product>(`/products`, { method: "POST", body: JSON.stringify(body) }),
   getPriceHistory: (barcode: string, days = 730) =>
     request<PriceHistory>(`/products/${barcode}/history?days=${days}`),
   getAlternatives: (barcode: string) =>

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
+import { AddProductForm } from "@/components/AddProductForm";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { PriceChart } from "@/components/PriceChart";
@@ -57,8 +58,6 @@ function ProductDetail() {
   const qc = useQueryClient();
   const { user, openLogin } = useApp();
   const { allergens: profile, diets: dietProfile, autoRead } = useA11y();
-  const [store, setStore] = useState("");
-  const [price, setPrice] = useState("");
   const [listMsg, setListMsg] = useState<string | null>(null);
   const [alertMsg, setAlertMsg] = useState<string | null>(null);
   const [shared, setShared] = useState(false);
@@ -243,15 +242,6 @@ function ProductDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, alternatives, autoRead, barcode, allergenMatches.length, cheaperAlt]);
 
-  async function contribute(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user) return openLogin(true);
-    await api.contributePrice(barcode, { store, price: Number(price) });
-    setStore("");
-    setPrice("");
-    await qc.invalidateQueries({ queryKey: ["product", barcode] });
-  }
-
   if (rawBarcode && !barcode) {
     return (
       <div>
@@ -272,7 +262,10 @@ function ProductDetail() {
     return (
       <div>
         <PageHeader title="Produit" back />
-        <p className="py-10 text-center text-error">Produit introuvable.</p>
+        <AddProductForm
+          barcode={barcode}
+          onCreated={() => qc.invalidateQueries({ queryKey: ["product", barcode] })}
+        />
       </div>
     );
   }
@@ -669,35 +662,6 @@ function ProductDetail() {
         </section>
       )}
 
-      {/* Community add price */}
-      <section className="card p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-headline-md text-on-surface">Prix communautaires</h3>
-        </div>
-        <form onSubmit={contribute} className="flex flex-col gap-3 sm:flex-row">
-          <input
-            className="input flex-1"
-            placeholder="Magasin"
-            aria-label="Nom du magasin"
-            value={store}
-            onChange={(e) => setStore(e.target.value)}
-            required
-          />
-          <input
-            className="input sm:w-32"
-            type="number"
-            step="0.01"
-            placeholder="Prix €"
-            aria-label="Prix en euros"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-          />
-          <button className="btn-primary">
-            <Icon name="add" className="text-[18px]" /> Ajouter
-          </button>
-        </form>
-      </section>
     </div>
   );
 }

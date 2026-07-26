@@ -50,6 +50,15 @@ class ProductSearchResult(BaseModel):
     total: int
 
 
+class ProductCreate(BaseModel):
+    """A product a user adds after scanning a barcode we don't have — typically a
+    store-internal barcode absent from OpenFoodFacts. Name comes from photo
+    recognition (client-side) or manual entry."""
+    barcode: str = Field(min_length=6, max_length=32, pattern=r"^\d+$")
+    name: str = Field(min_length=1, max_length=300)
+    brand: str | None = Field(default=None, max_length=200)
+
+
 class PriceContribution(BaseModel):
     store: str = Field(min_length=1, max_length=120)
     # Upper bound catches the typo case (e.g. 850 for €8.50) — a grocery item

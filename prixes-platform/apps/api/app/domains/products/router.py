@@ -18,6 +18,7 @@ from app.domains.products.schemas import (
     PriceHistoryOut,
     PriceHistoryPoint,
     PricePointOut,
+    ProductCreate,
     ProductDetail,
     ProductOut,
     ProductSearchResult,
@@ -37,6 +38,14 @@ async def browse(
     return ProductSearchResult(
         items=[ProductOut.model_validate(p) for p in products], total=len(products)
     )
+
+
+@router.post("", response_model=ProductOut, status_code=201)
+async def create(data: ProductCreate, db: DbSession, user: CurrentUser) -> ProductOut:
+    """Add a product we don't have (scanned barcode absent from OpenFoodFacts).
+    Authenticated to keep the catalog from being spammed anonymously."""
+    product = await service.create_product(db, data)
+    return ProductOut.model_validate(product)
 
 
 @router.get("/search", response_model=ProductSearchResult)

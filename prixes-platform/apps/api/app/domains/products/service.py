@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.products import off
 from app.domains.products.models import PricePoint, Product
-from app.domains.products.schemas import PriceContribution
+from app.domains.products.schemas import PriceContribution, ProductCreate
 
 logger = logging.getLogger(__name__)
 
@@ -222,6 +222,29 @@ async def healthier_alternatives(
     if product.nutriscore:
         stmt = stmt.where(Product.nutriscore < product.nutriscore)
     return list((await db.execute(stmt)).scalars())
+
+
+async def create_product(db: AsyncSession, data: ProductCreate) -> Product:
+    """Create a minimal product from a user scan (barcode + name + brand). Idempotent:
+    if the barcode already exists, return it rather than erroring. allergens/diets are
+    set to "" (= checked, none) so get_product() doesn't keep trying to refetch a
+    barcode OpenFoodFacts will never have."""
+    existing = await db.get(Product, data.barcode)
+    if existing is not None:
+        if not existing.name:
+            existing.name = data.name
+        return existing
+    product = Product(
+        barcode=data.barcode,
+        name=data.name,
+        brand=data.brand,
+        allergens="",
+        diets="",
+        fetched_at=datetime.now(UTC),
+    )
+    db.add(product)
+    await db.flush()
+    return product
 
 
 async def contribute_price(
