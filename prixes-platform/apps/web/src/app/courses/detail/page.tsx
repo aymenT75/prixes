@@ -139,6 +139,13 @@ function ProductDetail() {
     enabled: !!data,
   });
 
+  // The price point behind "best_price" — used to show its real confidence
+  // (source + age) on the hero banner instead of a blanket, possibly-wrong claim.
+  const bestPricePoint = useMemo(() => {
+    if (!data || data.best_price == null) return null;
+    return data.prices.find((p) => p.price === data.best_price) ?? null;
+  }, [data]);
+
   // The store carrying this product at its best (or first known) price — the one
   // we'll locate automatically below, no tap required.
   const targetStore = useMemo(() => {
@@ -467,10 +474,14 @@ function ProductDetail() {
               </p>
             )}
           </div>
-          <div className="relative z-10 rounded-xl border border-white/30 bg-white/20 px-4 py-2 text-center backdrop-blur-sm">
-            <p className="text-micro uppercase">Vérifié</p>
-            <p className="text-label-md">communauté</p>
-          </div>
+          {bestPricePoint && (
+            <div className="relative z-10 rounded-xl border border-white/30 bg-white/20 px-4 py-2 text-center backdrop-blur-sm">
+              <p className="text-micro uppercase">
+                {priceConfidence(bestPricePoint.source, bestPricePoint.created_at).sourceLabel}
+              </p>
+              <p className="text-label-md">{timeAgo(bestPricePoint.created_at)}</p>
+            </div>
+          )}
         </section>
       )}
 
