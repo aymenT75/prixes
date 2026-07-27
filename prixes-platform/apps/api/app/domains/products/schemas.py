@@ -4,8 +4,21 @@ from __future__ import annotations
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class RecognizeIn(BaseModel):
+    """Photo of a product whose barcode we couldn't resolve — base64, no data: prefix."""
+    image: str = Field(min_length=16)
+    media_type: Literal["image/jpeg", "image/png", "image/webp"] = "image/jpeg"
+
+
+class RecognizeOut(BaseModel):
+    available: bool  # False when no vision API key is configured
+    product_name: str | None = None
+    brand: str | None = None
 
 
 class PricePointOut(BaseModel):

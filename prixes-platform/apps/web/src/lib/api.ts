@@ -1,12 +1,11 @@
 // Typed fetch client with automatic access-token refresh on 401.
 import { tokenStore } from "./tokens";
 import type {
+  FuelNearbyResult,
   AlertList,
   AlternativesResult,
   AnalyticsSummary,
-  Deal,
   FeedbackList,
-  FeedPage,
   GeocodeResult,
   OptimizeResult,
   PriceAlert,
@@ -87,25 +86,12 @@ export const api = {
   exportMyData: () => request<Record<string, unknown>>("/users/me/export"),
   deleteAccount: () => request<void>("/users/me", { method: "DELETE" }),
 
-  // ── Deals ──
-  listDeals: (sort: "hot" | "new" = "hot", cursor = 0) =>
-    request<FeedPage>(`/deals?sort=${sort}&cursor=${cursor}`),
-  getDeal: (id: string) => request<Deal>(`/deals/${id}`),
-  createDeal: (body: Record<string, unknown>) =>
-    request<Deal>("/deals", { method: "POST", body: JSON.stringify(body) }),
-  voteDeal: (id: string, value: 1 | -1) =>
-    request<Deal>(`/deals/${id}/vote`, { method: "POST", body: JSON.stringify({ value }) }),
-  deleteDeal: (id: string) => request<void>(`/deals/${id}`, { method: "DELETE" }),
-  recognizeDeal: (image: string, media_type: string) =>
-    request<{ available: boolean; product_name: string | null; brand: string | null }>(
-      "/deals/recognize",
-      { method: "POST", body: JSON.stringify({ image, media_type }) },
+  // ── Fuel ──
+  fuelNearby: (lat: number, lon: number, fuelType?: string, radiusKm = 10) =>
+    request<FuelNearbyResult>(
+      `/fuel/nearby?lat=${lat}&lon=${lon}&radius_km=${radiusKm}` +
+        (fuelType ? `&fuel_type=${fuelType}` : ""),
     ),
-  reportDeal: (deal_id: string, reason: string, note?: string) =>
-    request("/moderation/reports", {
-      method: "POST",
-      body: JSON.stringify({ deal_id, reason, note }),
-    }),
 
   // ── Meta ──
   meta: () =>
@@ -143,6 +129,12 @@ export const api = {
     request<PriceHistory>(`/products/${barcode}/history?days=${days}`),
   getAlternatives: (barcode: string) =>
     request<AlternativesResult>(`/products/${barcode}/alternatives`),
+  // AI vision fallback when a scanned barcode isn't in the catalog.
+  recognizeProduct: (image: string, media_type: string) =>
+    request<{ available: boolean; product_name?: string; brand?: string }>(
+      "/products/recognize",
+      { method: "POST", body: JSON.stringify({ image, media_type }) },
+    ),
 
   // ── Stores ──
   storesNearby: (lat: number, lon: number, radiusKm = 10, limit = 20) =>

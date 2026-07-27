@@ -1,4 +1,4 @@
-"""AI product recognition from a photo — vision fallback for the deal flow.
+"""AI product recognition from a photo — names a product the barcode lookup missed.
 
 Barcode detection (client-side) is tried first; this is only called when no
 barcode is found. Uses OpenAI (GPT-4o vision) when an OpenAI key is configured,

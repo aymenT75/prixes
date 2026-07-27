@@ -44,10 +44,10 @@ export const TOUR_STEPS: TourStep[] = [
     body: "Visez le code-barres d'un produit en rayon pour voir son prix instantanément.",
   },
   {
-    id: "deals",
-    target: '[data-tour="nav-deals"]',
-    title: "Bons plans",
-    body: "Découvrez les meilleures offres de prix partagées par la communauté.",
+    id: "fuel",
+    target: '[data-tour="nav-fuel"]',
+    title: "Carburant",
+    body: "Comparez les prix des carburants dans les stations autour de vous.",
   },
   {
     id: "stores",

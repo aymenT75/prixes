@@ -6,7 +6,6 @@ import { A11yLayer } from "@/components/A11yLayer";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthModal } from "@/components/AuthModal";
 import { NativeSetup } from "@/components/NativeSetup";
-import { PostDealModal } from "@/components/PostDealModal";
 import { ProductTour } from "@/components/ProductTour";
 import { Providers } from "@/components/Providers";
 
@@ -63,7 +62,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
           <BottomNav />
           <AuthModal />
-          <PostDealModal />
           <A11yLayer />
           <NativeSetup />
           <ProductTour />

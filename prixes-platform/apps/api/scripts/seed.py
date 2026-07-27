@@ -2,8 +2,8 @@
 
 Populates the database with REAL French grocery products (crawled from the
 OpenFoodFacts open database, country=France), attaches multi-supermarket price
-points (Lidl, Aldi, Carrefour, E.Leclerc, Intermarché, Auchan), creates a demo
-login + a handful of community deals, and warms the Redis feed.
+points (Lidl, Aldi, Carrefour, E.Leclerc, Intermarché, Auchan), and creates a
+demo login.
 
 Why OpenFoodFacts and not raw Lidl/Aldi scraping?
     Lidl/Aldi/Carrefour sites are JS-rendered and aggressively bot-protected, so
@@ -15,21 +15,19 @@ Why OpenFoodFacts and not raw Lidl/Aldi scraping?
     in. See `scripts/retailers/` for the real-scraper extension point.
 
 Run (from apps/api, with DB migrated):
-    python scripts/seed.py                 # ~48 products, 6 stores, 12 deals
+    python scripts/seed.py                 # ~48 products, 6 stores
     python scripts/seed.py --per-cat 12    # crawl more per category
 
-Idempotent: products upsert by barcode; prices/deals only created when absent.
+Idempotent: products upsert by barcode; prices only created when absent.
 """
 from __future__ import annotations
 
 import argparse
 import asyncio
-import contextlib
 import hashlib
 import os
-import random
 import sys
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
@@ -37,13 +35,10 @@ import httpx
 # Make `app` importable when run as `python scripts/seed.py` from apps/api.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sqlalchemy import func, select  # noqa: E402
+from sqlalchemy import select  # noqa: E402
 
 from app.core.db import SessionLocal  # noqa: E402
-from app.core.ranking import hot_score  # noqa: E402
-from app.core.redis import FEED_HOT, FEED_NEW, redis_client  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
-from app.domains.deals.models import Deal  # noqa: E402
 from app.domains.products.models import PricePoint, Product  # noqa: E402
 from app.domains.products.off import _normalise_off  # noqa: E402
 from app.domains.users.models import User  # noqa: E402
@@ -141,8 +136,7 @@ async def crawl_category(client: httpx.AsyncClient, tag: str, n: int) -> list[di
     return out
 
 
-async def main(per_cat: int, n_deals: int) -> None:
-    rng = random.Random(42)  # noqa: S311 — fixed seed for reproducible demo data, not crypto
+async def main(per_cat: int) -> None:
     now = datetime.now(UTC).replace(microsecond=0)  # Ensure clean timezone-aware datetime
 
     # No HTTP client needed here — this flow seeds from FALLBACK_PRODUCTS (below),
@@ -207,72 +201,13 @@ async def main(per_cat: int, n_deals: int) -> None:
 
         print(f"  > {len(seeded)} produits, ~{len(seeded) * len(STORES)} prix magasins")
 
-        # ── Community deals (real products, discounted) ────────────
-        existing_deals = await db.scalar(select(func.count()).select_from(Deal))
-        created = 0
-        if existing_deals == 0 and seeded:
-            picks = rng.sample(seeded, min(n_deals, len(seeded)))
-            for product in picks:
-                prices = (
-                    await db.execute(
-                        select(PricePoint.price).where(PricePoint.barcode == product.barcode)
-                    )
-                ).scalars().all()
-                if not prices:
-                    continue
-                cheapest = min(prices)
-                usual = _eur(float(max(prices)) * 1.18)  # "usual" reference price
-                if cheapest >= usual:
-                    continue
-                up = rng.randint(3, 180)
-                created_at_aware = now - timedelta(hours=rng.randint(1, 72))
-                created_at_naive = created_at_aware.replace(tzinfo=None)  # Strip tz for DB storage
-                deal = Deal(
-                    author_id=demo.id,
-                    title=f"{product.name} -- {product.brand or 'bonne affaire'}",
-                    description="Prix repere en magasin par la communaute.",
-                    store=rng.choice(list(STORES)),
-                    category=product.categories,
-                    price_now=cheapest,
-                    price_before=usual,
-                    photo_url=product.image_url,
-                    link=f"https://world.openfoodfacts.org/product/{product.barcode}",
-                    votes_up=up,
-                    votes_down=rng.randint(0, 12),
-                    created_at=created_at_naive,
-                )
-                deal.score = hot_score(deal.votes_up, deal.votes_down, created_at_aware)
-                db.add(deal)
-                created += 1
-            demo.deals_count = created
-            print(f"  > {created} deals crees")
-        else:
-            print(f"= deals already present ({existing_deals}), skipping")
-
         await db.commit()
 
-        # ── Warm Redis ranked feeds ────────────────────────────────
-        rows = (
-            await db.execute(select(Deal).where(Deal.status == "active"))
-        ).scalars().all()
-        if rows:
-            await redis_client.zadd(
-                FEED_HOT, {str(d.id): float(d.score) for d in rows}
-            )
-            await redis_client.zadd(
-                FEED_NEW, {str(d.id): d.created_at.timestamp() for d in rows}
-            )
-            print(f"  > Redis feeds warmed ({len(rows)} deals)")
-
-    # Redis close timing out just means the script exits anyway — not worth surfacing.
-    with contextlib.suppress(TimeoutError):
-        await asyncio.wait_for(redis_client.aclose(), timeout=2.0)
     print("\nOK Seed fini. Connecte-toi avec demo@prixes.app / demo1234")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Seed Prixes with real OFF products.")
     parser.add_argument("--per-cat", type=int, default=8, help="products crawled per category")
-    parser.add_argument("--deals", type=int, default=12, help="number of demo deals")
     args = parser.parse_args()
-    asyncio.run(main(args.per_cat, args.deals))
+    asyncio.run(main(args.per_cat))

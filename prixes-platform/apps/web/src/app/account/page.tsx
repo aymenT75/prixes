@@ -80,7 +80,6 @@ export default function AccountPage() {
   }
 
   const stats = [
-    { icon: "sell", label: "Deals partagés", value: user.deals_count, box: "bg-primary/10 text-primary" },
     { icon: "favorite", label: "Votes reçus", value: user.votes_received, box: "bg-secondary/10 text-secondary" },
     { icon: "analytics", label: "Contributions", value: user.reputation, box: "bg-tertiary/10 text-tertiary" },
   ];

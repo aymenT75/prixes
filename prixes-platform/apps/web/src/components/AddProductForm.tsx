@@ -28,7 +28,7 @@ export function AddProductForm({
     setHint(null);
     try {
       const b64 = await downscaleToBase64(file);
-      const r = await api.recognizeDeal(b64, "image/jpeg");
+      const r = await api.recognizeProduct(b64, "image/jpeg");
       if (!r.available) {
         setHint("Reconnaissance IA indisponible — saisissez le nom.");
       } else if (r.product_name) {

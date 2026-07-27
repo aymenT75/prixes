@@ -6,10 +6,8 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select, update
 
 from app.core.deps import CurrentUser, DbSession
-from app.domains.deals.models import Deal, Vote
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -22,7 +20,6 @@ class UserMe(BaseModel):
     username: str
     initials: str
     reputation: int
-    deals_count: int
     votes_received: int
     role: str
     is_verified: bool
@@ -34,7 +31,6 @@ class UserPublic(BaseModel):
     username: str
     initials: str
     reputation: int
-    deals_count: int
 
 
 class UserUpdate(BaseModel):
@@ -63,25 +59,14 @@ async def update_me(body: UserUpdate, user: CurrentUser, db: DbSession) -> UserM
 @router.get("/me/export", response_model=dict)
 async def export_my_data(user: CurrentUser, db: DbSession) -> dict[str, Any]:
     """GDPR Art. 20 — return all personal data we hold for this user as JSON."""
-    deals = (await db.execute(select(Deal).where(Deal.author_id == user.id))).scalars().all()
-    votes = (await db.execute(select(Vote).where(Vote.user_id == user.id))).scalars().all()
     return {
         "profile": UserMe.model_validate(user).model_dump(mode="json"),
-        "deals": [
-            {"id": str(d.id), "title": d.title, "created_at": d.created_at.isoformat()}
-            for d in deals
-        ],
-        "votes": [{"deal_id": str(v.deal_id), "value": v.value} for v in votes],
     }
 
 
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_my_account(user: CurrentUser, db: DbSession) -> None:
-    """GDPR Art. 17 — erase the account. Authored deals are anonymised, not deleted,
-    to preserve community price history; PII is removed."""
-    await db.execute(
-        update(Deal).where(Deal.author_id == user.id).values(status="removed")
-    )
+    """GDPR Art. 17 — erase the account: PII is removed and the account is locked."""
     user.email = f"deleted-{user.id}@anonymous.invalid"
     user.username = "Compte supprimé"
     user.initials = "··"

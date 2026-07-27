@@ -22,9 +22,8 @@ class User(Base, TimestampMixin):
     oauth_provider: Mapped[str | None] = mapped_column(String(32), nullable=True)
     oauth_sub: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
 
-    # Reputation / gamification (from Firestore: rep, dealsCount, totalVotes)
+    # Reputation / gamification (from Firestore: rep, totalVotes)
     reputation: Mapped[int] = mapped_column(Integer, default=0)
-    deals_count: Mapped[int] = mapped_column(Integer, default=0)
     votes_received: Mapped[int] = mapped_column(Integer, default=0)
 
     role: Mapped[str] = mapped_column(String(16), default="user")  # user|moderator|admin

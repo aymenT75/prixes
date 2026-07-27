@@ -15,10 +15,9 @@ from app.core.redis import redis_client
 from app.domains.alerts.router import router as alerts_router
 from app.domains.analytics.router import router as analytics_router
 from app.domains.auth.router import router as auth_router
-from app.domains.deals.router import router as deals_router
 from app.domains.devices.router import router as devices_router
 from app.domains.feedback.router import router as feedback_router
-from app.domains.moderation.router import router as moderation_router
+from app.domains.fuel.router import router as fuel_router
 from app.domains.products.router import router as products_router
 from app.domains.shopping.router import router as shopping_router
 from app.domains.stores.router import router as stores_router
@@ -87,12 +86,11 @@ async def meta() -> dict[str, object]:
 
 app.include_router(auth_router, prefix=API_V1)
 app.include_router(users_router, prefix=API_V1)
-app.include_router(deals_router, prefix=API_V1)
+app.include_router(fuel_router, prefix=API_V1)
 app.include_router(products_router, prefix=API_V1)
 app.include_router(stores_router, prefix=API_V1)
 app.include_router(tts_router, prefix=API_V1)
 app.include_router(uploads_router, prefix=API_V1)
-app.include_router(moderation_router, prefix=API_V1)
 app.include_router(shopping_router, prefix=API_V1)
 app.include_router(alerts_router, prefix=API_V1)
 app.include_router(devices_router, prefix=API_V1)

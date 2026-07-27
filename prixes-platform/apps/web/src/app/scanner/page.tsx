@@ -69,7 +69,7 @@ export default function ScannerPage() {
     // 2) Vision AI (GPT-4o) → product name → search our catalogue.
     try {
       const b64 = await downscaleToBase64(file);
-      const r = await api.recognizeDeal(b64, "image/jpeg");
+      const r = await api.recognizeProduct(b64, "image/jpeg");
       if (!r.available) return aiFail("Reconnaissance IA indisponible.");
       if (!r.product_name) return aiFail("Produit non reconnu. Réessayez ou saisissez le code.");
       const name = r.product_name;

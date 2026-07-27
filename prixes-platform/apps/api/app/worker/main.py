@@ -12,9 +12,8 @@ from arq.connections import RedisSettings
 from app.core.config import settings
 from app.worker.tasks import (
     evaluate_price_alerts,
-    expire_deals,
+    ingest_fuel,
     prune_analytics,
-    refresh_deals,
     refresh_prices,
 )
 
@@ -29,8 +28,7 @@ class WorkerSettings:
         evaluate_price_alerts,
         refresh_prices,
         prune_analytics,
-        refresh_deals,
-        expire_deals,
+        ingest_fuel,
     ]
     redis_settings = RedisSettings.from_dsn(str(settings.redis_url))
     # The price crawl + OFF enrichment can take a couple of minutes; give jobs
@@ -46,13 +44,8 @@ class WorkerSettings:
         cron(evaluate_price_alerts, minute={0, 15, 30, 45}),  # type: ignore[arg-type]
         # GDPR data minimisation — prune old anonymous analytics events daily.
         cron(prune_analytics, hour=4, minute=10),  # type: ignore[arg-type]
-        # Auto-generated deals actually reset every ~48h (self-throttled inside
-        # the task) — checked twice a day so the reset lands close to on time.
-        # run_at_startup so a fresh deploy (like the one shipping this feature)
-        # populates the Deals tab immediately instead of waiting for the next
-        # scheduled check.
-        cron(refresh_deals, hour={3, 15}, minute=30, run_at_startup=True),  # type: ignore[arg-type]
-        # General deal-lifecycle enforcement — any deal past its own expires_at
-        # (community-submitted or auto-generated), checked hourly.
-        cron(expire_deals, minute=5, run_at_startup=True),  # type: ignore[arg-type]
+        # French fuel feed refreshes a few times a day; ingest hourly at :07.
+        # run_at_startup so a fresh deploy repopulates prices immediately rather
+        # than serving whatever was last cached.
+        cron(ingest_fuel, minute=7, run_at_startup=True),  # type: ignore[arg-type]
     ]

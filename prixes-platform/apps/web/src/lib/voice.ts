@@ -421,7 +421,7 @@ const NAV = [
   { path: "/list", say: "J'ouvre votre liste.", words: ["ma liste", "liste de course", "liste de courses", "panier", "ma course"] },
   { path: "/alerts", say: "J'ouvre vos alertes.", words: ["alerte", "alertes", "baisse de prix", "notification"] },
   { path: "/stores", say: "J'ouvre les magasins.", words: ["magasin", "magasins", "boutique", "magasin proche", "magasins proches", "ou acheter"] },
-  { path: "/deals", say: "J'ouvre les bons plans.", words: ["promo", "deal", "bon plan", "offre", "reduction", "soldes"] },
+  { path: "/fuel", say: "J'ouvre les prix des carburants.", words: ["carburant", "essence", "gazole", "diesel", "gasoil", "station", "sp95", "sp98", "e85", "gpl", "plein"] },
   { path: "/scanner", say: "J'ouvre le scanner.", words: ["scan", "scanner", "code barre", "code-barres"] },
   { path: "/account", say: "J'ouvre votre compte.", words: ["compte", "profil", "mon compte", "parametre", "reglage"] },
   { path: "/courses", say: "J'ouvre les courses.", words: ["course", "produit", "epicerie", "supermarche", "aliment"] },
@@ -462,18 +462,20 @@ export function parseIntent(raw: string): Intent {
   )
     return { type: "read", say: "" };
 
+  // Navigation by keyword — checked before the generic search phrase below so
+  // that "prix du carburant" routes to /fuel instead of becoming a literal
+  // search for "carburant" (the "prix d[eu]s? X" pattern would otherwise win).
+  for (const n of NAV) {
+    if (n.words.some((w) => t.includes(w))) {
+      return { type: "navigate", path: n.path, say: n.say };
+    }
+  }
+
   // Search: "cherche X", "trouve X", "recherche X", "je veux X", "prix du X"
   const m = t.match(/\b(?:cherche|chercher|trouve|trouver|recherche|rechercher|je veux|je cherche|prix d[eu]s?|combien coute|trouvez)\s+(.*)/);
   if (m && m[1]) {
     const q = m[1].replace(/^(l'|la |le |les |du |de la |des |un |une )/, "").trim();
     if (q.length > 1) return { type: "search", query: q, say: `Je cherche ${q}.` };
-  }
-
-  // Navigation by keyword
-  for (const n of NAV) {
-    if (n.words.some((w) => t.includes(w))) {
-      return { type: "navigate", path: n.path, say: n.say };
-    }
   }
 
   // Fallback: treat the whole phrase as a product search.

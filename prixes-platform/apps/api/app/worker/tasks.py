@@ -1,21 +1,25 @@
-"""Background tasks: refresh trending feed, evaluate price alerts."""
+"""Background tasks: ingest French fuel open data, evaluate price alerts."""
 from __future__ import annotations
 
+import io
+import zipfile
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from xml.etree import ElementTree as ET
 
-from sqlalchemy import CursorResult, delete
+from sqlalchemy import CursorResult, delete, func
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 # Import the full model registry so SQLAlchemy can resolve every ForeignKey
 # (e.g. price_alerts -> users/products) when it sorts tables on commit. The
 # worker process would otherwise only load a subset of mappers.
 from app.core import models as _models  # noqa: F401
+from app.core.config import settings
 from app.core.db import SessionLocal
-from app.core.redis import redis_client
+from app.core.http import get_http_client
 from app.domains.alerts import service as alert_service
 from app.domains.analytics.models import AnalyticsEvent
-from app.domains.deals import service as deals_service
-from app.domains.deals.autogen import refresh_auto_deals
+from app.domains.fuel.models import FuelStation
 from app.domains.notifications import service as notify_service
 from app.domains.products.ingest import refresh_prices as _refresh_prices
 
@@ -23,11 +27,72 @@ from app.domains.products.ingest import refresh_prices as _refresh_prices
 # horizon (see docs/PRIVACY — analytics retention).
 _ANALYTICS_RETENTION_DAYS = 90
 
-# Deals reset cadence. arq's cron only fires "at" a given hour/minute, not on a
-# rolling interval, so this task is scheduled to run every few hours and
-# self-throttles here against the last actual reset time in Redis.
-_DEALS_RESET_INTERVAL = timedelta(hours=48)
-_DEALS_LAST_RESET_KEY = "deals:autogen:last_reset"
+# gov ids: 1=Gazole 2=SP95 3=E85 4=GPLc 5=SP98 6=E10
+_FUEL_NAMES = {"1": "gazole", "2": "sp95", "3": "e85", "4": "gplc", "5": "sp98", "6": "e10"}
+
+
+async def ingest_fuel(_: dict[str, Any]) -> dict[str, int]:
+    """Download + parse the national instantaneous fuel-price feed (zipped XML)."""
+    resp = await get_http_client().get(settings.fuel_data_url, timeout=60.0)
+    resp.raise_for_status()
+
+    raw = resp.content
+    if raw[:2] == b"PK":  # zip archive
+        with zipfile.ZipFile(io.BytesIO(raw)) as zf:
+            raw = zf.read(zf.namelist()[0])
+
+    # ruff S314: stdlib XML parsing is vulnerable to entity-expansion attacks on
+    # untrusted input. This feed is a fixed government URL (donnees.roulez-eco.fr),
+    # not user-supplied, so the input is trusted; switching to defusedxml would mean
+    # adding a dependency for a source we control the address of.
+    root = ET.fromstring(raw)  # noqa: S314
+    now = datetime.now(UTC)
+    count = 0
+
+    async with SessionLocal() as db:
+        for pdv in root.findall(".//pdv"):
+            try:
+                sid = int(pdv.get("id"))  # type: ignore[arg-type]
+                lat = float(pdv.get("latitude")) / 100000.0  # type: ignore[arg-type]
+                lon = float(pdv.get("longitude")) / 100000.0  # type: ignore[arg-type]
+            except (TypeError, ValueError):
+                continue
+
+            prices = {
+                _FUEL_NAMES.get(p.get("id", ""), p.get("nom", "")).lower(): float(
+                    p.get("valeur", 0)
+                )
+                for p in pdv.findall("prix")
+                if p.get("valeur")
+            }
+            address = (pdv.findtext("adresse") or "").strip()
+            city = (pdv.findtext("ville") or "").strip()
+
+            stmt = pg_insert(FuelStation).values(
+                id=sid,
+                lat=lat,
+                lon=lon,
+                geo=func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326),
+                address=address or None,
+                city=city or None,
+                postal_code=pdv.get("cp"),
+                prices=prices,
+                updated_at=now,
+            )
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["id"],
+                set_={
+                    "lat": lat,
+                    "lon": lon,
+                    "geo": func.ST_SetSRID(func.ST_MakePoint(lon, lat), 4326),
+                    "prices": prices,
+                    "updated_at": now,
+                },
+            )
+            await db.execute(stmt)
+            count += 1
+        await db.commit()
+    return {"stations": count}
 
 
 async def evaluate_price_alerts(_: dict[Any, Any]) -> dict[str, int]:
@@ -50,30 +115,6 @@ async def refresh_prices(_: dict[Any, Any]) -> dict[str, int]:
         pages=8,  # Deeper recent-price pagination
         enrich_cap=20,  # Light OFF enrichment (focus on freshness, not completeness)
     )
-
-
-async def refresh_deals(_: dict[Any, Any]) -> dict[str, int]:
-    """Reset the auto-generated deals every ~48h so the Deals tab is never
-    empty for long, even with zero community submissions (see autogen.py)."""
-    now = datetime.now(UTC)
-    last = await redis_client.get(_DEALS_LAST_RESET_KEY)
-    if last and now - datetime.fromisoformat(last) < _DEALS_RESET_INTERVAL:
-        return {"skipped": 1}
-
-    async with SessionLocal() as db:
-        result = await refresh_auto_deals(db)
-        await db.commit()
-    await redis_client.set(_DEALS_LAST_RESET_KEY, now.isoformat())
-    return result
-
-
-async def expire_deals(_: dict[Any, Any]) -> dict[str, int]:
-    """Enforce any deal's `expires_at` — community-submitted or auto-generated
-    (see deals/service.py::expire_stale_deals for why this was needed)."""
-    async with SessionLocal() as db:
-        count = await deals_service.expire_stale_deals(db)
-        await db.commit()
-    return {"expired": count}
 
 
 async def prune_analytics(_: dict[Any, Any]) -> dict[str, int]:

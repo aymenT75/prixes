@@ -25,10 +25,9 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import contextlib
 import os
 import sys
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 import httpx
@@ -38,10 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import func, select  # noqa: E402
 
 from app.core.db import SessionLocal  # noqa: E402
-from app.core.ranking import hot_score  # noqa: E402
-from app.core.redis import FEED_HOT, FEED_NEW, redis_client  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
-from app.domains.deals.models import Deal  # noqa: E402
 from app.domains.products.models import PricePoint, Product  # noqa: E402
 from app.domains.users.models import User  # noqa: E402
 
@@ -279,7 +275,7 @@ def _pdate(s: str | None) -> datetime:
             return datetime.now(UTC)
 
 
-async def main(pages: int, enrich_cap: int, n_deals: int,
+async def main(pages: int, enrich_cap: int,
                per_retailer: int, prices_per_loc: int) -> None:
     now = datetime.now(UTC).replace(microsecond=0)
     headers = {"User-Agent": "Prixes/2.0 (real-price-ingest)"}
@@ -363,66 +359,8 @@ async def main(pages: int, enrich_cap: int, n_deals: int,
             print(f"  -> {len(seeded)} produits, {total_prices} prix reels en base "
                   f"({enriched} enrichis via OFF)")
 
-            # Real community deals: products with a real discount across stores
-            existing_deals = await db.scalar(select(func.count()).select_from(Deal))
-            created = 0
-            if existing_deals == 0:
-                # Pick products that have >=2 stores so a comparison/deal is meaningful
-                candidates = []
-                for product in seeded:
-                    prices = (
-                        await db.execute(
-                            select(PricePoint.price, PricePoint.store).where(
-                                PricePoint.barcode == product.barcode
-                            )
-                        )
-                    ).all()
-                    stores = {s for _, s in prices}
-                    if product.name and len(stores) >= 2:
-                        cheapest = min(pr for pr, _ in prices)
-                        dearest = max(pr for pr, _ in prices)
-                        if dearest > cheapest:
-                            candidates.append((product, cheapest, dearest, stores))
-                candidates.sort(key=lambda c: float(c[2] - c[1]) / float(c[2]), reverse=True)
-                for i, (product, cheapest, dearest, stores) in enumerate(candidates[:n_deals]):
-                    created_at = now - timedelta(hours=i * 5 + 1)
-                    deal = Deal(
-                        author_id=demo.id,
-                        title=f"{product.name} - {product.brand or 'bon prix'}"[:200],
-                        description=f"Prix releve en magasin. Le moins cher: {cheapest}EUR.",
-                        store=min(stores),
-                        category=(product.categories or "")[:64] or None,
-                        price_now=cheapest,
-                        price_before=dearest,
-                        photo_url=product.image_url,
-                        link=f"https://prices.openfoodfacts.org/products/{product.barcode}",
-                        votes_up=20 + i * 3,
-                        votes_down=i % 5,
-                        created_at=created_at.replace(tzinfo=None),
-                    )
-                    deal.score = hot_score(deal.votes_up, deal.votes_down, created_at)
-                    db.add(deal)
-                    created += 1
-                demo.deals_count = created
-                print(f"  -> {created} deals reels crees")
-            else:
-                print(f"= deals deja presents ({existing_deals})")
-
             await db.commit()
 
-            rows_deals = (
-                await db.execute(select(Deal).where(Deal.status == "active"))
-            ).scalars().all()
-            if rows_deals:
-                await redis_client.zadd(FEED_HOT, {str(d.id): float(d.score) for d in rows_deals})
-                await redis_client.zadd(
-                    FEED_NEW, {str(d.id): d.created_at.timestamp() for d in rows_deals}
-                )
-                print(f"  -> Redis feeds warmed ({len(rows_deals)} deals)")
-
-    # Redis close timing out just means the script exits anyway — not worth surfacing.
-    with contextlib.suppress(Exception):
-        await asyncio.wait_for(redis_client.aclose(), timeout=2.0)
     print("\nOK Donnees reelles ingerees. Login: demo@prixes.app / demo1234")
 
 
@@ -432,7 +370,5 @@ if __name__ == "__main__":
     ap.add_argument("--per-retailer", type=int, default=6, help="stores crawled per retailer")
     ap.add_argument("--prices-per-loc", type=int, default=40, help="prices pulled per store")
     ap.add_argument("--enrich", type=int, default=200, help="max OFF lookups for missing metadata")
-    ap.add_argument("--deals", type=int, default=12, help="number of community deals")
     args = ap.parse_args()
-    asyncio.run(main(args.pages, args.enrich, args.deals,
-                     args.per_retailer, args.prices_per_loc))
+    asyncio.run(main(args.pages, args.enrich, args.per_retailer, args.prices_per_loc))

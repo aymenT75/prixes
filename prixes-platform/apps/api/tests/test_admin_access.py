@@ -32,7 +32,7 @@ def _clear_overrides() -> Iterator[None]:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("endpoint", ["/api/v1/feedback", "/api/v1/moderation/reports"])
+@pytest.mark.parametrize("endpoint", ["/api/v1/feedback"])
 async def test_regular_user_forbidden(endpoint: str) -> None:
     app.dependency_overrides[get_current_user] = lambda: _fake_user("user")
     transport = ASGITransport(app=app)

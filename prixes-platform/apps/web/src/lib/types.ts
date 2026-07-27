@@ -13,33 +13,26 @@ export interface User {
   username: string;
   initials: string;
   reputation: number;
-  deals_count: number;
   votes_received: number;
   role: string;
   is_verified: boolean;
 }
 
-export interface Deal {
-  id: string;
-  title: string;
-  description: string | null;
-  store: string | null;
-  category: string | null;
-  price_now: number;
-  price_before: number;
-  discount_pct: number;
-  photo_url: string | null;
-  link: string | null;
-  votes_up: number;
-  votes_down: number;
-  expires_at: string | null;
-  created_at: string;
+export interface FuelStation {
+  id: number;
+  brand: string | null;
+  address: string | null;
+  city: string | null;
+  postal_code: string | null;
+  lat: number;
+  lon: number;
+  distance_km: number | null;
+  prices: Record<string, number>;
 }
 
-export interface FeedPage {
-  items: Deal[];
-  next_cursor: number | null;
-  sort: string;
+export interface FuelNearbyResult {
+  fuel_type: string | null;
+  items: FuelStation[];
 }
 
 export interface Product {

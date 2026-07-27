@@ -44,7 +44,7 @@ describe("parseIntent", () => {
   });
 
   it("navigates to a known screen by keyword", () => {
-    expect(parseIntent("ouvre les deals")).toMatchObject({ type: "navigate", path: "/deals" });
+    expect(parseIntent("prix du carburant")).toMatchObject({ type: "navigate", path: "/fuel" });
     expect(parseIntent("ouvre le scanner")).toMatchObject({ type: "navigate", path: "/scanner" });
     expect(parseIntent("ouvre ma liste")).toMatchObject({ type: "navigate", path: "/list" });
     expect(parseIntent("mes alertes")).toMatchObject({ type: "navigate", path: "/alerts" });
@@ -57,11 +57,10 @@ describe("parseIntent", () => {
     expect(parseIntent("ma liste de courses")).toMatchObject({ type: "navigate", path: "/list" });
   });
 
-  it("no longer navigates to the removed fuel screen", () => {
-    // The Carburant feature was removed — voice search for fuel words must not
-    // route anywhere special anymore, it just becomes a plain product search.
+  it("navigates to the fuel screen for a fuel-related phrase", () => {
+    // The Carburant feature is back — voice search for fuel words routes to /fuel.
     const intent = parseIntent("trouve une station essence");
-    expect(intent.type).not.toBe("navigate");
+    expect(intent).toMatchObject({ type: "navigate", path: "/fuel" });
   });
 
   it("falls back to treating the whole phrase as a search", () => {

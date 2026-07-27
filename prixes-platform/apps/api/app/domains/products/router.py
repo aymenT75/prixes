@@ -4,12 +4,15 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.core.deps import CurrentUser, DbSession
+from app.core.rate_limit import RateLimit
 from app.domains.products import service
 from app.domains.products.models import PricePoint
+from app.domains.products.recognize import recognize_product
 from app.domains.products.schemas import (
     AlternativeOut,
     AlternativesOut,
@@ -22,6 +25,8 @@ from app.domains.products.schemas import (
     ProductDetail,
     ProductOut,
     ProductSearchResult,
+    RecognizeIn,
+    RecognizeOut,
 )
 from app.domains.products.units import unit_price
 
@@ -38,6 +43,20 @@ async def browse(
     return ProductSearchResult(
         items=[ProductOut.model_validate(p) for p in products], total=len(products)
     )
+
+
+@router.post(
+    "/recognize",
+    response_model=RecognizeOut,
+    dependencies=[Depends(RateLimit("recognize", times=30, window=3600))],
+)
+async def recognize(data: RecognizeIn, user: CurrentUser) -> RecognizeOut:
+    """AI vision fallback: name a product from a photo when its barcode isn't in our
+    catalog. Returns available=False when no vision key is set."""
+    if not (settings.openai_api_key or settings.anthropic_api_key):
+        return RecognizeOut(available=False)
+    name, brand = await recognize_product(data.image, data.media_type)
+    return RecognizeOut(available=True, product_name=name, brand=brand)
 
 
 @router.post("", response_model=ProductOut, status_code=201)
