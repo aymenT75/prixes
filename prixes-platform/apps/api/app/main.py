@@ -22,7 +22,6 @@ from app.domains.products.router import router as products_router
 from app.domains.shopping.router import router as shopping_router
 from app.domains.stores.router import router as stores_router
 from app.domains.tts.router import router as tts_router
-from app.domains.uploads.router import router as uploads_router
 from app.domains.users.router import router as users_router
 
 if settings.sentry_dsn:
@@ -74,11 +73,7 @@ API_V1 = "/api/v1"
 @app.get(f"{API_V1}/meta", tags=["meta"])
 async def meta() -> dict[str, object]:
     """Public capability flags the frontend uses to adapt its UI."""
-    uploads_enabled = bool(
-        settings.s3_access_key_id and settings.s3_secret_access_key and settings.s3_public_base_url
-    )
     return {
-        "uploads_enabled": uploads_enabled,
         "tts_enabled": bool(settings.openai_api_key),
         "environment": settings.environment,
     }
@@ -90,7 +85,6 @@ app.include_router(fuel_router, prefix=API_V1)
 app.include_router(products_router, prefix=API_V1)
 app.include_router(stores_router, prefix=API_V1)
 app.include_router(tts_router, prefix=API_V1)
-app.include_router(uploads_router, prefix=API_V1)
 app.include_router(shopping_router, prefix=API_V1)
 app.include_router(alerts_router, prefix=API_V1)
 app.include_router(devices_router, prefix=API_V1)

@@ -79,16 +79,13 @@ restauration de la base de données).
 ---
 
 ## Options
-- **Photos de deals** : renseigner les variables `S3_*` (S3 ou Cloudflare R2).
-  Tant qu'elles sont vides, l'upload de photo est **masqué** dans l'UI (les deals
-  se publient sans photo). `GET /api/v1/meta` expose `uploads_enabled`.
 - **Suivi d'erreurs** : renseigner `SENTRY_DSN`.
 - **Connexion Google** : renseigner `GOOGLE_OAUTH_CLIENT_ID/SECRET`.
 
 ## Sécurité / robustesse déjà en place
 - Secrets hors-Git (`.env.production` est git-ignoré).
 - `restart: unless-stopped` + healthcheck sur l'API (redémarrage auto).
-- Rate-limiting (login, création de deals), CORS verrouillé sur le domaine.
+- Rate-limiting (login, reconnaissance photo produit), CORS verrouillé sur le domaine.
 - En-têtes de sécurité (HSTS, X-Content-Type-Options, X-Frame-Options) via Caddy.
 - Pages d'erreur / 404 / chargement personnalisées (pas d'écran blanc).
 - Sauvegarde DB avant chaque déploiement + quotidienne (cron), rollback

@@ -38,9 +38,9 @@
   --color-primary: 69 104 0;
   --color-on-error: 255 255 255;
   --color-error-container: 255 218 214;
-  /* Deals keep a warm accent so the "-XX% OFF" badge stands out against the vibrant UI. */
-  --color-deal-accent: 194 65 12;
-  --color-on-deal-accent: 255 255 255;
+  /* Warm accent for high-attention UI (voice listening, scan line, main FAB). */
+  --color-accent-warm: 194 65 12;
+  --color-on-accent-warm: 255 255 255;
   --color-surface-container: 237 237 243;
   --color-surface-container-high: 232 232 238;
   --color-surface-dim: 217 217 223;
@@ -99,10 +99,10 @@ html.dark {
   --color-primary: 154 217 46;
   --color-on-error: 179 0 0;
   --color-error-container: 179 0 0;
-  --color-deal-accent: 255 168 130;
-  /* deal-accent is light in dark mode, so on-deal-accent flips to a dark brown
+  --color-accent-warm: 255 168 130;
+  /* accent-warm is light in dark mode, so on-accent-warm flips to a dark brown
      for readable text/badges on it. */
-  --color-on-deal-accent: 40 20 0;
+  --color-on-accent-warm: 40 20 0;
   --color-surface-container: 33 38 45;
   --color-surface-container-high: 45 51 59;
   --color-surface-dim: 13 17 23;

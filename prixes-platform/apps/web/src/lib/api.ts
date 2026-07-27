@@ -96,7 +96,7 @@ export const api = {
 
   // ── Meta ──
   meta: () =>
-    request<{ uploads_enabled: boolean; tts_enabled: boolean; environment: string }>("/meta"),
+    request<{ tts_enabled: boolean; environment: string }>("/meta"),
 
   // ── Text-to-speech (natural voice) ──
   // Returns an object URL for the MP3, or null when TTS is unavailable (caller then
@@ -180,11 +180,4 @@ export const api = {
 
   // ── Analytics (admin read) ──
   analyticsSummary: (days = 14) => request<AnalyticsSummary>(`/analytics/summary?days=${days}`),
-
-  // ── Uploads ──
-  presign: (contentType: string) =>
-    request<{ upload_url: string; public_url: string; key: string }>(
-      `/uploads/presign?content_type=${encodeURIComponent(contentType)}`,
-      { method: "POST" },
-    ),
 };

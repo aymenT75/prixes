@@ -13,19 +13,16 @@ interface AppState {
   user: User | null;
   loading: boolean;
   loginModalOpen: boolean;
-  postModalOpen: boolean;
   loadMe: () => Promise<void>;
   setUser: (u: User | null) => void;
   logout: () => void;
   openLogin: (open: boolean) => void;
-  openPost: (open: boolean) => void;
 }
 
 export const useApp = create<AppState>((set) => ({
   user: null,
   loading: true,
   loginModalOpen: false,
-  postModalOpen: false,
   async loadMe() {
     if (!tokenStore.access) {
       set({ loading: false });
@@ -53,5 +50,4 @@ export const useApp = create<AppState>((set) => ({
     }
   },
   openLogin: (loginModalOpen) => set({ loginModalOpen }),
-  openPost: (postModalOpen) => set({ postModalOpen }),
 }));

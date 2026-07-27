@@ -1,13 +1,13 @@
 "use client";
 
 import { Icon } from "@/components/Icon";
-import { dealTemperature, temperatureColor } from "@/lib/format";
+import { priceGapTemperature, temperatureColor } from "@/lib/format";
 
-// The colour carries the "how good is this deal" signal at a glance, but
+// The colour carries the "how big is this price gap" signal at a glance, but
 // never colour-only: an icon (snowflake → thermostat → flame) plus a spoken-
 // out label ("Froid — peu intéressant" etc.) says the same thing in words.
 export function Thermometer({ discountPct, compact = false }: { discountPct: number; compact?: boolean }) {
-  const { temperature, label, icon } = dealTemperature(discountPct);
+  const { temperature, label, icon } = priceGapTemperature(discountPct);
   const color = temperatureColor[temperature];
 
   if (compact) {

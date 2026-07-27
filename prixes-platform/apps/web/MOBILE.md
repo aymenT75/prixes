@@ -66,7 +66,7 @@ npm run cap:assets
 | Speech (STT/TTS) | `@capacitor-community/speech-recognition` + `text-to-speech` | required on iOS (no Web Speech in WKWebView) |
 | Haptics | `@capacitor/haptics` | |
 | Share | `@capacitor/share` | |
-| Camera | `@capacitor/camera` | deal photo |
+| Camera | `@capacitor/camera` | product photo recognition |
 | Push | `@capacitor/push-notifications` | FCM/APNs |
 | Auth | `@capacitor-firebase/authentication` | native Google/Apple → Firebase ID token → `/auth/firebase` |
 | Shell | `@capacitor/app`, `status-bar`, `splash-screen` | back button, status bar, splash |

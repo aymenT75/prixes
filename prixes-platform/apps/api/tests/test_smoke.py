@@ -29,3 +29,5 @@ def test_openapi_contains_domains() -> None:
     # Real price-drop "bonnes affaires" replaces what community-submitted deals used
     # to cover, computed from our own price history instead.
     assert "/api/v1/products/bargains" in paths
+    # The presigned-upload endpoint only ever existed for deal photos — gone with it.
+    assert "/api/v1/uploads/presign" not in paths

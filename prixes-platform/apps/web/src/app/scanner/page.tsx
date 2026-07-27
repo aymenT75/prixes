@@ -280,7 +280,7 @@ export default function ScannerPage() {
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
             <div className="h-40 w-56 rounded-xl border-2 border-white/70" />
             {status === "scanning" && (
-              <div className="absolute h-0.5 w-56 animate-pulse bg-deal-accent" />
+              <div className="absolute h-0.5 w-56 animate-pulse bg-accent-warm" />
             )}
           </div>
           {status === "idle" && (

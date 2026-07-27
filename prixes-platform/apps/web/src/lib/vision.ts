@@ -1,6 +1,7 @@
 // Shared photo helpers for AI product recognition (scanner "identify by photo" +
-// deal poster). Barcode is tried first (offline, instant); the downscaled image is
-// only sent to the vision API when no barcode is found — keeps latency + cost low.
+// unknown-barcode fallback). Barcode is tried first (offline, instant); the
+// downscaled image is only sent to the vision API when no barcode is found —
+// keeps latency + cost low.
 
 /** Detect an EAN/UPC barcode in a photo using ZXing (lazy-loaded ~200 KB). */
 export async function detectBarcodeInFile(file: File): Promise<string | null> {

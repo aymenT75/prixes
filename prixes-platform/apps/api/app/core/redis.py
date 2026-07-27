@@ -13,11 +13,6 @@ redis_client: aioredis.Redis = aioredis.from_url(  # type: ignore[no-untyped-cal
     str(settings.redis_url), encoding="utf-8", decode_responses=True
 )  # redis-py wraps from_url in a decorator that erases its type annotations
 
-# Redis Sorted-Set keys for ranked feeds (see ARCHITECTURE.md §7)
-FEED_HOT = "deals:feed:hot"
-FEED_NEW = "deals:feed:new"
-FEED_TOP = "deals:feed:top"
-
 
 async def cache_aside(
     key: str,

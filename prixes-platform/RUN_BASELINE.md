@@ -17,7 +17,7 @@ cd apps/api
 uv sync                      # installs deps into .venv
 uv run alembic upgrade head  # creates tables + enables PostGIS
 
-# Seed REAL French products (OpenFoodFacts) + multi-store prices + demo deals:
+# Seed REAL French products (OpenFoodFacts) + multi-store prices + demo account:
 uv run python scripts/seed.py            # ~48 products across 6 categories, 6 stores
 # Pull live fuel prices from the official French gov API:
 uv run python scripts/ingest_fuel.py
@@ -44,7 +44,8 @@ Or register a fresh account from the app.
 ---
 
 ## What you'll see
-- **Accueil / Deals** — seeded community deals (real product photos, discounts, votes).
+- **Accueil** — popular products + a "Bonnes affaires" section (real price drops, only shows once
+  the seeded/refreshed price history actually has one).
 - **Courses** — "Produits populaires" lists the seeded catalogue; search hits OpenFoodFacts live;
   each product shows the 6-supermarket price comparison (Lidl, Aldi, E.Leclerc, Intermarché,
   Auchan, Carrefour).
@@ -58,4 +59,4 @@ Or register a fresh account from the app.
 - **Fuel** is 100% real, straight from `donnees.roulez-eco.fr` (no synthesis). The ARQ worker also
   refreshes it hourly: `uv run arq app.worker.main.WorkerSettings`.
 
-Re-running `seed.py` is safe (idempotent): products upsert, prices/deals only added when absent.
+Re-running `seed.py` is safe (idempotent): products upsert, prices only added when absent.

@@ -34,8 +34,8 @@ export default {
         primary: "rgb(var(--color-primary) / <alpha-value>)",
         "on-error": "rgb(var(--color-on-error) / <alpha-value>)",
         "error-container": "rgb(var(--color-error-container) / <alpha-value>)",
-        "deal-accent": "rgb(var(--color-deal-accent) / <alpha-value>)",
-        "on-deal-accent": "rgb(var(--color-on-deal-accent) / <alpha-value>)",
+        "accent-warm": "rgb(var(--color-accent-warm) / <alpha-value>)",
+        "on-accent-warm": "rgb(var(--color-on-accent-warm) / <alpha-value>)",
         "surface-container": "rgb(var(--color-surface-container) / <alpha-value>)",
         "surface-container-high": "rgb(var(--color-surface-container-high) / <alpha-value>)",
         "surface-dim": "rgb(var(--color-surface-dim) / <alpha-value>)",
@@ -101,7 +101,7 @@ export default {
         "label-md": ["12px", { lineHeight: "14px", fontWeight: "700" }],
         "label-sm": ["0.6875rem", { lineHeight: "1rem", fontWeight: "500" }],
         // 12px, not 10px: this is the smallest text in the app (store names, timestamps,
-        // vote counts on the deal cards) and 10px sat below Material's floor for
+        // badge labels) and 10px sat below Material's floor for
         // supporting text. It matters most for someone running a large system font
         // scale — the WebView zoom is capped, so the smallest sizes are exactly the ones
         // that stayed unreadable for the people who needed the setting in the first place.

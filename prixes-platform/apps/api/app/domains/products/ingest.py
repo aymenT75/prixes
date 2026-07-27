@@ -1,7 +1,7 @@
 """Recurring REAL price refresh from Open Prices — driven by the ARQ worker.
 
 This is the lightweight, importable counterpart to `scripts/scrape_prices.py`
-(which is the one-off heavy seeder that also creates the demo user + deals). This
+(which is the one-off heavy seeder that also creates the demo user). This
 module ONLY refreshes prices + product metadata, so it is safe to run on a
 schedule.
 

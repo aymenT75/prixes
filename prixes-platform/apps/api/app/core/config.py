@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     firebase_service_account_file: str = ""
     firebase_service_account_json: str = ""
 
-    # AI product recognition (deal photo → product name). Optional: barcode
+    # AI product recognition (product photo → name/brand). Optional: barcode
     # detection works without it; this is the vision fallback. Set a key to enable.
     # OpenAI (GPT-4o) is used when its key is set, else Anthropic (Claude).
     openai_api_key: str = ""
@@ -52,13 +52,6 @@ class Settings(BaseSettings):
     # falls back to on-device/browser TTS when the key is absent.
     openai_tts_model: str = "gpt-4o-mini-tts"
     openai_tts_voice: str = "nova"
-
-    # Object storage
-    s3_endpoint_url: str = ""
-    s3_bucket: str = "prixes-photos"
-    s3_access_key_id: str = ""
-    s3_secret_access_key: str = ""
-    s3_public_base_url: str = ""
 
     # Upstream open-data
     off_base_url: str = "https://world.openfoodfacts.org"

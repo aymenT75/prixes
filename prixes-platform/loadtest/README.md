@@ -1,6 +1,6 @@
 # Load testing (k6)
 
-Load tests for Prixes' read-heavy endpoints (catalog, search, deals feed,
+Load tests for Prixes' read-heavy endpoints (catalog, search, bargains,
 nearby-stores). Written for [k6](https://k6.io) — a single static binary, no
 Python/Node runtime needed on top of what already runs the app.
 
@@ -31,7 +31,7 @@ BASE_URL=https://prixes.omnilink.software k6 run loadtest/api-load.js
 ## What `api-load.js` does
 
 Ramps 0 → 10 → 50 virtual users over ~2 minutes, each looping:
-catalog browse → product search → deals feed → nearby-stores lookup, with a
+catalog browse → product search → bargains → nearby-stores lookup, with a
 1-3s "think time" between requests to approximate a real user rather than a
 tight request-spam loop.
 

@@ -48,12 +48,12 @@ export const confidenceColor: Record<Confidence, string> = {
 
 export type Temperature = "cold" | "warm" | "hot";
 
-// How interesting a discount actually is, from its percentage — the "deal
-// thermometer": froid (not worth it) → tiède → chaud (genuinely worth
-// grabbing). Used on deal cards and on a product's own cross-store price
-// spread, so it takes a plain discount % rather than a Deal, keeping both
-// call sites (DealCard, product detail) free of duplicated thresholds.
-export function dealTemperature(discountPct: number): {
+// How interesting a price gap actually is, from its percentage — the
+// thermometer: froid (not worth it) → tiède → chaud (genuinely worth it).
+// Used on a product's cross-store price spread (Thermometer.tsx). Takes a
+// plain discount % rather than a whole object, so it has no feature-specific
+// shape to keep in sync.
+export function priceGapTemperature(discountPct: number): {
   temperature: Temperature;
   label: string;
   icon: string;

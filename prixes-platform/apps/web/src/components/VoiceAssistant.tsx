@@ -307,11 +307,11 @@ export function VoiceAssistant() {
                     onClick={startListening}
                     aria-label="Parler"
                     className={`relative flex h-24 w-24 items-center justify-center rounded-full text-on-primary transition-all ${
-                      phase === "listening" ? "bg-deal-accent" : "bg-primary"
+                      phase === "listening" ? "bg-accent-warm" : "bg-primary"
                     }`}
                   >
                     {phase === "listening" && (
-                      <span className="absolute inset-0 animate-ping rounded-full bg-deal-accent/40" />
+                      <span className="absolute inset-0 animate-ping rounded-full bg-accent-warm/40" />
                     )}
                     <Icon name={phase === "listening" ? "graphic_eq" : "mic"} fill className="text-[44px]" />
                   </button>

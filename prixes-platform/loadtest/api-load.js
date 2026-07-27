@@ -1,7 +1,7 @@
 // Load test for the read-heavy endpoints real users hit hardest: catalog browse,
-// product search, the deals feed, and nearby-stores geolocation lookup. These are
-// exactly the paths flagged in the SIT audit as needing a load-test baseline
-// (no k6/locust existed before this).
+// product search, real-price-drop bargains, and nearby-stores geolocation lookup.
+// These are exactly the paths flagged in the SIT audit as needing a load-test
+// baseline (no k6/locust existed before this).
 //
 // Usage:
 //   k6 run loadtest/api-load.js
@@ -43,8 +43,8 @@ export default function () {
   const search = http.get(`${BASE_URL}/api/v1/products/search?q=${term}`);
   check(search, { "search 200": (r) => r.status === 200 });
 
-  const deals = http.get(`${BASE_URL}/api/v1/deals?sort=hot&limit=20`);
-  check(deals, { "deals feed 200": (r) => r.status === 200 });
+  const bargains = http.get(`${BASE_URL}/api/v1/products/bargains?limit=20`);
+  check(bargains, { "bargains 200": (r) => r.status === 200 });
 
   const stores = http.get(
     `${BASE_URL}/api/v1/stores/nearby?lat=${LAT}&lon=${LON}&radius_km=5`,

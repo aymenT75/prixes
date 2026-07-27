@@ -82,7 +82,7 @@ async def login_firebase(
     """Find-or-create a user from a verified Firebase identity (token verified in router).
 
     Firebase is the identity provider; the Postgres `users` row remains the source of
-    truth (deals/votes/shopping/alerts FK to it). Matched by Firebase uid, falling back
+    truth (shopping/alerts FK to it). Matched by Firebase uid, falling back
     to email so an existing password/Google account links to the same record.
     """
     user = await db.scalar(select(User).where(User.oauth_sub == uid))

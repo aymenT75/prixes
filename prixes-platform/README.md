@@ -4,7 +4,7 @@ Rewrite of the Prixes PWA onto a modern, scalable stack:
 
 - **Frontend:** Next.js (App Router, TypeScript, Tailwind, PWA) — `apps/web`
 - **Backend:** FastAPI (async, Pydantic v2, SQLAlchemy 2.0) — `apps/api`
-- **Data:** PostgreSQL + PostGIS · Redis · S3/R2 object storage
+- **Data:** PostgreSQL + PostGIS · Redis
 - **Worker:** ARQ (ingestion, feed ranking, images, email)
 
 See [ARCHITECTURE.md](./ARCHITECTURE.md) for the full system design, references, and roadmap.
@@ -45,7 +45,11 @@ Tracked in [ARCHITECTURE.md §12](./ARCHITECTURE.md#12-build-phases-roadmap--how
 - ✅ Phase 5 — Hardening (Redis rate limits, GDPR export/delete, deal reporting + moderation)
 
 ### Endpoints (API)
-`/api/v1/auth/{register,login,refresh,google}` · `/users/{me,:id}` ·
-`/deals` (feed, create, vote, delete) · `/products/{search,:barcode,prices}` ·
-`/fuel/nearby` · `/uploads/presign` · `/users/me/export` + `DELETE /users/me` (GDPR) ·
-`/moderation/reports` · `/health` · `/docs`
+`/api/v1/auth/{register,login,refresh,google,firebase}` · `/users/{me,:id}` ·
+`/products/{search,bargains,:barcode,recognize}` · `/fuel/nearby` ·
+`/shopping` · `/alerts` · `/stores/nearby` · `/tts` ·
+`/users/me/export` + `DELETE /users/me` (GDPR) · `/health`
+
+Deals (community-submitted, unmoderated by design flaws) was removed; the
+Carburant tab and a "Bonnes affaires" section (real price drops from our own
+price history) took its place — see [ARCHITECTURE.md](./ARCHITECTURE.md).

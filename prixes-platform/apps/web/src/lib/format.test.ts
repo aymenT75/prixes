@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dealTemperature, priceConfidence } from "./format";
+import { priceGapTemperature, priceConfidence } from "./format";
 
 function daysAgo(n: number): string {
   return new Date(Date.now() - n * 86_400_000).toISOString();
@@ -33,19 +33,19 @@ describe("priceConfidence", () => {
   });
 });
 
-describe("dealTemperature", () => {
+describe("priceGapTemperature", () => {
   it("rates a small discount as cold", () => {
-    expect(dealTemperature(5).temperature).toBe("cold");
-    expect(dealTemperature(14).temperature).toBe("cold");
+    expect(priceGapTemperature(5).temperature).toBe("cold");
+    expect(priceGapTemperature(14).temperature).toBe("cold");
   });
 
   it("rates a moderate discount as warm, inclusive of the boundary", () => {
-    expect(dealTemperature(15).temperature).toBe("warm");
-    expect(dealTemperature(29).temperature).toBe("warm");
+    expect(priceGapTemperature(15).temperature).toBe("warm");
+    expect(priceGapTemperature(29).temperature).toBe("warm");
   });
 
   it("rates a big discount as hot, inclusive of the boundary", () => {
-    expect(dealTemperature(30).temperature).toBe("hot");
-    expect(dealTemperature(70).temperature).toBe("hot");
+    expect(priceGapTemperature(30).temperature).toBe("hot");
+    expect(priceGapTemperature(70).temperature).toBe("hot");
   });
 });
