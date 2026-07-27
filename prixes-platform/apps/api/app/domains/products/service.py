@@ -5,9 +5,10 @@ import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import case, func, or_, select
+from sqlalchemy import case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.products import off
@@ -245,6 +246,94 @@ async def create_product(db: AsyncSession, data: ProductCreate) -> Product:
     db.add(product)
     await db.flush()
     return product
+
+
+_BARGAIN_SQL = text(
+    """
+    WITH recent AS (
+        SELECT DISTINCT ON (barcode, store) barcode, store, price AS current_price
+        FROM price_points
+        WHERE created_at >= :recent_since
+        ORDER BY barcode, store, created_at DESC
+    ),
+    reference AS (
+        SELECT barcode, store, MAX(price) AS reference_price
+        FROM price_points
+        WHERE created_at >= :lookback_since AND created_at < :recent_since
+        GROUP BY barcode, store
+    ),
+    drops AS (
+        SELECT
+            r.barcode, r.store, r.current_price, f.reference_price,
+            (f.reference_price - r.current_price) / f.reference_price AS drop_pct
+        FROM recent r
+        JOIN reference f ON f.barcode = r.barcode AND f.store = r.store
+        WHERE f.reference_price > r.current_price
+          AND (f.reference_price - r.current_price) / f.reference_price >= :min_drop_pct
+    ),
+    ranked AS (
+        SELECT *, ROW_NUMBER() OVER (PARTITION BY barcode ORDER BY drop_pct DESC) AS rn
+        FROM drops
+    )
+    SELECT barcode, store, current_price, reference_price, drop_pct
+    FROM ranked
+    WHERE rn = 1
+    ORDER BY drop_pct DESC
+    LIMIT :limit
+    """
+)
+
+
+async def list_bargains(
+    db: AsyncSession,
+    limit: int = 12,
+    min_drop_pct: float = 0.15,
+    recent_days: int = 3,
+    lookback_days: int = 60,
+) -> list[dict[str, Any]]:
+    """Real price drops: a product's current cheapest-store price vs. the highest
+    price seen at that same store in the preceding lookback window. Unlike the old
+    "Deals" feature (user-submitted, unverified), every row here comes straight
+    from our own real price history — no external dependency, no moderation needed.
+    """
+    now = datetime.now(UTC)
+    rows = (
+        await db.execute(
+            _BARGAIN_SQL,
+            {
+                "recent_since": now - timedelta(days=recent_days),
+                "lookback_since": now - timedelta(days=lookback_days),
+                "min_drop_pct": min_drop_pct,
+                "limit": limit,
+            },
+        )
+    ).all()
+    if not rows:
+        return []
+
+    products = {
+        p.barcode: p
+        for p in (
+            await db.execute(
+                select(Product).where(Product.barcode.in_([r.barcode for r in rows]))
+            )
+        ).scalars()
+    }
+    out = []
+    for r in rows:
+        product = products.get(r.barcode)
+        if product is None or not product.name:
+            continue
+        out.append(
+            {
+                "product": product,
+                "store": r.store,
+                "price": r.current_price,
+                "reference_price": r.reference_price,
+                "drop_pct": float(r.drop_pct),
+            }
+        )
+    return out
 
 
 async def contribute_price(

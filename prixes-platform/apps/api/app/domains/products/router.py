@@ -16,6 +16,8 @@ from app.domains.products.recognize import recognize_product
 from app.domains.products.schemas import (
     AlternativeOut,
     AlternativesOut,
+    BargainOut,
+    BargainsOut,
     PriceContribution,
     PriceContributionOut,
     PriceHistoryOut,
@@ -76,6 +78,28 @@ async def search(
     products = await service.search_products(db, q, page)
     return ProductSearchResult(
         items=[ProductOut.model_validate(p) for p in products], total=len(products)
+    )
+
+
+@router.get("/bargains", response_model=BargainsOut)
+async def bargains(
+    db: DbSession,
+    limit: Annotated[int, Query(ge=1, le=40)] = 12,
+) -> BargainsOut:
+    """Real price drops for the home screen, computed from our own price history —
+    no external catalog dependency."""
+    rows = await service.list_bargains(db, limit)
+    return BargainsOut(
+        items=[
+            BargainOut(
+                **ProductOut.model_validate(r["product"]).model_dump(),
+                store=r["store"],
+                price=r["price"],
+                reference_price=r["reference_price"],
+                drop_pct=r["drop_pct"],
+            )
+            for r in rows
+        ]
     )
 
 

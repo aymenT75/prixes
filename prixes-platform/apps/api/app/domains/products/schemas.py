@@ -107,3 +107,16 @@ class AlternativeOut(ProductOut):
 
 class AlternativesOut(BaseModel):
     items: list[AlternativeOut]
+
+
+class BargainOut(ProductOut):
+    """A product whose price at a given store just dropped for real (own price
+    history, not a submitted/unverified claim)."""
+    store: str | None
+    price: Decimal
+    reference_price: Decimal
+    drop_pct: float
+
+
+class BargainsOut(BaseModel):
+    items: list[BargainOut]

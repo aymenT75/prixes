@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { BargainCard } from "@/components/BargainCard";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
@@ -31,6 +32,14 @@ export default function HomePage() {
   // rather than leaving to an external merchant site.
   const { data } = useQuery({ queryKey: ["products", "browse"], queryFn: () => api.browseProducts() });
   const top = data?.items.slice(0, 6) ?? [];
+
+  // Real price drops from our own price history — no external catalog dependency,
+  // so the section only renders once we actually have some.
+  const { data: bargainsData } = useQuery({
+    queryKey: ["products", "bargains"],
+    queryFn: () => api.bargains(),
+  });
+  const bargains = bargainsData?.items ?? [];
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -77,6 +86,20 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Real price drops, own data only — hidden entirely when we have none. */}
+      {bargains.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-3 flex items-center gap-2 text-headline-md text-on-surface">
+            <Icon name="local_offer" className="text-error" /> Bonnes affaires
+          </h2>
+          <div className="-mx-margin-mobile flex gap-3 overflow-x-auto px-margin-mobile pb-1">
+            {bargains.map((b) => (
+              <BargainCard key={`${b.barcode}-${b.store}`} bargain={b} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Greeting */}
       <section className="mb-6">

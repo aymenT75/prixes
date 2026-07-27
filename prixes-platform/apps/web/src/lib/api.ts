@@ -5,6 +5,7 @@ import type {
   AlertList,
   AlternativesResult,
   AnalyticsSummary,
+  BargainsResult,
   FeedbackList,
   GeocodeResult,
   OptimizeResult,
@@ -118,6 +119,8 @@ export const api = {
   // ── Products ──
   browseProducts: (limit = 40) =>
     request<{ items: Product[]; total: number }>(`/products?limit=${limit}`),
+  // Real price drops from our own price history (home screen "Bonnes affaires").
+  bargains: (limit = 12) => request<BargainsResult>(`/products/bargains?limit=${limit}`),
   searchProducts: (q: string, page = 1) =>
     request<{ items: Product[]; total: number }>(
       `/products/search?q=${encodeURIComponent(q)}&page=${page}`,

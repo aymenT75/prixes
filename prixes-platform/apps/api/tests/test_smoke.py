@@ -26,3 +26,6 @@ def test_openapi_contains_domains() -> None:
     # Fuel is back (national price feed), Deals is gone in its place.
     assert "/api/v1/fuel/nearby" in paths
     assert "/api/v1/deals" not in paths
+    # Real price-drop "bonnes affaires" replaces what community-submitted deals used
+    # to cover, computed from our own price history instead.
+    assert "/api/v1/products/bargains" in paths

@@ -87,6 +87,17 @@ export interface AlternativesResult {
   items: Alternative[];
 }
 
+export interface Bargain extends Product {
+  store: string | null;
+  price: number;
+  reference_price: number;
+  drop_pct: number;
+}
+
+export interface BargainsResult {
+  items: Bargain[];
+}
+
 // ── Shopping list ──
 export interface ShoppingItem {
   id: string;
