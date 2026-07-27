@@ -23,7 +23,7 @@ export function Thermometer({ discountPct, compact = false }: { discountPct: num
   }
 
   return (
-    <div className="flex items-center gap-2" role="img" aria-label={`Thermomètre du deal : ${label}`}>
+    <div className="flex items-center gap-2" role="img" aria-label={`Écart de prix : ${label}`}>
       <span
         className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full"
         style={{ backgroundColor: `${color}1f`, color }}
