@@ -102,3 +102,4 @@ app/src/main/res/xml/config.xml
 
 # Generated marketing screenshots (regenerate from a device, don't version binaries here)
 store-screenshots/
+releases/
