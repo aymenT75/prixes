@@ -49,7 +49,11 @@ export function PageHeader({
         {pathname === "/" ? (
           <LogoLockup heading />
         ) : (
-          <h1 className="truncate text-headline-xl-mobile tracking-tight text-primary">{title}</h1>
+          // headline-lg, not the bigger headline-xl-mobile used on the logo lockup:
+          // this title shares its row with 2 icon buttons plus a right-side action
+          // and login button/avatar, so it needs to fit real page titles ("Produit",
+          // "Carburant") without truncating on a typical phone width.
+          <h1 className="truncate text-headline-lg tracking-tight text-primary">{title}</h1>
         )}
         {/* Voice + accessibility, next to the title so they never cover content. Sized
             44x44: measured on-device they were 36x36, under both WCAG 2.5.5 and
