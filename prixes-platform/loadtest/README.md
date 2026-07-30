@@ -25,7 +25,7 @@ k6 run loadtest/smoke.js
 k6 run loadtest/api-load.js
 
 # Against staging/prod — use sparingly, see the warning below.
-BASE_URL=https://prixes.omnilink.software k6 run loadtest/api-load.js
+BASE_URL=https://prixes.app k6 run loadtest/api-load.js
 ```
 
 ## What `api-load.js` does

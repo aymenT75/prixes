@@ -2,7 +2,7 @@
 
 **Released :** 2026-07-10  
 **Tag :** `v1.0.0`  
-**Live :** https://prixes.omnilink.software
+**Live :** https://prixes.app
 
 ---
 
@@ -77,8 +77,8 @@
 ## 🚀 Deployment
 
 **Live environment :**
-- Web : https://prixes.omnilink.software (Caddy reverse proxy)
-- API : https://prixes.omnilink.software/api/v1 (FastAPI behind Caddy)
+- Web : https://prixes.app (Caddy reverse proxy)
+- API : https://prixes.app/api/v1 (FastAPI behind Caddy)
 - Database : PostgreSQL 16 + PostGIS
 - Cache : Redis 7
 - Worker : Arq (async task queue)

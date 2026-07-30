@@ -19,7 +19,7 @@ to investigate and ship a fix before any public disclosure.
 
 ## Supported versions
 
-Only the `main` branch / production deployment (https://prixes.omnilink.software)
+Only the `main` branch / production deployment (https://prixes.app)
 is supported. There are no maintained older versions.
 
 ## Scope
@@ -57,7 +57,7 @@ those upstream.
 - **Data minimisation / GDPR (RGPD)**: users can export (`/account` → "Exporter
   mes données") and permanently delete their account and all associated data;
   anonymous analytics events are pruned automatically after 90 days
-  (`prune_analytics` worker cron); see [`/privacy`](https://prixes.omnilink.software/privacy)
+  (`prune_analytics` worker cron); see [`/privacy`](https://prixes.app/privacy)
   for the full policy.
 - **Dependency hygiene**: CI (`ruff` + `mypy` in strict mode for the backend,
   `eslint` + `tsc` for the frontend) runs on every push/PR; see

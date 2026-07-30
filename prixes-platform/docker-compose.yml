@@ -50,6 +50,11 @@ services:
 
   worker:
     build: ./apps/api
+    # Explicit image name so it's the exact same image as `api` (same build context,
+    # same Dockerfile) — without this, Compose auto-names it "prixes-platform-worker",
+    # a separate tag our deploy script never rebuilds/loads, so the worker silently
+    # keeps running stale code deploy after deploy while `api` gets updated.
+    image: prixes-platform-api:latest
     env_file: .env
     restart: unless-stopped
     environment:

@@ -11,7 +11,7 @@ Bienvenue ! Tu vas nous aider à améliorer l'app en l'essayant et en nous donna
 ## ℹ️ Avant de commencer
 
 - **Durée :** ~30 minutes
-- **Accès :** https://prixes.omnilink.software (fonctionne sur téléphone)
+- **Accès :** https://prixes.app (fonctionne sur téléphone)
 - **Comment :** je vais te donner des tâches et tu essaies de les faire
 - **Important :** il n'y a **pas de mauvaise réponse** — on teste l'app, pas toi !
 

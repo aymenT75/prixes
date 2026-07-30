@@ -1,7 +1,7 @@
 # Protocole de tests utilisateurs — Prixes
 
 > Document prêt à l'emploi pour la personne qui fait passer les tests (le « facilitateur »).
-> App : https://prixes.omnilink.software · Durée d'une session : ~30 min · 5 à 8 participants suffisent.
+> App : https://prixes.app · Durée d'une session : ~30 min · 5 à 8 participants suffisent.
 
 ---
 

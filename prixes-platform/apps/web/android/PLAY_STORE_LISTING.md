@@ -62,4 +62,4 @@ Shopping
 Email de support : aymenrobert@gmail.com
 
 ## URL de la politique de confidentialité
-https://prixes.omnilink.software/privacy
+https://prixes.app/privacy

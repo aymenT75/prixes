@@ -1,7 +1,7 @@
 # Prixes — Native iOS & Android (Capacitor)
 
 The native apps reuse the Next.js app: a **static export** (`out/`) is bundled inside a
-Capacitor shell and talks to the live API (`https://prixes.omnilink.software`) over HTTPS.
+Capacitor shell and talks to the live API (`https://prixes.app`) over HTTPS.
 Native plugins provide barcode scanning, geolocation, speech, haptics, share, camera,
 push notifications and native Google/Apple sign-in. On the web everything falls back to
 the existing Web APIs.
@@ -101,9 +101,9 @@ regenerate with the `--packagemanager Cocoapods` flag) — all plugins provide p
 ## Deep links (App Links / Universal Links)
 
 - Android manifest already declares an `autoVerify` intent filter for
-  `https://prixes.omnilink.software`. Host `/.well-known/assetlinks.json` on the domain
+  `https://prixes.app`. Host `/.well-known/assetlinks.json` on the domain
   with the app's SHA-256 signing fingerprint to enable verified App Links.
-- iOS: add the **Associated Domains** capability (`applinks:prixes.omnilink.software`) in
+- iOS: add the **Associated Domains** capability (`applinks:prixes.app`) in
   Xcode and host `/.well-known/apple-app-site-association`.
 - Price-alert push taps deep-link to the product in-app via the notification `data.barcode`
   (handled in `src/lib/push.ts` → `/courses/detail?barcode=…`).

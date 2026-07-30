@@ -5,7 +5,7 @@
 //
 // Usage:
 //   k6 run loadtest/api-load.js
-//   BASE_URL=https://prixes.omnilink.software k6 run loadtest/api-load.js
+//   BASE_URL=https://prixes.app k6 run loadtest/api-load.js
 //
 // Ramps to 50 concurrent users over 3 stages. Tune `options.stages` for a
 // heavier run once you have a baseline to compare against.

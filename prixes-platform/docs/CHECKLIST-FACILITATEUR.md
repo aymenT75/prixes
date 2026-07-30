@@ -15,7 +15,7 @@ Pour **toi**, avant et pendant chaque session avec un testeur.
 - [ ] **Préparer le testeur**
   - [ ] NDA signé ou email de consentement reçu
   - [ ] Lui envoyer le guide du testeur (GUIDE-TESTEUR.md)
-  - [ ] Confirmé que le lien https://prixes.omnilink.software marche chez lui
+  - [ ] Confirmé que le lien https://prixes.app marche chez lui
 
 - [ ] **Matériel d'observation**
   - [ ] Imprimer la grille d'observation (TESTS-UTILISATEURS.md, §5)

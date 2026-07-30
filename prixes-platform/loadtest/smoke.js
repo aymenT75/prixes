@@ -2,7 +2,7 @@
 // catch a broken endpoint/config fast, without generating real load.
 //
 // Usage: k6 run loadtest/smoke.js
-// Usage (against prod): BASE_URL=https://prixes.omnilink.software k6 run loadtest/smoke.js
+// Usage (against prod): BASE_URL=https://prixes.app k6 run loadtest/smoke.js
 import http from "k6/http";
 import { check, sleep } from "k6";
 

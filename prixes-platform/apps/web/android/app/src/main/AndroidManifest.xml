@@ -19,13 +19,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- App Links: open prixes.omnilink.software URLs in the app.
+            <!-- App Links: open prixes.app URLs in the app.
                  Requires /.well-known/assetlinks.json on the domain (see MOBILE.md). -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="prixes.omnilink.software" />
+                <data android:scheme="https" android:host="prixes.app" />
             </intent-filter>
         </activity>
 
