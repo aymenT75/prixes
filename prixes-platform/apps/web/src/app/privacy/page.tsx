@@ -71,9 +71,7 @@ export default function PrivacyPage() {
             <strong className="text-on-surface">Photo scannée</strong> — quand vous
             identifiez un produit par photo, l&apos;image est envoyée à un service
             d&apos;intelligence artificielle pour reconnaissance puis{" "}
-            <strong>immédiatement jetée</strong> — Prixes ne la stocke pas. Les photos que
-            vous choisissez d&apos;ajouter à un bon plan, elles, sont conservées (pour
-            l&apos;afficher).
+            <strong>immédiatement jetée</strong>. Prixes ne stocke aucune photo, jamais.
           </li>
           <li>
             <strong className="text-on-surface">Usage de l&apos;app</strong> — des
@@ -130,7 +128,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section icon="update" title="Mise à jour">
-        <p>Cette page reflète le fonctionnement actuel de l&apos;app. Dernière mise à jour : juillet 2026.</p>
+        <p>Cette page reflète le fonctionnement actuel de l&apos;app. Dernière mise à jour : août 2026.</p>
       </Section>
     </div>
   );
