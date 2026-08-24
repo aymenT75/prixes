@@ -1,0 +1,44 @@
+PETIT QUIZZ PRIXES (1 minute chrono)
+
+A creer dans Google Forms (gratuit, 2 minutes) : Formulaires Google, puis Formulaire vierge,
+puis colle les questions ci-dessous. Choix unique par clic, rien d'obligatoire sauf indication
+contraire.
+
+---
+
+1. Globalement, tu en penses quoi ?
+Choix unique :
+J'ai adore
+Plutot sympa
+Bof
+Pas convaincu
+J'ai galere
+
+2. C'etait facile a utiliser ?
+Choix unique :
+Oui, hyper simple
+Ca allait
+Un peu complique par moments
+Non, j'etais perdu
+
+3. Tu recommanderais a un proche ?
+Choix unique :
+Oui direct
+Peut-etre
+Non
+
+4. Qu'est-ce que t'as le plus utilise ?
+Choix unique :
+Scanner un produit / comparer les prix
+Les prix de l'essence
+La liste de courses
+L'assistant vocal
+Rien de special, j'ai juste regarde
+
+5. Un truc a dire en plus ? (facultatif)
+Reponse libre courte, pas obligatoire.
+
+---
+
+Astuce : dans Google Forms, desactive le petit interrupteur "Obligatoire" pour la question 5,
+pour que personne n'abandonne juste parce qu'il ne sait pas quoi ecrire.
