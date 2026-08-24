@@ -17,8 +17,14 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      launchShowDuration: 700,
-      backgroundColor: "#faf9f5",
+      // The native splash hands over to the in-app boot overlay (<BootScreen/>),
+      // which looks identical and stays up until the UI has actually settled — so
+      // the splash is hidden explicitly rather than on a fixed timer. The duration
+      // below is only a failsafe for a bundle that never boots at all.
+      launchShowDuration: 3000,
+      launchFadeOutDuration: 200,
+      // Same off-white as the boot overlay and the launch screen drawable.
+      backgroundColor: "#FDFDFD",
       showSpinner: false,
       androidScaleType: "CENTER_CROP",
     },

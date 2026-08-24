@@ -7,10 +7,11 @@ import { isNativeApp, nativePlatform } from "@/lib/platform";
 import { initPushNotifications } from "@/lib/push";
 import { useApp } from "@/lib/store";
 
-// Native-shell wiring that has no effect on the web build: hides the splash screen
-// once the web content is ready, styles the status bar, and maps the Android hardware
-// back button to in-app navigation (exiting the app only at the root). All Capacitor
-// modules are dynamically imported so they never load in a normal browser.
+// Native-shell wiring that has no effect on the web build: styles the status bar and
+// maps the Android hardware back button to in-app navigation (exiting the app only at
+// the root). All Capacitor modules are dynamically imported so they never load in a
+// normal browser. Hiding the native splash belongs to <BootScreen/>, which hands over
+// to the in-app boot overlay only once the UI has actually settled.
 export function NativeSetup() {
   const router = useRouter();
   const user = useApp((s) => s.user);
@@ -30,27 +31,21 @@ export function NativeSetup() {
     let removeBackListener: (() => void) | undefined;
 
     (async () => {
-      const [{ SplashScreen }, { StatusBar, Style }, { App }] = await Promise.all([
-        import("@capacitor/splash-screen"),
+      const [{ StatusBar, Style }, { App }] = await Promise.all([
         import("@capacitor/status-bar"),
         import("@capacitor/app"),
       ]);
 
-      // Dark icons/text on the app's light background (#faf9f5).
+      // Dark icons/text on the app's light background.
       try {
         await StatusBar.setStyle({ style: Style.Dark });
         if (nativePlatform() === "android") {
-          // setBackgroundColor is Android-only.
-          await StatusBar.setBackgroundColor({ color: "#faf9f5" });
+          // setBackgroundColor is Android-only. Matches the boot overlay and the
+          // launch screen so the status bar never changes colour mid-startup.
+          await StatusBar.setBackgroundColor({ color: "#FDFDFD" });
         }
       } catch {
         /* status bar not available */
-      }
-
-      try {
-        await SplashScreen.hide();
-      } catch {
-        /* splash already hidden */
       }
 
       try {
