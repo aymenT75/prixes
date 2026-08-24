@@ -106,6 +106,24 @@ export default function PrivacyPage() {
         </p>
       </Section>
 
+      <Section icon="database" title="D'où viennent les données affichées">
+        <p>
+          Prixes est une application <strong className="text-on-surface">indépendante</strong> :
+          elle n&apos;est ni affiliée, ni approuvée, ni gérée par une entité
+          gouvernementale ou une enseigne de distribution. Les prix des carburants
+          proviennent des données ouvertes publiées par l&apos;État français, reprises
+          sans modification.
+        </p>
+        <p>
+          Le détail de chaque source, avec un lien vers le site d&apos;origine, est sur la
+          page{" "}
+          <Link href="/sources" className="text-primary underline-offset-2 hover:underline">
+            Sources des données
+          </Link>
+          .
+        </p>
+      </Section>
+
       <Section icon="verified_user" title="Vos droits">
         <p>Conformément au RGPD, vous pouvez à tout moment :</p>
         <ul className="ml-4 list-disc space-y-1.5">

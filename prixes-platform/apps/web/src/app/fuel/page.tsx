@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
@@ -46,6 +47,35 @@ export default function FuelPage() {
   return (
     <div>
       <PageHeader title="Carburant" />
+
+      {/* Google Play "Déclarations trompeuses": government data must credit its
+          official source and state that Prixes is not a government app. */}
+      <div className="mb-5 rounded-2xl border-2 border-primary/25 bg-surface-container p-4">
+        <p className="flex items-start gap-2 text-body-md text-on-surface-variant">
+          <Icon name="info" fill className="mt-0.5 flex-shrink-0 text-[18px] text-primary" />
+          <span>
+            Prix issus des données ouvertes officielles de l&apos;État français, déclarés
+            par les stations. <strong className="text-on-surface">Prixes est une application indépendante</strong>,
+            non affiliée à une entité gouvernementale.
+          </span>
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a
+            href="https://www.prix-carburants.gouv.fr/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 rounded-lg border border-outline-variant/40 bg-surface px-3 py-1.5 text-label-md text-primary"
+          >
+            <Icon name="open_in_new" className="flex-shrink-0 text-[16px]" /> prix-carburants.gouv.fr
+          </a>
+          <Link
+            href="/sources"
+            className="flex items-center gap-1.5 rounded-lg border border-outline-variant/40 bg-surface px-3 py-1.5 text-label-md text-primary"
+          >
+            <Icon name="database" className="flex-shrink-0 text-[16px]" /> Toutes les sources
+          </Link>
+        </div>
+      </div>
 
       <div className="mb-5 flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
         {FUEL_TYPES.map((f) => (

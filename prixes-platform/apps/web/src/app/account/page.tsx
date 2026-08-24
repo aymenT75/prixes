@@ -33,6 +33,22 @@ export default function AccountPage() {
             Se connecter
           </button>
         </div>
+
+        {/* Reachable without an account: the data-source disclosure and the
+            privacy policy must not sit behind a login. */}
+        <section className="card mt-4 p-2">
+          <Link href="/sources" className="block w-full">
+            <Row icon="database" title="Sources des données" subtitle="D&apos;où viennent les prix affichés">
+              <Icon name="chevron_right" className="text-outline-variant" />
+            </Row>
+          </Link>
+          <Hr />
+          <Link href="/privacy" className="block w-full">
+            <Row icon="privacy_tip" title="Confidentialité" subtitle="Vos données, vos droits">
+              <Icon name="chevron_right" className="text-outline-variant" />
+            </Row>
+          </Link>
+        </section>
       </div>
     );
   }
@@ -190,6 +206,12 @@ export default function AccountPage() {
             <Icon name="chevron_right" className="text-outline-variant" />
           </Row>
         </button>
+        <Hr />
+        <Link href="/sources" className="block w-full">
+          <Row icon="database" title="Sources des données" subtitle="D'où viennent les prix affichés">
+            <Icon name="chevron_right" className="text-outline-variant" />
+          </Row>
+        </Link>
         <Hr />
         <Link href="/privacy" className="block w-full">
           <Row icon="privacy_tip" title="Confidentialité" subtitle="Vos données, vos droits">
