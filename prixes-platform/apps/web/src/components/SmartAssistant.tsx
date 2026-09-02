@@ -340,7 +340,13 @@ export function SmartAssistant() {
               <p className="text-micro uppercase tracking-wider text-on-surface-variant">
                 Estimation
               </p>
-              <p className="text-headline-md text-on-surface">{eur(keptTotal)}</p>
+              {/* "0,00 €" reads as a broken screen when the truth is simply that
+                  we know no price for anything kept. Say that instead. */}
+              <p className="text-headline-md text-on-surface">
+                {kept.length > 0 && keptUnpriced === kept.length
+                  ? "Non estimable"
+                  : eur(keptTotal)}
+              </p>
             </div>
             {keptUnpriced > 0 && (
               <p className="max-w-[55%] text-right text-micro text-on-surface-variant">
