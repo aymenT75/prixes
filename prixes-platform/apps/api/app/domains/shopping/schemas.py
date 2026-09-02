@@ -3,14 +3,29 @@ from __future__ import annotations
 
 import uuid
 from decimal import Decimal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+ItemSource = Literal["manual", "ai", "recipe", "mealplan"]
 
 
 class ShoppingItemIn(BaseModel):
-    barcode: str = Field(min_length=4, max_length=32)
+    # Either a catalog barcode or a free-text label — the same rule the database
+    # enforces, checked here so the caller gets a 422 instead of a 500.
+    barcode: str | None = Field(default=None, min_length=4, max_length=32)
+    free_text: str | None = Field(default=None, min_length=1, max_length=200)
     quantity: int = Field(default=1, ge=1, le=99)
     name: str | None = None
+    amount: Decimal | None = Field(default=None, gt=0, le=9999)
+    unit: str | None = Field(default=None, max_length=16)
+    source: ItemSource = "manual"
+
+    @model_validator(mode="after")
+    def _one_identifier(self) -> ShoppingItemIn:
+        if not self.barcode and not self.free_text:
+            raise ValueError("barcode ou free_text est obligatoire")
+        return self
 
 
 class ShoppingItemUpdate(BaseModel):
@@ -21,10 +36,14 @@ class ShoppingItemUpdate(BaseModel):
 class ShoppingItemOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: uuid.UUID
-    barcode: str
+    barcode: str | None
     quantity: int
     checked: bool
     name: str | None
+    free_text: str | None = None
+    amount: Decimal | None = None
+    unit: str | None = None
+    source: str = "manual"
     image_url: str | None = None
     best_price: Decimal | None = None
     nutriscore: str | None = None
@@ -33,6 +52,18 @@ class ShoppingItemOut(BaseModel):
 class ShoppingListOut(BaseModel):
     items: list[ShoppingItemOut]
     total: int
+
+
+class BulkAddIn(BaseModel):
+    """Add a whole basket at once — what the assistant and the meal planner use."""
+
+    items: list[ShoppingItemIn] = Field(min_length=1, max_length=60)
+
+
+class BulkAddOut(BaseModel):
+    added: int
+    merged: int
+    items: list[ShoppingItemOut]
 
 
 # ── Basket optimizer ──
@@ -53,3 +84,58 @@ class OptimizeResult(BaseModel):
     cheapest_split_total: Decimal | None = None
     priced_items: int
     unpriced_items: int
+
+
+class BasketLine(BaseModel):
+    """One line of a basket that isn't (yet) a saved shopping list."""
+
+    barcode: str = Field(min_length=4, max_length=32)
+    quantity: int = Field(default=1, ge=1, le=99)
+    label: str | None = None
+
+
+class OptimizeBasketIn(BaseModel):
+    lines: list[BasketLine] = Field(min_length=1, max_length=80)
+
+
+# ── Répartition entre magasins ──
+class BasketItem(BaseModel):
+    """One line, assigned to the store where you should actually buy it."""
+
+    barcode: str
+    label: str
+    quantity: int
+    unit_price: Decimal
+    line_total: Decimal
+
+
+class StoreBasketDetail(BaseModel):
+    store: str
+    items: list[BasketItem]
+    subtotal: Decimal
+
+
+class SplitOption(BaseModel):
+    """What the shop looks like if you agree to visit `len(stores)` stores."""
+
+    stores: list[str]
+    baskets: list[StoreBasketDetail]
+    total: Decimal
+    items_covered: int
+    items_total: int
+    # Priced items none of the chosen stores sells — you'd buy these elsewhere.
+    missing: list[str]
+    # Against the best single-store shop, and only when both plans fill the same
+    # basket. Comparing a 5-item trip to an 8-item one prices two different shops.
+    saving_vs_single: Decimal | None = None
+    # How many more items this plan finds than the best single store. When this is
+    # positive the extra stop is not about price at all — it is what completes the
+    # shopping, and the higher total is the cost of the items you were missing.
+    extra_items: int = 0
+
+
+class SplitResult(BaseModel):
+    # Ordered by number of stores: one, then two. Empty when nothing is priced.
+    options: list[SplitOption]
+    # Lines we have no price for anywhere, including free-text ones.
+    unpriced: list[str]

@@ -59,6 +59,24 @@ class Settings(BaseSettings):
     # French national instantaneous fuel-price feed (zipped XML, ~9800 stations).
     fuel_data_url: str = "https://donnees.roulez-eco.fr/opendata/instantane"
 
+    # MongoDB (Atlas M0) — the V3 document collections: smart-cart drafts, meal
+    # plans and imported recipes. The relational core (products,
+    # prices, users, fuel) stays in Postgres. Empty = those features answer 503
+    # and the rest of the app is unaffected.
+    mongo_url: str = ""
+    mongo_db: str = "prixes"
+
+    # Smart Assistant (text-to-cart) + weekly meal planner.
+    # Reuses openai_api_key / anthropic_api_key; OpenAI wins when both are set,
+    # same rule as product recognition.
+    smartcart_model: str = "gpt-4o-mini"
+    smartcart_anthropic_model: str = "claude-haiku-4-5-20251001"
+    smartcart_timeout_s: float = 20.0
+    smartcart_deadline_s: float = 25.0
+    smartcart_cache_ttl_s: int = 86400
+    smartcart_rate_per_hour: int = 10
+    mealplan_rate_per_day: int = 5
+
     # Observability
     sentry_dsn: str = ""
 

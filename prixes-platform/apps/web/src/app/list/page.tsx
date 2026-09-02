@@ -7,15 +7,24 @@ import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
+import { SmartAssistant } from "@/components/SmartAssistant";
+import { StorePlan } from "@/components/StorePlan";
 import { api } from "@/lib/api";
 import { eur, nutriBarStyle, nutriHint } from "@/lib/format";
 import { useApp } from "@/lib/store";
-import type { OptimizeResult, ShoppingItem } from "@/lib/types";
+import type { ShoppingItem, SplitResult } from "@/lib/types";
 
 export default function ListPage() {
   const { user, openLogin } = useApp();
   const qc = useQueryClient();
-  const [optimized, setOptimized] = useState<OptimizeResult | null>(null);
+  const [plan, setPlan] = useState<SplitResult | null>(null);
+
+  const { data: meta } = useQuery({
+    queryKey: ["meta"],
+    queryFn: () => api.meta(),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ["shopping"],
@@ -25,7 +34,7 @@ export default function ListPage() {
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["shopping"] });
-    setOptimized(null);
+    setPlan(null);
   };
 
   const update = useMutation({
@@ -41,9 +50,9 @@ export default function ListPage() {
     mutationFn: () => api.clearChecked(),
     onSuccess: invalidate,
   });
-  const optimize = useMutation({
-    mutationFn: () => api.optimizeBasket(),
-    onSuccess: (r) => setOptimized(r),
+  const organise = useMutation({
+    mutationFn: () => api.splitBasket(2),
+    onSuccess: setPlan,
   });
 
   if (!user) {
@@ -70,6 +79,23 @@ export default function ListPage() {
   return (
     <div>
       <PageHeader title="Ma liste" />
+
+      <SmartAssistant />
+
+      {/* Not a bottom-nav tab: the nav has four established destinations, and
+          the list is where planning a week starts. Hidden when the planner has no
+          model or no document store behind it — a link to a page that can only
+          say "indisponible" is worse than no link. */}
+      {meta?.meal_plan_enabled && (
+        <Link
+          href="/menu"
+          className="card mb-4 flex items-center gap-2 p-3 text-label-md text-on-surface"
+        >
+          <Icon name="calendar_month" className="text-[20px] text-primary" />
+          Menu de la semaine
+          <Icon name="chevron_right" className="ml-auto text-[20px] text-outline-variant" />
+        </Link>
+      )}
 
       {isLoading && <p className="py-10 text-center text-on-surface-variant">Chargement…</p>}
 
@@ -115,15 +141,15 @@ export default function ListPage() {
           </div>
 
           <button
-            onClick={() => optimize.mutate()}
-            disabled={optimize.isPending}
+            onClick={() => organise.mutate()}
+            disabled={organise.isPending}
             className="btn-primary mt-4 w-full py-3"
           >
             <Icon name="savings" className="text-[20px]" />
-            {optimize.isPending ? "Calcul…" : "Optimiser mon panier"}
+            {organise.isPending ? "Calcul…" : "Où faire mes courses ?"}
           </button>
 
-          {optimized && <OptimizeView result={optimized} />}
+          {plan && <StorePlan result={plan} />}
         </>
       )}
     </div>
@@ -141,6 +167,12 @@ function ListRow({
   onQty: (q: number) => void;
   onRemove: () => void;
 }) {
+  const label = item.name ?? item.free_text ?? item.barcode ?? "Article";
+  const recipeAmount =
+    item.amount != null && item.unit
+      ? `${String(item.amount).replace(/\.0+$/, "").replace(".", ",")} ${item.unit}`
+      : null;
+
   return (
     <div
       style={nutriBarStyle(item.nutriscore)}
@@ -154,33 +186,33 @@ function ListRow({
         />
       </button>
 
-      <Link href={`/courses/detail?barcode=${item.barcode}`} className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white">
-        {item.image_url ? (
-          <Image src={item.image_url} alt={item.name ?? ""} fill className="object-contain p-1" sizes="48px" />
-        ) : (
-          <div className="flex h-full items-center justify-center text-outline-variant">
-            <Icon name="grocery" />
-          </div>
-        )}
-      </Link>
+      <Thumb item={item} />
 
       <div className="min-w-0 flex-1">
         <p className={`truncate text-label-lg text-on-surface ${item.checked ? "line-through" : ""}`}>
-          <Link
-            href={`/courses/detail?barcode=${item.barcode}`}
-            aria-label={`${item.name ?? item.barcode}${
-              item.nutriscore && nutriHint[item.nutriscore.toLowerCase()]
-                ? ` — Nutri-Score ${item.nutriscore.toUpperCase()}, ${nutriHint[item.nutriscore.toLowerCase()]}`
-                : ""
-            } — voir la fiche produit`}
-            className="hover:underline focus-visible:underline"
-          >
-            {item.name ?? item.barcode}
-          </Link>
+          {item.barcode ? (
+            <Link
+              href={`/courses/detail?barcode=${item.barcode}`}
+              aria-label={`${label}${
+                item.nutriscore && nutriHint[item.nutriscore.toLowerCase()]
+                  ? ` — Nutri-Score ${item.nutriscore.toUpperCase()}, ${nutriHint[item.nutriscore.toLowerCase()]}`
+                  : ""
+              } — voir la fiche produit`}
+              className="hover:underline focus-visible:underline"
+            >
+              {label}
+            </Link>
+          ) : (
+            label
+          )}
         </p>
-        {item.best_price != null && (
-          <p className="text-micro text-on-surface-variant">{eur(item.best_price)} / u.</p>
-        )}
+        {/* One line, two facts. A third ("· assistant") pushed this to four wrapped
+            lines on a 375 px screen; the notepad thumbnail already marks a line the
+            catalog has no product for. */}
+        <p className="truncate text-micro text-on-surface-variant">
+          {recipeAmount && <span>{recipeAmount} · </span>}
+          {item.best_price != null ? `${eur(item.best_price)} / u.` : "prix inconnu"}
+        </p>
       </div>
 
       <div className="flex flex-shrink-0 items-center gap-1">
@@ -208,73 +240,21 @@ function ListRow({
   );
 }
 
-function OptimizeView({ result }: { result: OptimizeResult }) {
-  if (result.priced_items === 0) {
-    return (
-      <div className="card mt-4 p-4 text-center text-on-surface-variant">
-        <Icon name="info" className="text-[24px]" />
-        <p className="mt-1 text-body-md">
-          Aucun prix connu pour vos produits. Ajoutez des prix depuis les fiches produit.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-4 space-y-4">
-      {result.best_single_store && (
-        <div className="rounded-xl bg-primary-container p-5 text-on-primary-container shadow-float">
-          <p className="text-micro uppercase tracking-widest opacity-90">Meilleur magasin unique</p>
-          <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-headline-lg">{result.best_single_store.store}</span>
-            <span className="text-headline-lg">{eur(result.best_single_store.total)}</span>
-          </div>
-          <p className="mt-1 text-label-md opacity-90">
-            {result.best_single_store.items_covered}/{result.best_single_store.items_total} produits
-            disponibles
-          </p>
-        </div>
-      )}
-
-      {result.cheapest_split_total != null && (
-        <div className="card flex items-center justify-between p-4">
-          <div>
-            <p className="text-label-lg text-on-surface">En optimisant sur plusieurs magasins</p>
-            <p className="text-micro text-on-surface-variant">Meilleur prix par produit</p>
-          </div>
-          <span className="text-headline-md text-primary">{eur(result.cheapest_split_total)}</span>
-        </div>
-      )}
-
-      <div>
-        <h3 className="mb-2 text-headline-md text-on-surface">Comparatif magasins</h3>
-        <div className="space-y-2">
-          {result.by_store.map((b) => (
-            <div key={b.store} className="card p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-label-lg text-on-surface">{b.store}</span>
-                  <span className="chip bg-surface-container-high text-micro text-on-surface-variant">
-                    {b.items_covered}/{b.items_total}
-                  </span>
-                </div>
-                <span className="text-headline-md text-on-surface">{eur(b.total)}</span>
-              </div>
-              {b.missing.length > 0 && (
-                <p className="mt-1 text-micro text-on-surface-variant">
-                  Manque&nbsp;: {b.missing.join(", ")}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {result.unpriced_items > 0 && (
-        <p className="text-center text-micro text-on-surface-variant">
-          {result.unpriced_items} produit(s) sans prix connu, non inclus.
-        </p>
-      )}
+function Thumb({ item }: { item: ShoppingItem }) {
+  const inner = item.image_url ? (
+    <Image src={item.image_url} alt={item.name ?? ""} fill className="object-contain p-1" sizes="48px" />
+  ) : (
+    <div className="flex h-full items-center justify-center text-outline-variant">
+      <Icon name={item.barcode ? "grocery" : "edit_note"} />
     </div>
+  );
+  const box = "relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white";
+  // No barcode means no product page to open — render a plain box, not a dead link.
+  return item.barcode ? (
+    <Link href={`/courses/detail?barcode=${item.barcode}`} className={box}>
+      {inner}
+    </Link>
+  ) : (
+    <div className={box}>{inner}</div>
   );
 }

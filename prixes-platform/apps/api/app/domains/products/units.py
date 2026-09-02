@@ -8,7 +8,7 @@ defensively and simply give up (return None) when we can't be confident.
 from __future__ import annotations
 
 import re
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_CEILING, Decimal, InvalidOperation
 
 # Conversion of a written unit → (base unit label, factor to reach 1 base unit).
 # Mass normalises to kg, volume to L.
@@ -23,6 +23,9 @@ _UNIT_FACTORS: dict[str, tuple[str, Decimal]] = {
 }
 
 _UNIT_LABELS = {"kg": "€/kg", "L": "€/L", "piece": "€/pièce"}
+
+# Units that count objects rather than measure them.
+_COUNTABLE = {"pièce", "piece", "tranche", "botte", "sachet", "boîte", "pot"}
 
 # "6 x 33 cl", "4x25cl", "lot de 6"
 _MULTIPACK = re.compile(r"(\d+)\s*[x×]\s*", re.IGNORECASE)
@@ -57,6 +60,42 @@ def parse_quantity(quantity: str | None) -> tuple[Decimal, str] | None:
         return total, base_unit
 
     return None
+
+
+def to_base_amount(amount: Decimal, unit: str) -> tuple[Decimal, str] | None:
+    """Normalise a written amount ("1,5", "kg") to the same base as parse_quantity.
+
+    Returns (amount_in_base, "kg" | "L") or None for anything countable — a
+    "pièce", a "botte", a "sachet" — which has no mass or volume to convert.
+    Used to turn a recipe quantity into a number of packs to buy.
+    """
+    factor = _UNIT_FACTORS.get(unit.strip().lower())
+    if factor is None:
+        return None
+    base_unit, multiplier = factor
+    total = amount * multiplier
+    if total <= 0:
+        return None
+    return total, base_unit
+
+
+def packs_needed(amount: Decimal, unit: str, pack_quantity: str | None) -> int:
+    """How many packs of `pack_quantity` cover `amount` `unit`. At least 1.
+
+    "1,5 kg" of a product sold in 400 g packs is 4 packs — that integer, not the
+    1.5, is what the basket costing must multiply by the price.
+    Falls back to 1 whenever either side can't be parsed, which is the safe
+    direction: we would rather under-count than invent a total.
+    """
+    needed = to_base_amount(amount, unit)
+    if needed is None:
+        # Countable unit: "6 pièces" is 6 items, anything else is one.
+        return max(1, min(99, int(amount))) if unit.lower() in _COUNTABLE else 1
+    pack = parse_quantity(pack_quantity)
+    if pack is None or pack[1] != needed[1] or pack[0] <= 0:
+        return 1
+    count = (needed[0] / pack[0]).to_integral_value(rounding=ROUND_CEILING)
+    return max(1, min(99, int(count)))
 
 
 def unit_price(price: Decimal | float | None, quantity: str | None) -> tuple[Decimal, str] | None:

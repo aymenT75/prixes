@@ -101,13 +101,46 @@ export interface BargainsResult {
 // ── Shopping list ──
 export interface ShoppingItem {
   id: string;
-  barcode: string;
+  /** Null for a line the assistant produced that the catalog doesn't have. */
+  barcode: string | null;
   quantity: number;
   checked: boolean;
   name: string | null;
+  free_text: string | null;
+  /** Recipe quantity for display ("1.5" + "kg") — never used in price maths. */
+  amount: number | null;
+  unit: string | null;
+  source: "manual" | "ai" | "recipe" | "mealplan";
   image_url: string | null;
   best_price: number | null;
   nutriscore: string | null;
+}
+
+// ── Smart Assistant ──
+export interface SmartCartLine {
+  product_name: string;
+  amount: number;
+  unit: string;
+  category: string;
+  optional: boolean;
+  barcode: string | null;
+  matched_name: string | null;
+  image_url: string | null;
+  best_price: number | null;
+  unit_price: string | null;
+  quantity: number;
+  allergen_warning: string | null;
+}
+
+export interface SmartCartResult {
+  draft_id: string;
+  title: string;
+  servings: number;
+  lines: SmartCartLine[];
+  estimated_total: number | null;
+  matched_count: number;
+  unpriced_count: number;
+  cached: boolean;
 }
 
 export interface ShoppingList {
@@ -199,4 +232,76 @@ export interface AnalyticsSummary {
   unique_sessions: number;
   top_paths: { path: string; count: number }[];
   by_event: { event: string; count: number }[];
+}
+
+
+// ── Menu de la semaine ──
+export interface MealPlanMeal {
+  day: number;
+  day_label: string;
+  slot: string;
+  title: string;
+  ingredients: SmartCartLine[];
+}
+
+export interface MealPlan {
+  id: string;
+  week_start: string;
+  servings: number;
+  meals: MealPlanMeal[];
+  /** The week's shopping, deduplicated across every meal. */
+  basket: SmartCartLine[];
+  estimated_total: number | null;
+  unpriced_count: number;
+  stores: OptimizeResult | null;
+  /** The week as one trolley per store — same shape the shopping list produces. */
+  split: SplitResult | null;
+  over_budget: boolean;
+  /** How many times the planner retried to land inside the budget. */
+  budget_attempts: number;
+}
+
+// ── Recette importée ──
+export interface ImportedRecipe {
+  title: string;
+  source_url: string;
+  servings: number;
+  ingredients: SmartCartLine[];
+  estimated_total: number | null;
+  unpriced_count: number;
+}
+
+
+// ── Répartition entre magasins ──
+export interface BasketItem {
+  barcode: string;
+  label: string;
+  quantity: number;
+  unit_price: number;
+  line_total: number;
+}
+
+export interface StoreBasketDetail {
+  store: string;
+  items: BasketItem[];
+  subtotal: number;
+}
+
+export interface SplitOption {
+  stores: string[];
+  baskets: StoreBasketDetail[];
+  total: number;
+  items_covered: number;
+  items_total: number;
+  /** Priced items none of the chosen stores sells. */
+  missing: string[];
+  /** Against the best single-store shop, only when both fill the same basket. */
+  saving_vs_single: number | null;
+  /** How many more items this plan finds than the best single store. */
+  extra_items: number;
+}
+
+export interface SplitResult {
+  options: SplitOption[];
+  unpriced: string[];
 }

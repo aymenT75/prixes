@@ -15,6 +15,10 @@ import type {
   Product,
   ShoppingItem,
   ShoppingList,
+  SmartCartResult,
+  SplitResult,
+  ImportedRecipe,
+  MealPlan,
   StoresNearbyResult,
   TokenPair,
   User,
@@ -96,7 +100,12 @@ export const api = {
 
   // ── Meta ──
   meta: () =>
-    request<{ tts_enabled: boolean; environment: string }>("/meta"),
+    request<{
+      tts_enabled: boolean;
+      smart_assistant_enabled: boolean;
+      meal_plan_enabled: boolean;
+      environment: string;
+    }>("/meta"),
 
   // ── Text-to-speech (natural voice) ──
   // Returns an object URL for the MP3, or null when TTS is unavailable (caller then
@@ -156,6 +165,91 @@ export const api = {
   removeListItem: (id: string) => request<void>(`/shopping/${id}`, { method: "DELETE" }),
   clearChecked: () => request<{ removed: number }>("/shopping/clear-checked", { method: "POST" }),
   optimizeBasket: () => request<OptimizeResult>("/shopping/optimize"),
+  // One trolley per store: what to buy where, and what a second stop saves.
+  splitBasket: (maxStores = 2) =>
+    request<SplitResult>(`/shopping/split?max_stores=${maxStores}`),
+  // Cost a basket that isn't saved yet — a generated menu, an imported recipe.
+  optimizeLines: (lines: { barcode: string; quantity?: number; label?: string }[]) =>
+    request<OptimizeResult>("/shopping/optimize-basket", {
+      method: "POST",
+      body: JSON.stringify({ lines }),
+    }),
+
+  // ── Smart Assistant ──
+  smartCartStatus: () =>
+    request<{ available: boolean; rate_per_hour: number }>("/smart-cart/status"),
+  // `signal` lets the caller abort on its own deadline: the server gives up at 25s,
+  // the UI should not sit past that.
+  smartCart: (
+    body: {
+      prompt: string;
+      servings?: number | null;
+      avoid_allergens?: string[];
+      diets?: string[];
+    },
+    signal?: AbortSignal,
+  ) => request<SmartCartResult>("/smart-cart", { method: "POST", body: JSON.stringify(body), signal }),
+  commitSmartCart: (
+    draftId: string,
+    lines: {
+      barcode?: string | null;
+      free_text?: string | null;
+      name?: string | null;
+      quantity: number;
+      amount?: number | null;
+      unit?: string | null;
+    }[],
+  ) =>
+    request<{ added: number; merged: number }>(`/smart-cart/${draftId}/commit`, {
+      method: "POST",
+      body: JSON.stringify({ lines }),
+    }),
+
+  // ── Menu de la semaine ──
+  getMealPlan: (weekStart?: string) =>
+    request<MealPlan | null>("/meal-plan" + (weekStart ? `?week_start=${weekStart}` : "")),
+  generateMealPlan: (
+    body: {
+      servings: number;
+      meals_per_day: 1 | 2;
+      budget_eur?: number | null;
+      avoid_allergens?: string[];
+      diets?: string[];
+      dislikes?: string[];
+    },
+    signal?: AbortSignal,
+  ) => request<MealPlan>("/meal-plan", { method: "POST", body: JSON.stringify(body), signal }),
+  regenerateMeal: (weekStart: string, day: number, slot: string, note?: string) =>
+    request<MealPlan>(
+      `/meal-plan/${weekStart}/meals/${day}/regenerate?slot=${encodeURIComponent(slot)}`,
+      { method: "POST", body: JSON.stringify({ note: note ?? null }) },
+    ),
+  mealPlanToList: (weekStart: string) =>
+    request<{ added: number; merged: number }>(`/meal-plan/${weekStart}/to-list`, {
+      method: "POST",
+    }),
+
+  // ── Import de recette (JSON-LD schema.org) ──
+  importRecipe: (url: string, avoid_allergens: string[] = [], signal?: AbortSignal) =>
+    request<ImportedRecipe>("/recipes/import", {
+      method: "POST",
+      body: JSON.stringify({ url, avoid_allergens }),
+      signal,
+    }),
+  recipeToList: (
+    lines: {
+      barcode?: string | null;
+      free_text?: string | null;
+      name?: string | null;
+      quantity: number;
+      amount?: number | null;
+      unit?: string | null;
+    }[],
+  ) =>
+    request<{ added: number; merged: number }>("/recipes/to-list", {
+      method: "POST",
+      body: JSON.stringify({ lines }),
+    }),
 
   // ── Price alerts ──
   listAlerts: () => request<AlertList>("/alerts"),

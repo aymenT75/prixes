@@ -94,11 +94,30 @@ def _match_retailer(name: str | None) -> str | None:
     return None
 
 
+def canon_store_name(raw: str) -> str:
+    """Fold every spelling of a chain onto one name.
+
+    OpenStreetMap names the same chain a dozen ways — "E.Leclerc", "E. Leclerc",
+    "Centre Commercial E.Leclerc", "Intermarché Express". An exact lookup catches
+    only the spellings someone thought to list, and the rest arrive as separate
+    stores. The comparison then splits one chain's catalogue in two, and the
+    basket splitter cheerfully sends you to "two stores" that are the same shop.
+
+    The exact table wins first because it draws distinctions the substring rules
+    cannot: Netto belongs to Intermarché but is a different brand with its own
+    prices, so it has to stay its own store.
+    """
+    stripped = raw.strip()
+    if (exact := STORE_CANON.get(stripped.lower())) is not None:
+        return exact
+    return _match_retailer(stripped) or stripped[:120]
+
+
 def _canon_store(loc: dict[str, Any]) -> str | None:
     raw = (loc.get("osm_brand") or loc.get("osm_name") or "").strip()
     if not raw:
         return None
-    return STORE_CANON.get(raw.lower(), raw[:120])
+    return canon_store_name(raw)
 
 
 def _pdate(s: str | None) -> datetime:
