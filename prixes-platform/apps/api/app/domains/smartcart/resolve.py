@@ -36,6 +36,10 @@ _MIN_SCORE = 0.50
 # core.llm._STRIP_KEYS.
 _MAX_NAME = 120
 _MAX_AMOUNT = Decimal(9999)
+# Above this many packs for one line, the match is the wrong format rather than a
+# big shop: 1,8 kg of potatoes matched to a spice sachet asks for 99 packs and
+# turns a raclette into a 98 € basket. Ten is the most anyone buys of one thing.
+_MAX_PACKS = 10
 # Candidates kept per line before the price lookup.
 _MAX_CANDIDATES = 8
 
@@ -219,15 +223,20 @@ async def resolve_lines(
 
         if best is not None and best_score >= _MIN_SCORE:
             product = best.product
-            price = prices.get(product.barcode)
-            out.barcode = product.barcode
-            out.matched_name = product.name
-            out.image_url = product.image_url
-            out.best_price = price
-            out.quantity = packs_needed(amount, line.unit, product.quantity)
-            out.allergen_warning = allergen_conflict(product, avoid)
-            if (per_unit := unit_price(price, product.quantity)) is not None:
-                out.unit_price = f"{per_unit[0]} {per_unit[1]}"
+            packs = packs_needed(amount, line.unit, product.quantity)
+            # An implausible pack count means the match is the wrong format, not a
+            # big shop. Keep the line as free text: an honest "prix inconnu" beats
+            # a confident total built on a sachet sold by the gram.
+            if packs <= _MAX_PACKS:
+                price = prices.get(product.barcode)
+                out.barcode = product.barcode
+                out.matched_name = product.name
+                out.image_url = product.image_url
+                out.best_price = price
+                out.quantity = packs
+                out.allergen_warning = allergen_conflict(product, avoid)
+                if (per_unit := unit_price(price, product.quantity)) is not None:
+                    out.unit_price = f"{per_unit[0]} {per_unit[1]}"
 
         resolved.append(out)
 

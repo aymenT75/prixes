@@ -182,3 +182,17 @@ def test_cache_key_ignores_case_and_spacing() -> None:
 
 def test_cache_key_separates_servings() -> None:
     assert _cache_key("raclette", 4) != _cache_key("raclette", 6)
+
+
+# ── A match whose format makes no sense is not a match ───────────────────────
+def test_an_implausible_pack_count_rejects_the_match() -> None:
+    """Found in production: 1,8 kg of potatoes matched a product sold by the
+    gram, so the basket asked for 99 packs and quoted 98 € for a raclette. The
+    line must survive without a price rather than carry a confident wrong one."""
+    from app.domains.smartcart.resolve import _MAX_PACKS
+
+    # 1.8 kg against a 20 g pack.
+    assert packs_needed(Decimal("1.8"), "kg", "20 g") > _MAX_PACKS
+    # The realistic cases stay well under the bar.
+    assert packs_needed(Decimal("1.8"), "kg", "2,5 kg") <= _MAX_PACKS
+    assert packs_needed(Decimal("1.2"), "kg", "400 g") <= _MAX_PACKS
