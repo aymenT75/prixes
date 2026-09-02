@@ -5,7 +5,11 @@
 // Bump this on any release you need to force past a stale cache: the byte change
 // makes the browser install the new SW, whose activate handler deletes every
 // cache that isn't the current name — purging the old shell for all devices.
-const CACHE = "prixes-v3";
+// v4: the icon font gained eleven glyphs (auto_awesome, calendar_month,
+// playlist_add…). Fonts are stale-while-revalidate, so without this bump the
+// browser keeps serving the previous subset and every new icon renders as its
+// raw ligature text — "AUTO_AWESOME" in place of the sparkle.
+const CACHE = "prixes-v4";
 const SHELL = ["/manifest.json"];
 
 self.addEventListener("install", (e) => {
