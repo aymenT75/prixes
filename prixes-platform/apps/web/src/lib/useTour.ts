@@ -25,10 +25,12 @@ export const TOUR_STEPS: TourStep[] = [
     body: "On vous fait visiter l'app en quelques secondes pour vous montrer l'essentiel.",
   },
   {
-    id: "courses",
-    target: '[data-tour="nav-courses"]',
-    title: "Cherchez & comparez",
-    body: "Trouvez n'importe quel produit et comparez son prix entre plusieurs magasins.",
+    id: "assistant",
+    target: '[data-tour="nav-assistant"]',
+    title: "Dictez vos courses",
+    body:
+      "Dites ce que vous voulez préparer : l'assistant monte la liste, la chiffre, " +
+      "et vous dit dans quel magasin l'acheter.",
   },
   {
     id: "colors",

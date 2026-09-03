@@ -7,7 +7,9 @@ import { Icon } from "@/components/Icon";
 
 const TABS = [
   { href: "/", label: "Accueil", icon: "home", tour: undefined },
-  { href: "/menu", label: "Menu", icon: "restaurant_menu", tour: "nav-courses" },
+  // The assistant is what makes Prixes different, so it gets the tab. It sits
+  // at the top of the list — the page it fills — rather than on its own screen.
+  { href: "/list", label: "Assistant", icon: "auto_awesome", tour: "nav-assistant" },
   { href: "/fuel", label: "Carburant", icon: "local_gas_station", tour: "nav-fuel" },
   { href: "/scanner", label: "Scanner", icon: "qr_code_scanner", tour: "nav-scanner" },
 ];
