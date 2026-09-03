@@ -72,6 +72,20 @@ scp web.tar.gz api.tar.gz root@SERVEUR:/opt/prixes-platform/
 # Sur le serveur :
 cd /opt/prixes-platform && ./scripts/deploy.sh
 ```
+### Vérifier l'image avant de l'envoyer
+
+buildx peut servir une construction entièrement en cache et laisser le tag sur
+l'image précédente : la commande réussit, le `.tar.gz` fait la bonne taille, et
+c'est du code périmé qui part en production. Contrôlez avant de transférer :
+
+```bash
+docker images --format '{{.Tag}}	{{.CreatedSince}}' | head -3   # doit dire "seconds ago"
+docker run --rm --entrypoint sh prixes-platform-web:latest   -c "grep -rlq 'UNE_CHAINE_DE_VOTRE_CHANGEMENT' .next/static && echo OUI || echo NON"
+```
+
+Si l'image est vieille ou ne contient pas votre changement, reconstruisez avec
+`--no-cache`.
+
 En cas de problème après déploiement : `./scripts/rollback-app.sh` (voir
 [docs/ROLLBACK.md](docs/ROLLBACK.md) pour la procédure complète, y compris la
 restauration de la base de données).
