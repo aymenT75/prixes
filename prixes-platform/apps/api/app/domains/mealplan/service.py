@@ -231,7 +231,7 @@ def _payable(split: SplitResult | None, fallback: Decimal | None) -> Decimal | N
 
 
 async def generate(
-    db: AsyncSession, mongo: MongoDb, user_id: uuid.UUID, data: MealPlanIn
+    db: AsyncSession, mongo: MongoDb | None, user_id: uuid.UUID, data: MealPlanIn
 ) -> MealPlanOut:
     if not llm_enabled():
         raise HTTPException(
@@ -280,26 +280,32 @@ async def generate(
                 cheaper, c_meals, c_basket, c_stores, c_split,
             )
 
-    doc = _document(user_id, week_start, data, meals)
-    try:
-        stored = await mongo[MEAL_PLANS].find_one_and_replace(
-            {"user_id": str(user_id), "week_start": week_start.isoformat()},
-            doc,
-            upsert=True,
-            return_document=ReturnDocument.AFTER,
-        )
-        doc_id = str(stored["_id"])
-    except PyMongoError as exc:
-        # The menu is still worth showing even if we could not save it.
-        logger.warning(f"Meal plan not stored: {exc}")
-        doc_id = ""
+    # Composing a week does not need a document store — only remembering it does.
+    # Without Mongo the plan is still generated, priced and sent to the list; it
+    # simply is not there when you come back.
+    doc_id = ""
+    if mongo is not None:
+        doc = _document(user_id, week_start, data, meals)
+        try:
+            stored = await mongo[MEAL_PLANS].find_one_and_replace(
+                {"user_id": str(user_id), "week_start": week_start.isoformat()},
+                doc,
+                upsert=True,
+                return_document=ReturnDocument.AFTER,
+            )
+            doc_id = str(stored["_id"])
+        except PyMongoError as exc:
+            # The menu is still worth showing even if we could not save it.
+            logger.warning(f"Meal plan not stored: {exc}")
 
     return _assemble(doc_id, week_start, data, out_meals, basket, stores, split, attempts)
 
 
 async def get_current(
-    db: AsyncSession, mongo: MongoDb, user_id: uuid.UUID, week_start: date | None
+    db: AsyncSession, mongo: MongoDb | None, user_id: uuid.UUID, week_start: date | None
 ) -> MealPlanOut | None:
+    if mongo is None:
+        return None  # nothing was stored, so there is nothing to restore
     week = week_start or coming_monday()
     try:
         doc = await mongo[MEAL_PLANS].find_one(

@@ -51,39 +51,54 @@ export default function HomePage() {
     <div>
       <PageHeader title="Prixes" />
 
-      {/* The cart artwork now greets people on the launch screen instead of here, so the
-          panel is copy-only: the heading and the shortcuts get the full width, which is
-          what actually helps at a large system font scale. */}
-      <section
-        className="mb-6 overflow-hidden rounded-2xl border border-white/60 bg-gradient-to-br
-                   from-[#f5fdeb] via-[#e8fcf0] to-[#d8f2ff] p-6 shadow-float
-                   dark:border-white/10 dark:from-surface-container dark:via-[#1a3a2a] dark:to-[#0a2540]"
-      >
-        <div className="relative z-10 w-full min-w-0">
-          <h2 className="max-w-[12ch] text-headline-lg font-bold tracking-tight text-on-surface">
-            Ne payez jamais le prix fort
-          </h2>
-          <p className="mt-2 max-w-[25ch] text-body-md text-on-surface-variant">
-            Comparez les prix des produits entre les magasins et trouvez le tarif le plus bas en un instant.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {[
-              { path: "/courses", label: "Comparateur" },
-              { path: "/stores", label: "Magasins proches" },
-              { path: "/alerts", label: "Alertes de baisse" },
-            ].map((c) => (
-              <button
-                key={c.label}
-                onClick={() => router.push(c.path)}
-                className="rounded-full border border-white/70 bg-white/70
-                           px-4 py-2 text-label-md font-medium text-on-surface shadow-sm backdrop-blur
-                           active:scale-95 transition-transform
-                           dark:border-white/10 dark:bg-white/10"
-              >
-                {c.label}
-              </button>
-            ))}
+      {/* Frosted panel: a soft grey ground, two blurred colour blooms behind it,
+          and the cart drawn inline rather than fetched — it is the first thing
+          painted, so it must not wait on a network round trip. */}
+      <section className="relative mb-6 overflow-hidden rounded-[28px] border border-white/70 bg-gradient-to-br from-[#f2f4f6] via-[#f6f8f9] to-[#eef2f4] p-6 shadow-float dark:border-white/10 dark:from-surface-container dark:via-[#16211c] dark:to-[#0e1a24] sm:p-8">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-16 -top-24 h-64 w-64 rounded-full bg-primary-fixed-dim/25 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-secondary-fixed-dim/20 blur-3xl"
+        />
+
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-headline-md font-bold italic tracking-tight text-on-surface">
+              Pri<span className="text-primary-fixed-dim [text-shadow:0_0_18px_rgb(var(--color-primary-fixed-dim)/0.55)]">x</span>es
+            </p>
+
+            <h2 className="mt-3 max-w-[11ch] text-headline-lg font-bold leading-[1.08] tracking-tight text-on-surface sm:max-w-[13ch]">
+              Ne payez jamais le prix fort
+            </h2>
+            <p className="mt-2 max-w-[24ch] text-body-md text-on-surface-variant sm:max-w-[28ch]">
+              Comparez les prix des produits entre les magasins et trouvez le tarif le plus
+              bas en un instant.
+            </p>
           </div>
+
+          <CartArtwork className="h-24 w-24 flex-shrink-0 sm:h-32 sm:w-32 md:h-44 md:w-44" />
+        </div>
+
+        <div className="relative z-10 mt-5 flex flex-wrap gap-2">
+          {[
+            { path: "/courses", label: "Comparateur" },
+            { path: "/stores", label: "Magasins" },
+            { path: "/alerts", label: "Alertes" },
+          ].map((c) => (
+            <button
+              key={c.label}
+              onClick={() => router.push(c.path)}
+              className="rounded-full border border-white/80 bg-white/60 px-5 py-2.5 text-label-md
+                         font-medium text-on-surface shadow-sm backdrop-blur-md
+                         transition-transform active:scale-95
+                         dark:border-white/10 dark:bg-white/10"
+            >
+              {c.label}
+            </button>
+          ))}
         </div>
       </section>
 
@@ -174,5 +189,52 @@ export default function HomePage() {
         </div>
       </section>
     </div>
+  );
+}
+
+/**
+ * The shopping cart that greets people on the home panel.
+ *
+ * Inline rather than an <img>: it is above the fold on first paint, and a
+ * network round trip for the one thing people see first is a poor trade for a
+ * shape this simple. Strokes only, so it stays crisp at any size.
+ */
+function CartArtwork({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 120 120" className={className} aria-hidden focusable="false">
+      <defs>
+        <linearGradient id="cart-body" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgb(var(--color-primary-fixed-dim))" />
+          <stop offset="55%" stopColor="rgb(var(--color-tertiary-fixed))" />
+          <stop offset="100%" stopColor="rgb(var(--color-secondary-fixed-dim))" />
+        </linearGradient>
+        <linearGradient id="cart-fill" x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0%" stopColor="rgb(var(--color-primary-fixed-dim))" stopOpacity="0.45" />
+          <stop offset="100%" stopColor="rgb(var(--color-secondary-fixed-dim))" stopOpacity="0.30" />
+        </linearGradient>
+      </defs>
+
+      {/* Basket, drawn as one open shape so the gradient runs through it. */}
+      <path
+        d="M34 34 H104 L94 74 H44 Z"
+        fill="url(#cart-fill)"
+        stroke="url(#cart-body)"
+        strokeWidth="6"
+        strokeLinejoin="round"
+      />
+      {/* The fold that gives the basket its facet. */}
+      <path d="M34 34 L69 56 L104 34" fill="none" stroke="url(#cart-body)" strokeWidth="4" strokeOpacity="0.5" strokeLinejoin="round" />
+      {/* Handle down to the axle. */}
+      <path
+        d="M12 18 H26 L34 34 M44 74 H92"
+        fill="none"
+        stroke="url(#cart-body)"
+        strokeWidth="6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <circle cx="52" cy="94" r="9" fill="url(#cart-fill)" stroke="url(#cart-body)" strokeWidth="5" />
+      <circle cx="88" cy="94" r="9" fill="url(#cart-fill)" stroke="url(#cart-body)" strokeWidth="5" />
+    </svg>
   );
 }

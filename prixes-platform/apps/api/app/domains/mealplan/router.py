@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.config import settings
 from app.core.deps import CurrentUser, DbSession
-from app.core.mongo import Mongo
+from app.core.mongo import Mongo, OptionalMongo
 from app.core.rate_limit import RateLimit
 from app.domains.mealplan import service
 from app.domains.mealplan.schemas import MealPlanIn, MealPlanOut, RegenerateIn
@@ -25,7 +25,7 @@ _LIMIT = Depends(RateLimit("mealplan", times=settings.mealplan_rate_per_day, win
 @router.get("", response_model=MealPlanOut | None)
 async def current(
     db: DbSession,
-    mongo: Mongo,
+    mongo: OptionalMongo,
     user: CurrentUser,
     week_start: date | None = None,
 ) -> MealPlanOut | None:
@@ -35,7 +35,7 @@ async def current(
 
 @router.post("", response_model=MealPlanOut, status_code=201, dependencies=[_LIMIT])
 async def generate(
-    data: MealPlanIn, db: DbSession, mongo: Mongo, user: CurrentUser
+    data: MealPlanIn, db: DbSession, mongo: OptionalMongo, user: CurrentUser
 ) -> MealPlanOut:
     return await service.generate(db, mongo, user.id, data)
 

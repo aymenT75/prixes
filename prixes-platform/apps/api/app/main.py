@@ -85,7 +85,9 @@ async def meta() -> dict[str, object]:
     return {
         "tts_enabled": bool(settings.openai_api_key),
         "smart_assistant_enabled": llm_enabled(),
-        "meal_plan_enabled": llm_enabled() and mongo_enabled(),
+        # Composing a week needs a model; only remembering it needs Mongo.
+        "meal_plan_enabled": llm_enabled(),
+        "meal_plan_saved": mongo_enabled(),
         "environment": settings.environment,
     }
 

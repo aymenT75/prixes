@@ -7,7 +7,7 @@ import { Icon } from "@/components/Icon";
 
 const TABS = [
   { href: "/", label: "Accueil", icon: "home", tour: undefined },
-  { href: "/courses", label: "Courses", icon: "shopping_basket", tour: "nav-courses" },
+  { href: "/menu", label: "Menu", icon: "restaurant_menu", tour: "nav-courses" },
   { href: "/fuel", label: "Carburant", icon: "local_gas_station", tour: "nav-fuel" },
   { href: "/scanner", label: "Scanner", icon: "qr_code_scanner", tour: "nav-scanner" },
 ];

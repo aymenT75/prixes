@@ -104,6 +104,8 @@ export const api = {
       tts_enabled: boolean;
       smart_assistant_enabled: boolean;
       meal_plan_enabled: boolean;
+      /** False when there is no document store: plans are not remembered. */
+      meal_plan_saved: boolean;
       environment: string;
     }>("/meta"),
 
@@ -224,9 +226,22 @@ export const api = {
       `/meal-plan/${weekStart}/meals/${day}/regenerate?slot=${encodeURIComponent(slot)}`,
       { method: "POST", body: JSON.stringify({ note: note ?? null }) },
     ),
-  mealPlanToList: (weekStart: string) =>
-    request<{ added: number; merged: number }>(`/meal-plan/${weekStart}/to-list`, {
+  // Sends the basket the client already has rather than one the server stored —
+  // so a week can reach the list even when nothing is persisted.
+  addBasketToList: (
+    items: {
+      barcode?: string | null;
+      free_text?: string | null;
+      name?: string | null;
+      quantity: number;
+      amount?: number | null;
+      unit?: string | null;
+      source?: string;
+    }[],
+  ) =>
+    request<{ added: number; merged: number }>("/shopping/bulk", {
       method: "POST",
+      body: JSON.stringify({ items }),
     }),
 
   // ── Import de recette (JSON-LD schema.org) ──

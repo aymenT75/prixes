@@ -55,6 +55,17 @@ export default function MenuPage() {
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState<string | null>(null);
 
+  // Composing a week needs a model; only remembering it needs a document store.
+  // Without one the plan lives for the session, and the per-meal redo — which
+  // reads the stored week — is hidden rather than left to fail.
+  const { data: meta } = useQuery({
+    queryKey: ["meta"],
+    queryFn: () => api.meta(),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const saved = meta?.meal_plan_saved ?? false;
+
   const { data: plan, isLoading } = useQuery({
     queryKey: ["meal-plan", week],
     queryFn: () => api.getMealPlan(week),
@@ -96,7 +107,20 @@ export default function MenuPage() {
   });
 
   const toList = useMutation({
-    mutationFn: () => api.mealPlanToList(week),
+    mutationFn: () =>
+      api.addBasketToList(
+        (plan?.basket ?? [])
+          .filter((line) => !line.optional)
+          .map((line) => ({
+            barcode: line.barcode,
+            free_text: line.barcode ? null : line.product_name,
+            name: line.matched_name ?? line.product_name,
+            quantity: line.quantity,
+            amount: line.amount,
+            unit: line.unit,
+            source: "mealplan",
+          })),
+      ),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["shopping"] });
       setAdded(
@@ -214,6 +238,13 @@ export default function MenuPage() {
         </p>
       )}
 
+      {plan && !saved && (
+        <p className="mt-4 rounded-xl bg-surface-container p-3 text-micro text-on-surface-variant">
+          Ce menu n&apos;est pas mémorisé : ajoutez les courses à votre liste avant de
+          quitter la page.
+        </p>
+      )}
+
       {isLoading && <p className="py-10 text-center text-on-surface-variant">Chargement…</p>}
 
       {plan && (
@@ -226,6 +257,7 @@ export default function MenuPage() {
                 meal={meal}
                 onRegenerate={() => regenerate.mutate({ day: meal.day, slot: meal.slot })}
                 busy={regenerate.isPending}
+                canRegenerate={saved}
               />
             ))}
           </div>
@@ -292,10 +324,12 @@ function MealCard({
   meal,
   onRegenerate,
   busy,
+  canRegenerate,
 }: {
   meal: MealPlanMeal;
   onRegenerate: () => void;
   busy: boolean;
+  canRegenerate: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -308,14 +342,16 @@ function MealCard({
           </p>
           <p className="truncate text-label-lg text-on-surface">{meal.title}</p>
         </div>
-        <button
-          onClick={onRegenerate}
-          disabled={busy}
-          aria-label={`Changer le repas du ${meal.day_label}`}
-          className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90 disabled:opacity-50"
-        >
-          <Icon name="refresh" className="text-[18px]" />
-        </button>
+        {canRegenerate && (
+          <button
+            onClick={onRegenerate}
+            disabled={busy}
+            aria-label={`Changer le repas du ${meal.day_label}`}
+            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90 disabled:opacity-50"
+          >
+            <Icon name="refresh" className="text-[18px]" />
+          </button>
+        )}
         <button
           onClick={() => setOpen(!open)}
           aria-expanded={open}
