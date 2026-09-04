@@ -49,6 +49,22 @@ class ProductOut(BaseModel):
     allergens: str | None = None
     diets: str | None = None
 
+    # ── Nutrition, per 100 g (null = not declared upstream) ──
+    # Stored as Numeric for exactness, exposed as float on purpose: Pydantic
+    # serialises Decimal to a JSON *string*, and the client has to do arithmetic
+    # on these (daily totals, gap detection) — a string would silently compare
+    # and subtract wrong. Precision at these magnitudes is well within float64.
+    energy_kcal_100g: float | None = None
+    proteins_100g: float | None = None
+    carbohydrates_100g: float | None = None
+    sugars_100g: float | None = None
+    fiber_100g: float | None = None
+    fat_100g: float | None = None
+    saturated_fat_100g: float | None = None
+    salt_100g: float | None = None
+    fruits_vegetables_nuts_100g: float | None = None
+    serving_size: str | None = None
+
 
 class ProductDetail(ProductOut):
     prices: list[PricePointOut] = Field(default_factory=list)

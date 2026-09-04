@@ -33,6 +33,30 @@ class Product(Base, TimestampMixin):
     # Comma-separated FR diet labels the product SATISFIES (e.g. "végan, bio").
     diets: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # ── Nutrition, per 100 g (NULL = not declared by OpenFoodFacts) ──────────
+    # Numeric rather than float: these feed the health score, and a coach that
+    # returns a slightly different number for the same product each time isn't
+    # credible. `fruits_vegetables_nuts_100g` is a percentage, the rest are grams
+    # except energy, in kcal.
+    energy_kcal_100g: Mapped[Decimal | None] = mapped_column(Numeric(9, 3), nullable=True)
+    proteins_100g: Mapped[Decimal | None] = mapped_column(Numeric(9, 3), nullable=True)
+    carbohydrates_100g: Mapped[Decimal | None] = mapped_column(Numeric(9, 3), nullable=True)
+    sugars_100g: Mapped[Decimal | None] = mapped_column(Numeric(9, 3), nullable=True)
+    fiber_100g: Mapped[Decimal | None] = mapped_column(Numeric(9, 3), nullable=True)
+    fat_100g: Mapped[Decimal | None] = mapped_column(Numeric(9, 3), nullable=True)
+    saturated_fat_100g: Mapped[Decimal | None] = mapped_column(Numeric(9, 3), nullable=True)
+    salt_100g: Mapped[Decimal | None] = mapped_column(Numeric(9, 3), nullable=True)
+    fruits_vegetables_nuts_100g: Mapped[Decimal | None] = mapped_column(
+        Numeric(9, 3), nullable=True
+    )
+    serving_size: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # When we last read nutrition off an OFF payload. Distinct from a NULL value
+    # column, because "OFF declares no sugars" and "we never looked" are different
+    # states and only the second one should trigger a refetch.
+    nutrition_checked_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     raw_off: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 

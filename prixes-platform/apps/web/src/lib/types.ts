@@ -47,6 +47,20 @@ export interface Product {
   categories: string | null;
   allergens: string | null;
   diets: string | null;
+  // Nutrition per 100 g, null when OpenFoodFacts doesn't declare it. Real JSON
+  // numbers (the API exposes these as float, not Decimal) so they can be summed
+  // and compared client-side without parsing.
+  energy_kcal_100g: number | null;
+  proteins_100g: number | null;
+  carbohydrates_100g: number | null;
+  sugars_100g: number | null;
+  fiber_100g: number | null;
+  fat_100g: number | null;
+  saturated_fat_100g: number | null;
+  salt_100g: number | null;
+  /** Share of fruits/vegetables/nuts, in percent. */
+  fruits_vegetables_nuts_100g: number | null;
+  serving_size: string | null;
 }
 
 export interface PricePoint {

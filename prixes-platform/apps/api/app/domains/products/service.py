@@ -31,6 +31,7 @@ async def get_product(db: AsyncSession, barcode: str) -> Product | None:
         and (datetime.now(UTC) - product.fetched_at) < PRODUCT_TTL
         and product.allergens is not None
         and product.diets is not None
+        and product.nutrition_checked_at is not None
     )
     if fresh:
         return product
@@ -42,6 +43,8 @@ async def get_product(db: AsyncSession, barcode: str) -> Product | None:
                 product.allergens = ""  # mark checked so we don't refetch each view
             if product.diets is None:
                 product.diets = ""
+            if product.nutrition_checked_at is None:
+                product.nutrition_checked_at = datetime.now(UTC)
             await db.flush()
         return product  # may be None; serve stale if we had it
 
@@ -228,20 +231,23 @@ async def healthier_alternatives(
 async def create_product(db: AsyncSession, data: ProductCreate) -> Product:
     """Create a minimal product from a user scan (barcode + name + brand). Idempotent:
     if the barcode already exists, return it rather than erroring. allergens/diets are
-    set to "" (= checked, none) so get_product() doesn't keep trying to refetch a
-    barcode OpenFoodFacts will never have."""
+    set to "" and nutrition_checked_at is stamped (= checked, nothing declared) so
+    get_product() doesn't keep trying to refetch a barcode OpenFoodFacts will
+    never have."""
     existing = await db.get(Product, data.barcode)
     if existing is not None:
         if not existing.name:
             existing.name = data.name
         return existing
+    now = datetime.now(UTC)
     product = Product(
         barcode=data.barcode,
         name=data.name,
         brand=data.brand,
         allergens="",
         diets="",
-        fetched_at=datetime.now(UTC),
+        fetched_at=now,
+        nutrition_checked_at=now,
     )
     db.add(product)
     await db.flush()

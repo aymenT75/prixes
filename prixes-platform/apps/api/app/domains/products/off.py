@@ -1,6 +1,7 @@
 """OpenFoodFacts + OpenPrices client adapters (normalise upstream into our schema)."""
 from __future__ import annotations
 
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any
 
 from app.core.config import settings
@@ -79,6 +80,91 @@ def _extract_diets(product: dict[str, Any]) -> str | None:
     return ", ".join(diets) or None
 
 
+# ── Nutrition (per 100 g) ────────────────────────────────────────────────────
+# OFF nutriment key → our column. Everything is the `_100g` variant, which OFF
+# already normalises per 100 g/ml regardless of how the label states it.
+NUTRIMENT_KEYS: dict[str, tuple[str, ...]] = {
+    "energy_kcal_100g": ("energy-kcal_100g",),
+    "proteins_100g": ("proteins_100g",),
+    "carbohydrates_100g": ("carbohydrates_100g",),
+    "sugars_100g": ("sugars_100g",),
+    "fiber_100g": ("fiber_100g", "fibers_100g"),
+    "fat_100g": ("fat_100g",),
+    "saturated_fat_100g": ("saturated-fat_100g",),
+    "salt_100g": ("salt_100g",),
+    # Share of fruits/vegetables/nuts (%). OFF computes it from the ingredient
+    # list for most products; the declared value only exists on a minority.
+    "fruits_vegetables_nuts_100g": (
+        "fruits-vegetables-nuts-estimate-from-ingredients_100g",
+        "fruits-vegetables-nuts_100g",
+        "fruits-vegetables-nuts-estimate_100g",
+    ),
+}
+
+# Physical ceilings per 100 g. OFF is crowd-sourced, so a mis-keyed field (sugars
+# entered in mg, kJ typed under the kcal key, a decimal slip) has to be dropped
+# rather than surfaced — the same reasoning as `is_plausible_price` for prices,
+# and it matters more here because a coach acts on these numbers.
+_MAX = {
+    "energy_kcal_100g": Decimal("900"),  # pure fat — nothing edible exceeds it
+    "fruits_vegetables_nuts_100g": Decimal("100"),  # a percentage
+}
+_MAX_GRAMS = Decimal("100")  # a nutrient can't weigh more than the 100 g it's in
+_QUANT = Decimal("0.001")
+
+# kJ → kcal. Used only when OFF carries the energy in kJ and not in kcal, which
+# is common on EU labels (they legally state kJ first).
+_KJ_PER_KCAL = Decimal("4.184")
+_MAX_KJ = Decimal("4000")
+
+
+def _num(value: Any, maximum: Decimal) -> Decimal | None:
+    """Coerce an OFF nutriment value to a bounded Decimal, or None if unusable."""
+    if value is None or value == "":
+        return None
+    try:
+        parsed = Decimal(str(value).strip().replace(",", "."))
+    except (InvalidOperation, ValueError, TypeError):
+        return None
+    if not parsed.is_finite() or parsed < 0 or parsed > maximum:
+        return None
+    return parsed.quantize(_QUANT, rounding=ROUND_HALF_UP)
+
+
+def extract_nutrition(product: dict[str, Any]) -> dict[str, Decimal | None]:
+    """Return our per-100 g nutriment columns from an OFF product payload.
+
+    Every key is always present (None when OFF doesn't declare it) so callers can
+    setattr the whole dict without masking a value that used to be there.
+    """
+    nutriments = product.get("nutriments")
+    if not isinstance(nutriments, dict):
+        nutriments = {}
+
+    out: dict[str, Decimal | None] = {}
+    for column, candidates in NUTRIMENT_KEYS.items():
+        maximum = _MAX.get(column, _MAX_GRAMS)
+        value: Decimal | None = None
+        for key in candidates:
+            value = _num(nutriments.get(key), maximum)
+            if value is not None:
+                break
+        out[column] = value
+
+    # No kcal declared: derive it from kJ rather than losing the product entirely.
+    # `energy_100g` is kJ in OFF's normalised units, same as `energy-kj_100g`.
+    if out["energy_kcal_100g"] is None:
+        kj = _num(nutriments.get("energy-kj_100g"), _MAX_KJ) or _num(
+            nutriments.get("energy_100g"), _MAX_KJ
+        )
+        if kj is not None:
+            kcal = (kj / _KJ_PER_KCAL).quantize(_QUANT, rounding=ROUND_HALF_UP)
+            # The conversion can still land out of range if the source was wrong.
+            if kcal <= _MAX["energy_kcal_100g"]:
+                out["energy_kcal_100g"] = kcal
+    return out
+
+
 def _normalise_off(barcode: str, product: dict[str, Any]) -> dict[str, Any]:
     nova = product.get("nova_group")
     return {
@@ -94,6 +180,8 @@ def _normalise_off(barcode: str, product: dict[str, Any]) -> dict[str, Any]:
         "categories": product.get("categories"),
         "allergens": _extract_allergens(product),
         "diets": _extract_diets(product),
+        "serving_size": (product.get("serving_size") or None),
+        **extract_nutrition(product),
         "raw_off": product,
     }
 
@@ -122,7 +210,7 @@ async def search_off(query: str, page: int = 1, page_size: int = 20) -> list[dic
         "page_size": page_size,
         "fields": "code,product_name,product_name_fr,brands,image_front_url,"
         "nutriscore_grade,ecoscore_grade,nova_group,categories,quantity,allergens_tags,"
-        "labels_tags,ingredients_analysis_tags",
+        "labels_tags,ingredients_analysis_tags,nutriments,serving_size",
     }
     resp = await get_http_client().get(url, params=params, timeout=8.0)
     if resp.status_code != 200:

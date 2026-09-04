@@ -25,13 +25,15 @@ from sqlalchemy import func, select
 
 from app.core.db import SessionLocal
 from app.domains.products.models import PricePoint, Product
+from app.domains.products.off import extract_nutrition
 
 OP_PRICES = "https://prices.openfoodfacts.org/api/v1/prices"
 OP_LOCATIONS = "https://prices.openfoodfacts.org/api/v1/locations"
 OFF_PRODUCT = "https://world.openfoodfacts.org/api/v2/product/{}.json"
 OFF_FIELDS = (
     "product_name,product_name_fr,brands,image_front_url,image_url,"
-    "nutriscore_grade,nutrition_grades,ecoscore_grade,nova_group,categories,quantity"
+    "nutriscore_grade,nutrition_grades,ecoscore_grade,nova_group,categories,quantity,"
+    "nutriments,serving_size"
 )
 USER_AGENT = "Prixes/2.0 (scheduled-price-refresh)"
 
@@ -163,6 +165,8 @@ async def _enrich_from_off(client: httpx.AsyncClient, barcode: str) -> dict[str,
             if isinstance(nova, (int, str)) and str(nova).isdigit()
             else None,
             "categories": p.get("categories"),
+            "serving_size": p.get("serving_size") or None,
+            **extract_nutrition(p),
         }
     except Exception:  # noqa: BLE001
         return None
@@ -278,7 +282,7 @@ async def refresh_prices(
                     enriched += 1
                     if off:
                         for k, v in off.items():
-                            if v and not getattr(product, k, None):
+                            if v not in (None, "") and getattr(product, k, None) is None:
                                 setattr(product, k, v)
                 product.fetched_at = now
 
