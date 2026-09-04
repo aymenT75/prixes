@@ -1,6 +1,32 @@
 export const eur = (n: number) =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
 
+// A per-100g nutrition value split into number and unit, or null when
+// OpenFoodFacts declares nothing (the caller then omits the row rather than
+// printing a dash). Energy reads as a whole number — nobody needs 539,4 kcal —
+// and gram values keep one decimal below 100, with a trailing ",0" dropped so
+// 12 g never renders as "12,0 g".
+export function nutrientParts(
+  value: number | null | undefined,
+  unit: string,
+): { value: string; unit: string } | null {
+  if (value == null || typeof value !== "number" || !Number.isFinite(value)) return null;
+  const maximumFractionDigits = unit === "kcal" || Math.abs(value) >= 100 ? 0 : 1;
+  return {
+    value: new Intl.NumberFormat("fr-FR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits,
+    }).format(value),
+    unit,
+  };
+}
+
+/** The same value as one string — for prose, speech and single-line rows. */
+export function nutrient(value: number | null | undefined, unit: string): string | null {
+  const parts = nutrientParts(value, unit);
+  return parts && `${parts.value} ${parts.unit}`;
+}
+
 export function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);

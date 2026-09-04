@@ -8,6 +8,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { AddProductForm } from "@/components/AddProductForm";
 import { Icon } from "@/components/Icon";
+import { NutritionFacts } from "@/components/NutritionFacts";
 import { PageHeader } from "@/components/PageHeader";
 import { PriceChart } from "@/components/PriceChart";
 import { ProductCard } from "@/components/ProductCard";
@@ -181,6 +182,9 @@ function ProductDetail() {
 
   const dietList = parseAllergens(data?.diets ?? null);
   const allergenList = parseAllergens(data?.allergens ?? null);
+  // OpenFoodFacts already resolves the organic labels (AB, EU organic…) into the
+  // diet list, so the badge is a read of existing data, not a new lookup.
+  const isOrganic = dietList.some((d) => d.toLowerCase() === "bio");
   const allergenMatches = allergenList.filter((a) =>
     profile.some(
       (p) => a.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(a.toLowerCase()),
@@ -313,6 +317,12 @@ function ProductDetail() {
           <ScoreBadge kind="Nutri" grade={data.nutriscore} />
           <ScoreBadge kind="Eco" grade={data.ecoscore} />
           <NovaBadge group={data.nova_group} />
+          {isOrganic && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-micro text-on-primary">
+              <Icon name="eco" fill className="text-[14px]" />
+              Bio
+            </span>
+          )}
           {(data.nutriscore || data.ecoscore || data.nova_group) && <ScoreLegend compact />}
         </div>
       </section>
@@ -409,6 +419,9 @@ function ProductDetail() {
           </p>
         </div>
       </section>
+
+      {/* Nutrition — facts only; the personalised reading comes with the profile. */}
+      <NutritionFacts product={data} />
 
       {/* Dietary regime */}
       {(dietList.length > 0 || dietProfile.length > 0) && (
