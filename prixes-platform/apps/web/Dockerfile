@@ -1,7 +1,11 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
-COPY package.json ./
-RUN npm install
+# The lockfile comes too: `npm install` from package.json alone re-resolves the
+# tree on every build, so production could ship versions nobody tested — and it
+# is what failed here ("Cannot read properties of null (reading 'edgesOut')").
+# `npm ci` installs exactly what the lockfile pins, and is faster.
+COPY package.json package-lock.json ./
+RUN npm ci
 
 FROM node:22-alpine AS builder
 WORKDIR /app
