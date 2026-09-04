@@ -85,7 +85,7 @@ async def _draft_from_model(data: SmartCartIn) -> tuple[AiDraft | None, bool]:
 
 
 async def _store_draft(
-    user_id: uuid.UUID, data: SmartCartIn, draft: AiDraft, lines: list[ResolvedLine]
+    user_id: uuid.UUID | None, data: SmartCartIn, draft: AiDraft, lines: list[ResolvedLine]
 ) -> str:
     """Keep the proposal so we can later see what was proposed vs bought.
 
@@ -95,7 +95,9 @@ async def _store_draft(
     if not mongo_enabled():
         return str(ObjectId())
     doc: dict[str, Any] = {
-        "user_id": str(user_id),
+        # None for a signed-out visitor: the draft is still worth keeping for
+        # "what gets asked" without attaching it to anyone.
+        "user_id": str(user_id) if user_id else None,
         "prompt": data.prompt,
         "title": draft.title,
         "servings": draft.servings,
@@ -111,7 +113,9 @@ async def _store_draft(
     return str(result.inserted_id)
 
 
-async def generate(db: AsyncSession, user_id: uuid.UUID, data: SmartCartIn) -> SmartCartOut:
+async def generate(
+    db: AsyncSession, user_id: uuid.UUID | None, data: SmartCartIn
+) -> SmartCartOut:
     if not llm_enabled():
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,

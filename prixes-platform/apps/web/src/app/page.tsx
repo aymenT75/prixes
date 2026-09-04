@@ -10,6 +10,7 @@ import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { ScoreLegend } from "@/components/ScoreLegend";
+import { WhatsNew } from "@/components/WhatsNew";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/store";
 
@@ -101,6 +102,8 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <WhatsNew />
 
       {/* Real price drops, own data only — hidden entirely when we have none. */}
       {bargains.length > 0 && (

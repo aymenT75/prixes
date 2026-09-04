@@ -22,6 +22,7 @@ import * as z from "zod/mini";
 import { Icon } from "@/components/Icon";
 import { ApiError, api } from "@/lib/api";
 import { eur } from "@/lib/format";
+import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
 import { createVoiceRecognizer, speechSupported } from "@/lib/voice";
 import type { SmartCartLine, SmartCartResult } from "@/lib/types";
@@ -100,6 +101,7 @@ function messageFor(error: unknown): string {
 
 export function SmartAssistant() {
   const qc = useQueryClient();
+  const { user, openLogin } = useApp();
   const { allergens, diets } = useA11y();
   const [prompt, setPrompt] = useState("");
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -361,12 +363,16 @@ export function SmartAssistant() {
               Annuler
             </button>
             <button
-              onClick={() => commit.mutate(draft)}
+              onClick={() => (user ? commit.mutate(draft) : openLogin(true))}
               disabled={commit.isPending || kept.length === 0}
               className="btn-primary flex-[2] py-3 disabled:opacity-50"
             >
               <Icon name="playlist_add" className="text-[18px]" />
-              {commit.isPending ? "Ajout…" : `Ajouter à ma liste (${kept.length})`}
+              {commit.isPending
+                ? "Ajout…"
+                : user
+                  ? `Ajouter à ma liste (${kept.length})`
+                  : "Se connecter pour garder"}
             </button>
           </div>
         </div>

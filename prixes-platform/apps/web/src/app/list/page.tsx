@@ -55,13 +55,20 @@ export default function ListPage() {
     onSuccess: setPlan,
   });
 
+  // Signed out, the assistant still runs — trying it is how people understand
+  // what the app does. Only keeping the result needs an account, so the sign-in
+  // prompt sits under it rather than in front of it.
   if (!user) {
     return (
       <div>
         <PageHeader title="Ma liste" />
-        <div className="card flex flex-col items-center gap-3 p-10 text-center">
-          <Icon name="list_alt" className="text-[48px] text-outline-variant" />
-          <p className="text-on-surface-variant">Connectez-vous pour créer votre liste de courses.</p>
+        <SmartAssistant />
+        <div className="card flex flex-col items-center gap-3 p-8 text-center">
+          <Icon name="list_alt" className="text-[40px] text-outline-variant" />
+          <p className="text-body-md text-on-surface-variant">
+            Créez un compte pour garder votre liste et retrouver vos courses d&apos;un
+            appareil à l&apos;autre.
+          </p>
           <button onClick={() => openLogin(true)} className="btn-primary">
             Se connecter
           </button>
