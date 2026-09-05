@@ -120,3 +120,19 @@ class BargainOut(ProductOut):
 
 class BargainsOut(BaseModel):
     items: list[BargainOut]
+
+
+# Nutrients another app (Hi Coach) can ask "what's rich in this" for. Keyed on
+# the OFF nutriment field so adding one is a one-line change in service.py.
+NutrientKey = Literal["protein", "fiber"]
+
+
+class RichInItem(ProductOut):
+    """A catalog product ranked by how much of one nutrient it carries per 100 g."""
+    nutrient_value: float  # grams per 100 g, from the cached OFF payload
+    best_price: Decimal | None = None
+
+
+class RichInOut(BaseModel):
+    nutrient: NutrientKey
+    items: list[RichInItem]

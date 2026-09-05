@@ -8,12 +8,12 @@ from decimal import Decimal
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import case, func, or_, select, text
+from sqlalchemy import Float, case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.products import off
 from app.domains.products.models import PricePoint, Product
-from app.domains.products.schemas import PriceContribution, ProductCreate
+from app.domains.products.schemas import NutrientKey, PriceContribution, ProductCreate
 
 logger = logging.getLogger(__name__)
 
@@ -353,3 +353,98 @@ async def contribute_price(
     db.add(pp)
     await db.flush()
     return pp
+
+
+# OFF nutriment field per nutrient we expose. Adding a nutrient here is a
+# one-line change — no new ingestion, no per-nutrient column (see off.py: the
+# full OFF payload, nutriments included, already sits in `raw_off`).
+_NUTRIENT_OFF_KEYS: dict[NutrientKey, str] = {
+    "protein": "proteins_100g",
+    "fiber": "fiber_100g",
+}
+_NUMERIC = r"^\d+(\.\d+)?$"
+
+
+async def _best_prices(db: AsyncSession, barcodes: list[str]) -> dict[str, Decimal]:
+    """Cheapest known price per barcode, in one query rather than one per product."""
+    if not barcodes:
+        return {}
+    rows = await db.execute(
+        select(PricePoint.barcode, func.min(PricePoint.price))
+        .where(PricePoint.barcode.in_(barcodes))
+        .group_by(PricePoint.barcode)
+    )
+    return {barcode: price for barcode, price in rows.all() if price is not None}
+
+
+async def rich_in_nutrient(
+    db: AsyncSession, nutrient: NutrientKey, limit: int = 12
+) -> list[dict[str, Any]]:
+    """Catalog products ranked by nutrient content per 100 g, each with its best
+    known price. A companion app (Hi Coach) uses this to turn a nutrient gap
+    into "buy this" without either app re-ingesting the other's data.
+
+    A numeric guard on the raw OFF text field comes first: `nutriments` values
+    are occasionally non-numeric upstream ("traces", ""), and a bad cast would
+    fail the whole query rather than just skip that one row.
+    """
+    off_key = _NUTRIENT_OFF_KEYS[nutrient]
+    raw_value = Product.raw_off["nutriments"][off_key].astext
+    nutrient_value = raw_value.cast(Float)
+
+    # Over-fetch: some of the richest matches never had a price contributed,
+    # and we would rather have enough candidates to fill `limit` than return
+    # a short, all-unpriced list.
+    fetch = max(limit * 4, 40)
+    rows = (
+        await db.execute(
+            select(
+                Product.barcode,
+                Product.name,
+                Product.brand,
+                Product.image_url,
+                Product.quantity,
+                Product.nutriscore,
+                Product.ecoscore,
+                Product.nova_group,
+                Product.categories,
+                Product.allergens,
+                Product.diets,
+                nutrient_value.label("nutrient_value"),
+            )
+            .where(
+                Product.name.is_not(None),
+                raw_value.is_not(None),
+                raw_value.op("~")(_NUMERIC),
+            )
+            .order_by(nutrient_value.desc())
+            .limit(fetch)
+        )
+    ).all()
+    if not rows:
+        return []
+
+    prices = await _best_prices(db, [r.barcode for r in rows])
+    # Priceable products first (a suggestion the user can actually act on),
+    # richest first within each group — never dropping the unpriced ones,
+    # which still answer the nutrition question honestly.
+    ranked = sorted(rows, key=lambda r: (prices.get(r.barcode) is None, -r.nutrient_value))
+
+    return [
+        {
+            "barcode": r.barcode,
+            "name": r.name,
+            "brand": r.brand,
+            "image_url": r.image_url,
+            "quantity": r.quantity,
+            "nutriscore": r.nutriscore,
+            "ecoscore": r.ecoscore,
+            "nova_group": r.nova_group,
+            "categories": r.categories,
+            "allergens": r.allergens,
+            "diets": r.diets,
+            "nutrient_value": r.nutrient_value,
+            "best_price": prices.get(r.barcode),
+        }
+        for r in ranked[:limit]
+    ]

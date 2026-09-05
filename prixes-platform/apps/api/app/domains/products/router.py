@@ -18,6 +18,7 @@ from app.domains.products.schemas import (
     AlternativesOut,
     BargainOut,
     BargainsOut,
+    NutrientKey,
     PriceContribution,
     PriceContributionOut,
     PriceHistoryOut,
@@ -29,6 +30,8 @@ from app.domains.products.schemas import (
     ProductSearchResult,
     RecognizeIn,
     RecognizeOut,
+    RichInItem,
+    RichInOut,
 )
 from app.domains.products.units import unit_price
 
@@ -100,6 +103,23 @@ async def bargains(
             )
             for r in rows
         ]
+    )
+
+
+@router.get("/rich-in/{nutrient}", response_model=RichInOut)
+async def rich_in(
+    nutrient: NutrientKey,
+    db: DbSession,
+    limit: Annotated[int, Query(ge=1, le=40)] = 12,
+) -> RichInOut:
+    """Catalog products ranked by nutrient content per 100 g, each with its best
+    known price. Consumed by Hi Coach to turn a nutrient gap into a purchase
+    suggestion — an anonymous nutrient name in, a priced product list out, no
+    health data ever crossing into this app."""
+    rows = await service.rich_in_nutrient(db, nutrient, limit)
+    return RichInOut(
+        nutrient=nutrient,
+        items=[RichInItem.model_validate(r) for r in rows],
     )
 
 
