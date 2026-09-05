@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import HTTPException, status
 from sqlalchemy import case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import InstrumentedAttribute
 
 from app.domains.products import off
 from app.domains.products.models import PricePoint, Product
@@ -226,6 +227,62 @@ async def healthier_alternatives(
     if product.nutriscore:
         stmt = stmt.where(Product.nutriscore < product.nutriscore)
     return list((await db.execute(stmt)).scalars())
+
+
+# Nutrients a shopper can act on by buying something — allow-listed by name so
+# the query parameter never becomes an arbitrary column/SQL injection vector.
+# Sugar/energy are ceilings to stay under, not a "buy more of this" case, so
+# they are deliberately absent here.
+RICH_IN_COLUMNS: dict[str, InstrumentedAttribute[Decimal | None]] = {
+    "fiber": Product.fiber_100g,
+    "protein": Product.proteins_100g,
+    "fruits_vegetables": Product.fruits_vegetables_nuts_100g,
+}
+
+
+async def list_rich_in(
+    db: AsyncSession, nutrient: str, limit: int = 12
+) -> list[dict[str, Any]]:
+    """Best-stocked products for one nutrient (per 100 g), cheapest price first
+    among the top matches. `nutrient` must be a key of RICH_IN_COLUMNS — the
+    router rejects anything else before this is called.
+    """
+    column = RICH_IN_COLUMNS[nutrient]
+    candidates = list(
+        (
+            await db.execute(
+                select(Product)
+                .where(Product.name.is_not(None), column.is_not(None), column > 0)
+                .order_by(column.desc())
+                .limit(limit * 3)  # over-fetch: many top matches have no price yet
+            )
+        ).scalars()
+    )
+    if not candidates:
+        return []
+
+    barcodes = [p.barcode for p in candidates]
+    best_prices: dict[str, Decimal] = {
+        row[0]: row[1]
+        for row in (
+            await db.execute(
+                select(PricePoint.barcode, func.min(PricePoint.price))
+                .where(PricePoint.barcode.in_(barcodes))
+                .group_by(PricePoint.barcode)
+            )
+        ).all()
+    }
+    # `candidates` is already ordered by the nutrient descending; filtering
+    # preserves that order, so no need to re-sort.
+    priced = [p for p in candidates if p.barcode in best_prices][:limit]
+    return [
+        {
+            "product": p,
+            "nutrient_value": float(getattr(p, column.key)),
+            "best_price": best_prices[p.barcode],
+        }
+        for p in priced
+    ]
 
 
 async def create_product(db: AsyncSession, data: ProductCreate) -> Product:

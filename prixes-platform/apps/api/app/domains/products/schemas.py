@@ -125,6 +125,18 @@ class AlternativesOut(BaseModel):
     items: list[AlternativeOut]
 
 
+class RichInOut(ProductOut):
+    """A product ranked by one nutrient (per 100 g), with its best known price —
+    the "what should I buy" side of the coach's gap detection (a separate app;
+    see Hi Coach). Real prices from our own catalog, not an external lookup."""
+    nutrient_value: float
+    best_price: Decimal | None = None
+
+
+class RichInResult(BaseModel):
+    items: list[RichInOut]
+
+
 class BargainOut(ProductOut):
     """A product whose price at a given store just dropped for real (own price
     history, not a submitted/unverified claim)."""

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
@@ -29,6 +29,8 @@ from app.domains.products.schemas import (
     ProductSearchResult,
     RecognizeIn,
     RecognizeOut,
+    RichInOut,
+    RichInResult,
 )
 from app.domains.products.units import unit_price
 
@@ -97,6 +99,28 @@ async def bargains(
                 price=r["price"],
                 reference_price=r["reference_price"],
                 drop_pct=r["drop_pct"],
+            )
+            for r in rows
+        ]
+    )
+
+
+@router.get("/rich-in/{nutrient}", response_model=RichInResult)
+async def rich_in(
+    nutrient: Literal["fiber", "protein", "fruits_vegetables"],
+    db: DbSession,
+    limit: Annotated[int, Query(ge=1, le=40)] = 12,
+) -> RichInResult:
+    """Products best-stocked in one nutrient, cheapest known price first among
+    the top matches. Feeds a "what should I buy" suggestion — the identity of
+    who has a gap in that nutrient lives entirely outside this service."""
+    rows = await service.list_rich_in(db, nutrient, limit)
+    return RichInResult(
+        items=[
+            RichInOut(
+                **ProductOut.model_validate(r["product"]).model_dump(),
+                nutrient_value=r["nutrient_value"],
+                best_price=r["best_price"],
             )
             for r in rows
         ]
