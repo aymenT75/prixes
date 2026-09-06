@@ -72,8 +72,14 @@ export function StorePlan({
       )}
 
       <div className="rounded-xl bg-primary-container p-5 text-on-primary-container shadow-float">
+        {/* "Tout au même endroit" above a list of four things to find elsewhere
+            reads as a bug. Only claim it when the basket really is complete. */}
         <p className="text-micro uppercase tracking-widest opacity-90">
-          {option.stores.length === 1 ? "Tout au même endroit" : "Votre tournée"}
+          {option.stores.length > 1
+            ? "Votre tournée"
+            : option.missing.length === 0
+              ? "Tout au même endroit"
+              : "Le gros des courses ici"}
         </p>
         <div className="mt-1 flex items-baseline justify-between gap-3">
           <span className="text-headline-lg">{option.stores.join(" puis ")}</span>
@@ -116,17 +122,34 @@ export function StorePlan({
         </section>
       ))}
 
+      {/* Catalogue names carry their own commas ("Vinaigrette huile, 250ml"), so a
+          comma-joined run-on is unreadable. One line per item instead. */}
       {option.missing.length > 0 && (
-        <p className="text-center text-micro text-on-surface-variant">
-          À trouver ailleurs&nbsp;: {option.missing.join(", ")}
-        </p>
+        <div className="text-micro text-on-surface-variant">
+          <p className="mb-1 font-bold">À trouver ailleurs</p>
+          <ul className="space-y-0.5">
+            {option.missing.map((name) => (
+              <li key={name} className="truncate">
+                {name}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
       {result.unpriced.length > 0 && (
-        <p className="text-center text-micro text-on-surface-variant">
-          {result.unpriced.length} article{result.unpriced.length > 1 ? "s" : ""} sans prix
-          connu, non compté{result.unpriced.length > 1 ? "s" : ""}&nbsp;:{" "}
-          {result.unpriced.join(", ")}
-        </p>
+        <div className="text-micro text-on-surface-variant">
+          <p className="mb-1 font-bold">
+            {result.unpriced.length} article{result.unpriced.length > 1 ? "s" : ""} sans prix
+            connu, non compté{result.unpriced.length > 1 ? "s" : ""}
+          </p>
+          <ul className="space-y-0.5">
+            {result.unpriced.map((name) => (
+              <li key={name} className="truncate">
+                {name}
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

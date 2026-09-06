@@ -61,7 +61,7 @@ export default function ListPage() {
   if (!user) {
     return (
       <div>
-        <PageHeader title="Ma liste" />
+        <PageHeader title="Assistant" />
         <SmartAssistant />
         <div className="card flex flex-col items-center gap-3 p-8 text-center">
           <Icon name="list_alt" className="text-[40px] text-outline-variant" />
@@ -85,7 +85,7 @@ export default function ListPage() {
 
   return (
     <div>
-      <PageHeader title="Ma liste" />
+      <PageHeader title="Assistant" />
 
       <SmartAssistant />
 
@@ -118,6 +118,7 @@ export default function ListPage() {
 
       {items.length > 0 && (
         <>
+          <h2 className="mb-2 text-headline-md text-on-surface">Ma liste</h2>
           <div className="space-y-2">
             {items.map((it) => (
               <ListRow

@@ -111,6 +111,13 @@ export function SmartAssistant() {
   const [added, setAdded] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Whether this browser can dictate is only knowable in the browser. Asking
+  // during render made the prerendered HTML (no mic button) disagree with the
+  // first client render (mic button), and React threw away the whole tree to
+  // recover — a hydration error on the app's flagship page. Decide after mount.
+  const [canDictate, setCanDictate] = useState(false);
+  useEffect(() => setCanDictate(speechSupported()), []);
+
   // Hide the whole block when no model key is configured, rather than offering a
   // button that can only fail.
   const { data: status } = useQuery({
@@ -258,7 +265,7 @@ export function SmartAssistant() {
           aria-label="Décrivez ce que vous voulez préparer"
           className="min-h-[52px] flex-1 resize-none rounded-xl border border-outline-variant bg-surface-container-lowest p-3 text-body-md text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none disabled:opacity-60"
         />
-        {speechSupported() && (
+        {canDictate && (
           <button
             onClick={listening ? () => setListening(false) : dictate}
             disabled={generate.isPending}

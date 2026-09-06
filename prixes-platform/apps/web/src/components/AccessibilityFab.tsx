@@ -266,17 +266,20 @@ function ToggleRow({
       aria-label={title}
       className="mb-2 flex w-full items-center justify-between rounded-xl border border-outline-variant/30 p-3 text-left active:scale-[0.99]"
     >
-      <span className="flex items-center gap-3">
-        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container text-primary">
+      {/* min-w-0 on the text, flex-shrink-0 on the switch: without both, a
+          two-line subtitle grows the label until it runs under the switch —
+          which is exactly what happens at 390px with the larger text sizes. */}
+      <span className="flex min-w-0 flex-1 items-center gap-3">
+        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-surface-container text-primary">
           <Icon name={icon} />
         </span>
-        <span>
+        <span className="min-w-0">
           <span className="block text-label-lg text-on-surface">{title}</span>
           <span className="block text-micro text-on-surface-variant">{subtitle}</span>
         </span>
       </span>
       <span
-        className={`relative h-7 w-12 rounded-full transition-colors ${on ? "bg-primary" : "bg-surface-variant"}`}
+        className={`relative ml-3 h-7 w-12 flex-shrink-0 rounded-full transition-colors ${on ? "bg-primary" : "bg-surface-variant"}`}
       >
         <span
           className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${on ? "left-6" : "left-1"}`}
