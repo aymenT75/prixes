@@ -68,7 +68,14 @@ export default function ProductDetailPage() {
 }
 
 function ProductDetail() {
-  const rawBarcode = useSearchParams().get("barcode") ?? "";
+  const params = useSearchParams();
+  const rawBarcode = params.get("barcode") ?? "";
+  // The confirmation buzz belongs to a scan: aiming a camera at a barcode gives
+  // no other feedback that it worked. Reaching this page by tapping a search
+  // result is already its own confirmation, and buzzing every time someone opens
+  // a product turns a signal into noise. The allergen warning still buzzes,
+  // however you got here — that one is a safety alert, not a receipt.
+  const fromScan = params.get("from") === "scan";
   const barcode = isValidBarcode(rawBarcode) ? rawBarcode : "";
   const qc = useQueryClient();
   const { user, openLogin } = useApp();
@@ -277,11 +284,10 @@ function ProductDetail() {
     // A safety allergen warning must be spoken instantly (on-device) — never wait on a
     // network round-trip for the natural voice.
     if (parts.length) speak(parts.join(" "), undefined, { instant: hasAllergen });
-    // Haptic confirmation of the scan: danger buzz if allergen, success buzz otherwise.
     if (hasAllergen) hapticDanger();
-    else hapticSuccess();
+    else if (fromScan) hapticSuccess();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, alternatives, autoRead, barcode, allergenMatches.length, cheaperAlt]);
+  }, [data, alternatives, autoRead, barcode, allergenMatches.length, cheaperAlt, fromScan]);
 
   if (rawBarcode && !barcode) {
     return (

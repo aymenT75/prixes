@@ -78,7 +78,7 @@ export default function ScannerPage() {
       if (res.items.length > 0) {
         hapticSuccess();
         speak(`${name} trouvé.`);
-        router.push(`/courses/detail?barcode=${res.items[0].barcode}`);
+        router.push(`/courses/detail?barcode=${res.items[0].barcode}&from=scan`);
       } else {
         hapticSuccess();
         speak(`${name}. Voici les résultats.`);
@@ -102,7 +102,7 @@ export default function ScannerPage() {
       handledRef.current = true;
       setStatus("found");
       if (navigator.vibrate) navigator.vibrate(60);
-      router.push(`/courses/detail?barcode=${code}`);
+      router.push(`/courses/detail?barcode=${code}&from=scan`);
     },
     [router],
   );
@@ -349,7 +349,7 @@ export default function ScannerPage() {
           e.preventDefault();
           const code = manual.trim();
           if (code && isPlausibleBarcode(code)) {
-            router.push(`/courses/detail?barcode=${code}`);
+            router.push(`/courses/detail?barcode=${code}&from=scan`);
           } else if (code) {
             setMessage("Code invalide — saisissez 8 à 14 chiffres.");
             setTimeout(() => setMessage(null), 3000);
