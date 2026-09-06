@@ -15,7 +15,15 @@ import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { ScoreLegend } from "@/components/ScoreLegend";
 import { Thermometer } from "@/components/Thermometer";
 import { api } from "@/lib/api";
-import { confidenceColor, eur, nutriHint, priceConfidence, scoreColor, timeAgo } from "@/lib/format";
+import {
+  confidenceColor,
+  eur,
+  nutriHint,
+  perUnit,
+  priceConfidence,
+  scoreColor,
+  timeAgo,
+} from "@/lib/format";
 import { getCurrentPosition } from "@/lib/geo";
 import { shareOrCopy } from "@/lib/share";
 import { useApp } from "@/lib/store";
@@ -75,7 +83,7 @@ function ProductDetail() {
     const price =
       data.best_price != null
         ? ` — meilleur prix ${eur(data.best_price)}${
-            data.best_unit_price != null ? ` (${eur(data.best_unit_price)} ${data.unit_label})` : ""
+            data.best_unit_price != null ? ` (${perUnit(data.best_unit_price, data.unit_label)})` : ""
           }`
         : "";
     const res = await shareOrCopy({
@@ -498,7 +506,7 @@ function ProductDetail() {
             <span className="text-headline-xl">{eur(data.best_price)}</span>
             {data.best_unit_price != null && (
               <p className="mt-1 text-label-md opacity-90">
-                {eur(data.best_unit_price)} {data.unit_label}
+                {perUnit(data.best_unit_price, data.unit_label)}
               </p>
             )}
           </div>
@@ -670,7 +678,7 @@ function ProductDetail() {
                   <p className="text-headline-md text-on-surface">{eur(p.price)}</p>
                   {p.unit_price != null && (
                     <p className="text-micro text-on-surface-variant">
-                      {eur(p.unit_price)} {p.unit_label}
+                      {perUnit(p.unit_price, p.unit_label)}
                     </p>
                   )}
                   <span className="mt-1 inline-flex items-center gap-1 text-micro text-primary">

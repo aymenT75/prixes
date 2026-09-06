@@ -8,11 +8,17 @@ import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
-import { nutriBarStyle, nutriHint } from "@/lib/format";
+import { eur, nutriBarStyle, nutriHint, perUnit } from "@/lib/format";
 import { useApp } from "@/lib/store";
-import type { Product } from "@/lib/types";
+import type { Product, SearchHit } from "@/lib/types";
 
-export function ProductCard({ product }: { product: Product }) {
+/**
+ * Browse hands us a bare product; search hands us one that knows its price. The
+ * card takes either, and simply says nothing about price when there is none —
+ * an empty line is honest, a "0,00 €" is not.
+ */
+export function ProductCard({ product }: { product: Product | SearchHit }) {
+  const priced = "best_price" in product ? product : null;
   const { user, openLogin } = useApp();
   const qc = useQueryClient();
   const [added, setAdded] = useState(false);
@@ -73,6 +79,22 @@ export function ProductCard({ product }: { product: Product }) {
           </Link>
         </p>
         {product.brand && <p className="truncate text-micro uppercase text-on-surface-variant">{product.brand}</p>}
+        {priced?.best_price != null && (
+          <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-label-lg text-primary">
+            {eur(priced.best_price)}
+            {priced.best_store && (
+              <span className="text-micro font-normal text-on-surface-variant">
+                chez {priced.best_store}
+                {priced.nearby && " · près de vous"}
+              </span>
+            )}
+            {priced.best_unit_price != null && (
+              <span className="text-micro font-normal text-on-surface-variant">
+                ({perUnit(priced.best_unit_price, priced.unit_label ?? null)})
+              </span>
+            )}
+          </p>
+        )}
         <div className="mt-1.5 flex flex-wrap gap-1">
           <ScoreBadge kind="Nutri" grade={product.nutriscore} />
           <ScoreBadge kind="Eco" grade={product.ecoscore} />

@@ -30,6 +30,9 @@ _COUNTABLE = {"pièce", "piece", "tranche", "botte", "sachet", "boîte", "pot"}
 # "6 x 33 cl", "4x25cl", "lot de 6"
 _MULTIPACK = re.compile(r"(\d+)\s*[x×]\s*", re.IGNORECASE)
 _LOT = re.compile(r"lot\s+de\s+(\d+)", re.IGNORECASE)
+# Below this, a parsed pack is a data error, not a grocery item (see parse_quantity).
+_MIN_PACK = Decimal("0.005")
+
 # "500 g", "1,5 kg", "33cl"
 _AMOUNT = re.compile(r"(\d+(?:[.,]\d+)?)\s*(kg|mg|g|cl|ml|dl|l)\b", re.IGNORECASE)
 
@@ -55,7 +58,10 @@ def parse_quantity(quantity: str | None) -> tuple[Decimal, str] | None:
             return None
         base_unit, factor = _UNIT_FACTORS[m.group(2).lower()]
         total = value * factor * multiplier
-        if total <= 0:
+        if total < _MIN_PACK:
+            # Almost always a parse accident rather than a real pack: a name like
+            # "Pommes de terre 1 g" turned a 0,99 € bag into "990,00 €/kg" on the
+            # search results. Better to show no unit price than a wrong one.
             return None
         return total, base_unit
 

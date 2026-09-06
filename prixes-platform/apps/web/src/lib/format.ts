@@ -1,6 +1,21 @@
 export const eur = (n: number) =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n);
 
+/**
+ * "4,45 €/L" — the price of one kilo, litre or piece.
+ *
+ * The server sends the label with its currency already in it ("€/kg"), so
+ * pairing it with `eur()` printed "4,45 € €/kg" on four screens. Formatting the
+ * number alone and letting the label carry the unit fixes all four.
+ */
+export function perUnit(value: number, label: string | null): string {
+  const amount = new Intl.NumberFormat("fr-FR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+  return label ? `${amount} ${label}` : `${amount} €`;
+}
+
 export function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);

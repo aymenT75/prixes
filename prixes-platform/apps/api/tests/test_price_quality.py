@@ -2,9 +2,12 @@
 (a €0.85 item recorded as €850, a lot priced as a unit, a currency slip)."""
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
 
 from app.domains.products.ingest import is_plausible_price
+from app.domains.products.units import parse_quantity, unit_price
 
 
 @pytest.mark.parametrize("price", [0.01, 0.85, 3.20, 49.99, 250.0, 1000.0])
@@ -57,3 +60,15 @@ def test_an_unknown_shop_keeps_its_name() -> None:
     from app.domains.products.ingest import canon_store_name
 
     assert canon_store_name("Maxi Zoo") == "Maxi Zoo"
+
+
+# ── Un prix au kilo absurde vient d'un poids absurde ─────────────────────────
+def test_a_one_gram_pack_is_not_believed() -> None:
+    """« Pommes de terre 1 g » affichait un sac à 0,99 € comme « 990,00 €/kg »."""
+    assert parse_quantity("1 g") is None
+    assert unit_price(Decimal("0.99"), "1 g") is None
+
+
+@pytest.mark.parametrize("quantity", ["500 g", "1 kg", "33 cl", "1,5 L", "6 x 33 cl"])
+def test_real_grocery_packs_still_parse(quantity: str) -> None:
+    assert parse_quantity(quantity) is not None

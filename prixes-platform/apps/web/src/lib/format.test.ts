@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { priceGapTemperature, priceConfidence } from "./format";
+import { perUnit, priceConfidence, priceGapTemperature } from "./format";
 
 function daysAgo(n: number): string {
   return new Date(Date.now() - n * 86_400_000).toISOString();
@@ -47,5 +47,19 @@ describe("priceGapTemperature", () => {
   it("rates a big discount as hot, inclusive of the boundary", () => {
     expect(priceGapTemperature(30).temperature).toBe("hot");
     expect(priceGapTemperature(70).temperature).toBe("hot");
+  });
+});
+
+describe("prix à l'unité", () => {
+  it("ne double pas le symbole euro", () => {
+    // Le libellé du serveur porte déjà la devise : « 4,45 € €/L » s'affichait
+    // sur quatre écrans.
+    expect(perUnit(4.45, "€/L")).toBe("4,45 €/L");
+    expect(perUnit(1, "€/kg")).toBe("1,00 €/kg");
+    expect(perUnit(0.5, "€/pièce")).toBe("0,50 €/pièce");
+  });
+
+  it("reste lisible sans libellé", () => {
+    expect(perUnit(2.5, null)).toBe("2,50 €");
   });
 });

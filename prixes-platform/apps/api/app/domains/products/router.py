@@ -27,6 +27,7 @@ from app.domains.products.schemas import (
     ProductCreate,
     ProductDetail,
     ProductOut,
+    ProductSearchItem,
     ProductSearchResult,
     RecognizeIn,
     RecognizeOut,
@@ -37,6 +38,10 @@ from app.domains.products.units import unit_price
 
 router = APIRouter(prefix="/products", tags=["products"])
 
+# A phone sees a handful of chains around it; anything beyond that is someone
+# probing the endpoint, not a shopper.
+_MAX_NEARBY_STORES = 12
+
 
 @router.get("", response_model=ProductSearchResult)
 async def browse(
@@ -45,8 +50,11 @@ async def browse(
 ) -> ProductSearchResult:
     """Default catalog listing (seeded products) for the Courses tab."""
     products = await service.list_products(db, limit)
+    # Same item shape as /search so the client has one type, not two — browse
+    # simply leaves the price fields empty rather than pretending to know one.
     return ProductSearchResult(
-        items=[ProductOut.model_validate(p) for p in products], total=len(products)
+        items=[ProductSearchItem.model_validate(p) for p in products],
+        total=len(products),
     )
 
 
@@ -77,10 +85,30 @@ async def search(
     db: DbSession,
     q: Annotated[str, Query(min_length=2, max_length=100)],
     page: Annotated[int, Query(ge=1, le=20)] = 1,
+    stores: Annotated[str | None, Query(max_length=400)] = None,
 ) -> ProductSearchResult:
+    """Search the catalogue, cheapest first.
+
+    `stores` is a comma-separated list of the chains near the caller. When it is
+    given, a product priced at one of them outranks a cheaper one that is not:
+    a price at a shop they cannot reach is not an offer. Without it the ranking
+    falls back to the cheapest price anywhere, which is still more useful than
+    the alphabetical accident it replaced.
+    """
+    nearby = [s for s in (stores or "").split(",") if s.strip()][:_MAX_NEARBY_STORES]
     products = await service.search_products(db, q, page)
+    ranked = await service.rank_by_price(db, products, nearby)
+    items = []
+    for hit in ranked:
+        item = ProductSearchItem.model_validate(hit.product)
+        item.best_price = hit.best_price
+        item.best_store = hit.best_store
+        item.nearby = hit.nearby
+        if (per_unit := unit_price(hit.best_price, hit.product.quantity)) is not None:
+            item.best_unit_price, item.unit_label = per_unit
+        items.append(item)
     return ProductSearchResult(
-        items=[ProductOut.model_validate(p) for p in products], total=len(products)
+        items=items, total=len(items), ranked_by_nearby=any(i.nearby for i in items)
     )
 
 

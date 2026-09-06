@@ -13,6 +13,7 @@ import type {
   PriceHistory,
   ProductDetail,
   Product,
+  SearchResult,
   ShoppingItem,
   ShoppingList,
   SmartCartResult,
@@ -129,12 +130,15 @@ export const api = {
 
   // ── Products ──
   browseProducts: (limit = 40) =>
-    request<{ items: Product[]; total: number }>(`/products?limit=${limit}`),
+    request<SearchResult>(`/products?limit=${limit}`),
   // Real price drops from our own price history (home screen "Bonnes affaires").
   bargains: (limit = 12) => request<BargainsResult>(`/products/bargains?limit=${limit}`),
-  searchProducts: (q: string, page = 1) =>
-    request<{ items: Product[]; total: number }>(
-      `/products/search?q=${encodeURIComponent(q)}&page=${page}`,
+  // `stores` are the chains near the user: passing them ranks a price they can
+  // actually reach above a cheaper one they cannot.
+  searchProducts: (q: string, page = 1, stores: string[] = []) =>
+    request<SearchResult>(
+      `/products/search?q=${encodeURIComponent(q)}&page=${page}` +
+        (stores.length ? `&stores=${encodeURIComponent(stores.join(","))}` : ""),
     ),
   getProduct: (barcode: string) => request<ProductDetail>(`/products/${barcode}`),
   createProduct: (body: { barcode: string; name: string; brand?: string }) =>

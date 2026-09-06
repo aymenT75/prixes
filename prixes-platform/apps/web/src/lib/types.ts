@@ -49,6 +49,23 @@ export interface Product {
   diets: string | null;
 }
 
+/** A search hit, carrying the price that decided its rank. */
+export interface SearchHit extends Product {
+  best_price: number | null;
+  best_store: string | null;
+  best_unit_price: number | null;
+  unit_label: string | null;
+  /** True when `best_store` is one of the shops near the user. */
+  nearby: boolean;
+}
+
+export interface SearchResult {
+  items: SearchHit[];
+  total: number;
+  /** True when the order actually reflects nearby shops, not just any price. */
+  ranked_by_nearby: boolean;
+}
+
 export interface PricePoint {
   store: string | null;
   price: number;

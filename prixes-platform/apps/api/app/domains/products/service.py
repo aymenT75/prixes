@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections import defaultdict
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
@@ -12,6 +14,7 @@ from sqlalchemy import Float, case, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.products import off
+from app.domains.products.ingest import canon_store_name
 from app.domains.products.models import PricePoint, Product
 from app.domains.products.schemas import NutrientKey, PriceContribution, ProductCreate
 
@@ -168,6 +171,86 @@ async def search_products(db: AsyncSession, query: str, page: int) -> list[Produ
         products.append(product)
     await db.flush()
     return products
+
+
+@dataclass(slots=True)
+class RankedProduct:
+    """A search hit, with the price that decides where it lands in the list."""
+
+    product: Product
+    best_price: Decimal | None
+    best_store: str | None
+    #: True when `best_store` is one of the shops the caller said were near them.
+    nearby: bool
+
+
+async def rank_by_price(
+    db: AsyncSession, products: list[Product], nearby_stores: list[str]
+) -> list[RankedProduct]:
+    """Order search hits the way a shopper reads them: cheapest first, and
+    cheapest *where they can actually go* before cheapest anywhere.
+
+    A price at a shop three towns away is not an offer, so a product priced at a
+    nearby chain outranks a cheaper one that is not. Products we cannot price at
+    all keep the relevance order they arrived in and go last — an unknown price
+    must never look like a good one.
+    """
+    if not products:
+        return []
+
+    # The caller sends what OpenStreetMap calls the shop ("Carrefour Market",
+    # "Centre Commercial E.Leclerc"); prices are stored under the chain. Fold both
+    # sides through the same table or nothing matches.
+    wanted = {
+        canon_store_name(store).lower() for store in nearby_stores if store.strip()
+    }
+    rows = await db.execute(
+        select(PricePoint.barcode, PricePoint.store, func.min(PricePoint.price))
+        .where(PricePoint.barcode.in_([p.barcode for p in products]))
+        .group_by(PricePoint.barcode, PricePoint.store)
+    )
+    per_product: dict[str, list[tuple[str | None, Decimal]]] = defaultdict(list)
+    for barcode, store, price in rows.all():
+        if price is not None:
+            per_product[barcode].append((store, price))
+
+    ranked: list[RankedProduct] = []
+    for product in products:
+        offers = per_product.get(product.barcode, [])
+        near = [
+            (store, price)
+            for store, price in offers
+            if store and canon_store_name(store).lower() in wanted
+        ]
+        pool = near or offers
+        if pool:
+            store, price = min(pool, key=lambda o: o[1])
+            ranked.append(RankedProduct(product, price, store, bool(near)))
+        else:
+            ranked.append(RankedProduct(product, None, None, False))
+
+    return order_hits(ranked)
+
+
+def order_hits(ranked: list[RankedProduct]) -> list[RankedProduct]:
+    """Nearby-and-priced, then priced anywhere, then unpriced.
+
+    Within the first two tiers the cheapest wins; the last tier keeps the
+    relevance order it arrived in, because an unknown price must never be sorted
+    as if it were zero.
+    """
+
+    def key(item: tuple[int, RankedProduct]) -> tuple[int, Decimal, int]:
+        index, hit = item
+        if hit.best_price is None:
+            tier = 2
+        elif hit.nearby:
+            tier = 0
+        else:
+            tier = 1
+        return (tier, hit.best_price or Decimal(0), index)
+
+    return [hit for _, hit in sorted(enumerate(ranked), key=key)]
 
 
 async def price_history(

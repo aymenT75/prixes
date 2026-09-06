@@ -58,9 +58,26 @@ class ProductDetail(ProductOut):
     unit_label: str | None = None
 
 
+class ProductSearchItem(ProductOut):
+    """A search hit with the price that decides its rank.
+
+    `nearby` says whether `best_store` is one of the shops the caller told us
+    were near them — the difference between an offer they can act on and a price
+    three towns away.
+    """
+
+    best_price: Decimal | None = None
+    best_store: str | None = None
+    best_unit_price: Decimal | None = None
+    unit_label: str | None = None
+    nearby: bool = False
+
+
 class ProductSearchResult(BaseModel):
-    items: list[ProductOut]
+    items: list[ProductSearchItem]
     total: int
+    #: Echoed back so the UI can say "près de chez vous" only when it is true.
+    ranked_by_nearby: bool = False
 
 
 class ProductCreate(BaseModel):
