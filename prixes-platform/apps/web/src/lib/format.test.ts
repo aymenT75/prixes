@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { perUnit, priceConfidence, priceGapTemperature } from "./format";
+import { distance, perUnit, priceConfidence, priceGapTemperature } from "./format";
 
 function daysAgo(n: number): string {
   return new Date(Date.now() - n * 86_400_000).toISOString();
@@ -61,5 +61,24 @@ describe("prix à l'unité", () => {
 
   it("reste lisible sans libellé", () => {
     expect(perUnit(2.5, null)).toBe("2,50 €");
+  });
+});
+
+describe("distance", () => {
+  it("compte en mètres sous le kilomètre", () => {
+    expect(distance(0.45)).toBe("450 m");
+    expect(distance(0.12)).toBe("100 m");
+    expect(distance(0.98)).toBe("1000 m");
+  });
+
+  it("ne prétend pas viser la porte d'entrée", () => {
+    // Un point GPS n'est pas précis à dix mètres près.
+    expect(distance(0.001)).toBe("50 m");
+    expect(distance(0.44)).toBe("450 m");
+  });
+
+  it("passe aux kilomètres au-delà", () => {
+    expect(distance(1)).toBe("1,0 km");
+    expect(distance(3.24)).toBe("3,2 km");
   });
 });

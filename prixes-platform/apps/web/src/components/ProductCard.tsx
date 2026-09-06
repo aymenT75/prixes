@@ -8,16 +8,23 @@ import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
-import { eur, nutriBarStyle, nutriHint, perUnit } from "@/lib/format";
+import { distance, eur, nutriBarStyle, nutriHint, perUnit } from "@/lib/format";
 import { useApp } from "@/lib/store";
-import type { Product, SearchHit } from "@/lib/types";
+import type { Product, SearchHit, Store } from "@/lib/types";
 
 /**
  * Browse hands us a bare product; search hands us one that knows its price. The
  * card takes either, and simply says nothing about price when there is none —
  * an empty line is honest, a "0,00 €" is not.
  */
-export function ProductCard({ product }: { product: Product | SearchHit }) {
+export function ProductCard({
+  product,
+  branch,
+}: {
+  product: Product | SearchHit;
+  /** The nearest shop of the chain holding the best price, when we know it. */
+  branch?: Store | null;
+}) {
   const priced = "best_price" in product ? product : null;
   const { user, openLogin } = useApp();
   const qc = useQueryClient();
@@ -45,8 +52,14 @@ export function ProductCard({ product }: { product: Product | SearchHit }) {
   const nutri = product.nutriscore?.toLowerCase() ?? null;
   const hint = nutri ? (nutriHint[nutri] ?? "") : "";
   const nutriStyle = nutriBarStyle(product.nutriscore);
+  const where =
+    priced?.best_price != null && priced.best_store
+      ? ` — ${eur(priced.best_price)} chez ${priced.best_store}` +
+        (branch ? `, à ${distance(branch.distance_km)}` : "")
+      : "";
   const linkLabel =
     `${product.name ?? "Produit"}${product.brand ? `, ${product.brand}` : ""}` +
+    where +
     (nutri ? ` — Nutri-Score ${nutri.toUpperCase()}, ${hint}` : "") +
     " — voir la fiche produit";
 
@@ -84,8 +97,11 @@ export function ProductCard({ product }: { product: Product | SearchHit }) {
             {eur(priced.best_price)}
             {priced.best_store && (
               <span className="text-micro font-normal text-on-surface-variant">
+                {/* The shop and how far it is, on the card itself: someone who
+                    taps the first result has already decided, and will not open
+                    a product page to find out where to go. */}
                 chez {priced.best_store}
-                {priced.nearby && " · près de vous"}
+                {branch ? ` · à ${distance(branch.distance_km)}` : priced.nearby ? " · près de vous" : ""}
               </span>
             )}
             {priced.best_unit_price != null && (

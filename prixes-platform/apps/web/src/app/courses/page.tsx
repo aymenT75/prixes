@@ -36,7 +36,7 @@ function CoursesInner() {
   }, [params]);
 
   const searching = query.length >= 2;
-  const { stores, state: geoState, ask } = useNearbyStores();
+  const { stores, state: geoState, ask, nearest } = useNearbyStores();
 
   const { data, isFetching, error, refetch } = useApiQuery({
     queryKey: ["products", searching ? query : "browse", stores.join(",")],
@@ -126,7 +126,7 @@ function CoursesInner() {
       {!error && (
         <div className="space-y-3">
           {data?.items.map((p) => (
-            <ProductCard key={p.barcode} product={p} />
+            <ProductCard key={p.barcode} product={p} branch={nearest(p.best_store)} />
           ))}
           {healthier && (
             <section className="pt-2" aria-labelledby="healthier-title">
@@ -139,7 +139,7 @@ function CoursesInner() {
               <p className="mb-2 text-micro text-on-surface-variant">
                 Nutri-Score {healthier.nutriscore?.toUpperCase()} parmi ces résultats.
               </p>
-              <ProductCard product={healthier} />
+              <ProductCard product={healthier} branch={nearest(healthier.best_store)} />
             </section>
           )}
           {data?.items.length === 0 && !isFetching && (

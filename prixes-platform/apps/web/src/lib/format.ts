@@ -16,6 +16,18 @@ export function perUnit(value: number, label: string | null): string {
   return label ? `${amount} ${label}` : `${amount} €`;
 }
 
+/**
+ * "450 m", "1,2 km" — la distance telle qu'on la dit.
+ *
+ * "0,4 km" is how a database stores it, not how anyone says it; under a
+ * kilometre people count in metres, and rounding to fifty keeps a GPS fix from
+ * pretending to be precise to the doorstep.
+ */
+export function distance(km: number): string {
+  if (km < 1) return `${Math.max(50, Math.round((km * 1000) / 50) * 50)} m`;
+  return `${km.toFixed(1).replace(".", ",")} km`;
+}
+
 export function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
