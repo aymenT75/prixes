@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
+import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { SmartAssistant } from "@/components/SmartAssistant";
@@ -219,7 +219,9 @@ function ListRow({
             catalog has no product for. */}
         <p className="truncate text-micro text-on-surface-variant">
           {recipeAmount && <span>{recipeAmount} · </span>}
-          {item.best_price != null ? `${eur(item.best_price)} / u.` : "prix inconnu"}
+          {item.best_price != null
+            ? `${eur(item.best_price)} / ${item.pack || "u."}`
+            : "prix inconnu"}
         </p>
       </div>
 
@@ -249,12 +251,14 @@ function ListRow({
 }
 
 function Thumb({ item }: { item: ShoppingItem }) {
-  const inner = item.image_url ? (
-    <Image src={item.image_url} alt={item.name ?? ""} fill className="object-contain p-1" sizes="48px" />
-  ) : (
-    <div className="flex h-full items-center justify-center text-outline-variant">
-      <Icon name={item.barcode ? "grocery" : "edit_note"} />
-    </div>
+  const inner = (
+    <ProductThumb
+      barcode={item.barcode}
+      imageUrl={item.image_url}
+      name={item.name}
+      size={48}
+      className="p-1"
+    />
   );
   const box = "relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white";
   // No barcode means no product page to open — render a plain box, not a dead link.

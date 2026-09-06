@@ -47,6 +47,9 @@ class ShoppingItemOut(BaseModel):
     image_url: str | None = None
     best_price: Decimal | None = None
     nutriscore: str | None = None
+    # What the price is the price *of* ("500 g", "2 L"). Without it the list can
+    # only say "0,75 € / u.", which reads as one leek rather than a 500 g bunch.
+    pack: str | None = None
 
 
 class ShoppingListOut(BaseModel):

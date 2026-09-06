@@ -114,6 +114,8 @@ export interface ShoppingItem {
   image_url: string | null;
   best_price: number | null;
   nutriscore: string | null;
+  /** What the price is the price *of* — "500 g", "2 L". Null for a free-text line. */
+  pack: string | null;
 }
 
 // ── Smart Assistant ──

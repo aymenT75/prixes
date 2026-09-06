@@ -14,6 +14,7 @@ from app.worker.tasks import (
     evaluate_price_alerts,
     ingest_fuel,
     prune_analytics,
+    refresh_fresh_prices,
     refresh_prices,
 )
 
@@ -27,6 +28,7 @@ class WorkerSettings:
         healthcheck,
         evaluate_price_alerts,
         refresh_prices,
+        refresh_fresh_prices,
         prune_analytics,
         ingest_fuel,
     ]
@@ -39,6 +41,10 @@ class WorkerSettings:
     cron_jobs = [
         # Real supermarket prices — refresh every ~3 hours (background, no API latency).
         cron(refresh_prices, hour={0, 3, 6, 9, 12, 15, 18, 21}, minute=15),  # type: ignore[arg-type]
+        # Fruit and veg sold by weight — once a day at 05:40. The feed is
+        # community-contributed and moves slowly, and run_at_startup means a
+        # fresh deploy has produce priced before anyone opens the app.
+        cron(refresh_fresh_prices, hour=5, minute=40, run_at_startup=True),  # type: ignore[arg-type]
         # Re-check price alerts every 15 minutes (picks up new lows shortly after
         # each refresh).
         cron(evaluate_price_alerts, minute={0, 15, 30, 45}),  # type: ignore[arg-type]

@@ -1,12 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 
 import { AddProductForm } from "@/components/AddProductForm";
+import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { PriceChart } from "@/components/PriceChart";
@@ -30,8 +30,15 @@ function parseAllergens(s: string | null): string[] {
     .filter(Boolean);
 }
 
+/**
+ * The digits guard keeps a junk query param from becoming an API call.
+ *
+ * Weighed produce has no EAN, so it is keyed by category (`fl:potatoes`) — a
+ * deliberately non-numeric form that this guard would otherwise reject, turning
+ * every fruit and vegetable into "Code-barres invalide".
+ */
 function isValidBarcode(code: string): boolean {
-  return /^\d{8,14}$/.test(code);
+  return /^\d{8,14}$/.test(code) || /^fl:[a-z0-9-]{2,28}$/.test(code);
 }
 
 // The product barcode is passed as a query param (?barcode=…) rather than a route
@@ -187,6 +194,25 @@ function ProductDetail() {
     ),
   );
 
+  /**
+   * Un magasin, une ligne.
+   *
+   * The API returns up to fifty individual readings. For a barcoded product that
+   * was one or two rows; for a kilo of potatoes, priced in dozens of shops of the
+   * same chain, it is fifty rows repeating "Carrefour" — a log, not a comparison.
+   * The cheapest recent reading per chain is the number a shopper is choosing
+   * between; the full series still feeds the history chart above.
+   */
+  const byStore = useMemo(() => {
+    const best = new Map<string, NonNullable<typeof data>["prices"][number]>();
+    for (const price of data?.prices ?? []) {
+      const key = price.store ?? "?";
+      const kept = best.get(key);
+      if (!kept || price.price < kept.price) best.set(key, price);
+    }
+    return [...best.values()].sort((a, b) => a.price - b.price);
+  }, [data]);
+
   // How much this product's price actually varies store to store — the
   // "thermometer": a wide spread means shopping around is genuinely worth it
   // (chaud), a narrow one means any store is fine (froid). Purely a spread
@@ -296,11 +322,13 @@ function ProductDetail() {
       {/* Hero */}
       <section className="mb-6 flex flex-col items-center">
         <div className="relative mb-4 flex h-44 w-44 items-center justify-center overflow-hidden rounded-xl border border-outline-variant/20 bg-white shadow-float">
-          {data.image_url ? (
-            <Image src={data.image_url} alt={data.name ?? ""} fill className="object-contain p-4" sizes="176px" />
-          ) : (
-            <Icon name="grocery" className="text-[48px] text-outline-variant" />
-          )}
+          <ProductThumb
+            barcode={data.barcode}
+            imageUrl={data.image_url}
+            name={data.name}
+            size={176}
+            className="p-4"
+          />
           {data.quantity && (
             <span className="absolute right-3 top-3 rounded-full bg-primary px-2 py-1 text-micro text-on-primary">
               {data.quantity}
@@ -588,16 +616,16 @@ function ProductDetail() {
             <Thermometer discountPct={priceSpreadPct} />
           </div>
         )}
-        {data.prices.length > 0 && (
+        {byStore.length > 0 && (
           <p className="mb-3 flex items-center gap-1 text-body-md text-on-surface-variant">
             <Icon name="map" className="text-[16px]" /> Touchez un magasin pour voir le plus proche sur la carte.
           </p>
         )}
         <div className="space-y-3">
-          {data.prices.length === 0 && (
+          {byStore.length === 0 && (
             <p className="text-body-md text-on-surface-variant">Aucun prix relevé. Ajoutez le vôtre 👇</p>
           )}
-          {data.prices.map((p, i) => {
+          {byStore.map((p, i) => {
             const cheapest = data.best_price != null && p.price === data.best_price;
             return (
               <Link

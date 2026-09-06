@@ -15,10 +15,10 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import * as z from "zod/mini";
 
+import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
 import { ApiError, api } from "@/lib/api";
 import { eur } from "@/lib/format";
@@ -420,13 +420,13 @@ function DraftRow({
       </button>
 
       <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-lg bg-white">
-        {line.image_url ? (
-          <Image src={line.image_url} alt="" fill className="object-contain p-0.5" sizes="40px" />
-        ) : (
-          <div className="grid h-full place-items-center text-outline-variant">
-            <Icon name="grocery" className="text-[18px]" />
-          </div>
-        )}
+        <ProductThumb
+          barcode={line.barcode}
+          imageUrl={line.image_url}
+          name={line.matched_name ?? line.product_name}
+          size={40}
+          className="p-0.5"
+        />
       </div>
 
       <div className="min-w-0 flex-1">

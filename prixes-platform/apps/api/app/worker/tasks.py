@@ -21,6 +21,7 @@ from app.domains.alerts import service as alert_service
 from app.domains.analytics.models import AnalyticsEvent
 from app.domains.fuel.models import FuelStation
 from app.domains.notifications import service as notify_service
+from app.domains.products.fresh import refresh_fresh_prices as _refresh_fresh_prices
 from app.domains.products.ingest import refresh_prices as _refresh_prices
 
 # GDPR data minimisation: anonymous usage events have no purpose past this
@@ -115,6 +116,13 @@ async def refresh_prices(_: dict[Any, Any]) -> dict[str, int]:
         pages=8,  # Deeper recent-price pagination
         enrich_cap=20,  # Light OFF enrichment (focus on freshness, not completeness)
     )
+
+
+async def refresh_fresh_prices(_: dict[Any, Any]) -> dict[str, int]:
+    """Scheduled refresh of weighed produce — the fruit and veg a barcode never
+    covers (see domains/products/fresh.py). Daily is plenty: these are category
+    averages across a whole chain, not a shelf label that moves by the hour."""
+    return await _refresh_fresh_prices()
 
 
 async def prune_analytics(_: dict[Any, Any]) -> dict[str, int]:

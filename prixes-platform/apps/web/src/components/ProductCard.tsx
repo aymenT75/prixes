@@ -1,10 +1,10 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 
+import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
 import { NovaBadge, ScoreBadge } from "@/components/ScoreBadge";
 import { api } from "@/lib/api";
@@ -54,13 +54,13 @@ export function ProductCard({ product }: { product: Product }) {
       className="card relative flex items-center gap-4 p-3 transition-shadow hover:shadow-float focus-within:shadow-float"
     >
       <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-white">
-        {product.image_url ? (
-          <Image src={product.image_url} alt="" fill className="object-contain p-1" sizes="64px" />
-        ) : (
-          <div className="flex h-full items-center justify-center text-outline-variant">
-            <Icon name="grocery" />
-          </div>
-        )}
+        <ProductThumb
+          barcode={product.barcode}
+          imageUrl={product.image_url}
+          name={product.name}
+          size={64}
+          className="p-1"
+        />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-label-lg text-on-surface">

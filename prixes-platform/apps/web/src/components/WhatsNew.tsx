@@ -25,7 +25,7 @@ import { api } from "@/lib/api";
 
 // Bump the suffix when there is genuinely something new to announce: everyone
 // who dismissed the previous round sees the next one.
-const DISMISSED_KEY = "prixes.whatsnew.v3";
+const DISMISSED_KEY = "prixes.whatsnew.v4";
 
 type Entry = {
   href: string;
@@ -81,6 +81,15 @@ export function WhatsNew() {
       body: "Vos courses réparties par magasin, et ce que le second arrêt fait gagner.",
       tint: "bg-secondary-fixed-dim/15 text-secondary",
       // Prices are the app's own data — this one always works.
+      available: true,
+    },
+    {
+      href: "/courses?q=pommes+de+terre",
+      icon: "nutrition",
+      title: "Les fruits et légumes au poids",
+      body: "Pommes de terre, carottes, courgettes : comparés au kilo, enseigne par enseigne.",
+      tint: "bg-secondary-fixed-dim/15 text-secondary",
+      // Prices come from our own catalogue, like the basket split.
       available: true,
     },
     {
