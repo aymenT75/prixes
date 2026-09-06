@@ -74,7 +74,11 @@ class Settings(BaseSettings):
     smartcart_timeout_s: float = 20.0
     smartcart_deadline_s: float = 25.0
     smartcart_cache_ttl_s: int = 86400
-    smartcart_rate_per_hour: int = 10
+    # Ten was too mean for someone discovering the feature: a few tries, a couple
+    # of refusals, and they were locked out for the rest of the hour. Repeated
+    # prompts are answered from the Redis cache and a request that produces
+    # nothing now hands its quota back, so the real model spend barely moves.
+    smartcart_rate_per_hour: int = 25
     mealplan_rate_per_day: int = 5
 
     # Observability

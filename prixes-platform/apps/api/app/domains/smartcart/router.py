@@ -10,12 +10,12 @@ without reaching the model at all.
 """
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.core.config import settings
 from app.core.deps import CurrentUser, DbSession, OptionalUser
 from app.core.llm import llm_enabled
-from app.core.rate_limit import RateLimit
+from app.core.rate_limit import RateLimit, refund
 from app.domains.smartcart import service
 from app.domains.smartcart.schemas import CommitIn, CommitOut, SmartCartIn, SmartCartOut
 
@@ -41,15 +41,25 @@ async def status_() -> dict[str, object]:
         )
     ],
 )
-async def generate(data: SmartCartIn, db: DbSession, user: OptionalUser) -> SmartCartOut:
+async def generate(
+    request: Request, data: SmartCartIn, db: DbSession, user: OptionalUser
+) -> SmartCartOut:
     """Open to everyone: asking what a raclette costs should not need an account.
 
     Committing the result does — a shopping list belongs to someone. The rate
     limiter falls back to the caller's IP when there is no token, which is looser
     than a per-account budget; the Redis cache on the normalised prompt is what
     keeps the repeated questions from reaching the model at all.
+
+    A request that comes back with no basket hands its quota back. Otherwise the
+    first-time user, whose opening attempts are the most likely to be refused,
+    spends the whole hour's budget on refusals and is locked out for having tried.
     """
-    return await service.generate(db, user.id if user else None, data)
+    try:
+        return await service.generate(db, user.id if user else None, data)
+    except HTTPException:
+        await refund(request)
+        raise
 
 
 @router.post("/{draft_id}/commit", response_model=CommitOut, status_code=201)

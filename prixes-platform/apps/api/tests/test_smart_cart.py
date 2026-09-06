@@ -13,8 +13,10 @@ from typing import Any
 import pytest
 
 from app.core.llm import strictify
+from app.core.rate_limit import _human_delay
 from app.domains.products.models import Product
 from app.domains.products.units import packs_needed, to_base_amount
+from app.domains.smartcart.prompt import SMART_CART_SYSTEM
 from app.domains.smartcart.resolve import _similarity, allergen_conflict, sanitise
 from app.domains.smartcart.schemas import AiDraft, AiLine
 from app.domains.smartcart.service import _cache_key
@@ -196,3 +198,23 @@ def test_an_implausible_pack_count_rejects_the_match() -> None:
     # The realistic cases stay well under the bar.
     assert packs_needed(Decimal("1.8"), "kg", "2,5 kg") <= _MAX_PACKS
     assert packs_needed(Decimal("1.2"), "kg", "400 g") <= _MAX_PACKS
+
+
+# ── Le budget horaire ne doit pas punir l'essai ───────────────────────────────
+@pytest.mark.parametrize(
+    ("seconds", "expected"),
+    [(1, "1 secondes"), (45, "45 secondes"), (300, "5 minutes"),
+     (3175, "53 minutes"), (3600, "1 heure"), (7200, "2 heures")],
+)
+def test_the_retry_delay_is_written_for_a_human(seconds: int, expected: str) -> None:
+    """"Réessayez dans 3175s" tells nobody anything."""
+    assert _human_delay(seconds) == expected
+
+
+def test_the_prompt_no_longer_treats_a_vague_request_as_off_topic() -> None:
+    """A user typing "mes courses" into a thing called "Assistant courses" was
+    told their request was not about shopping. The rule that caused it is now
+    explicitly bounded."""
+    assert "DEMANDE IMPRÉCISE" in SMART_CART_SYSTEM
+    assert "les courses de la semaine" in SMART_CART_SYSTEM
+    assert "Ce n'est PAS la réponse à une demande de" in SMART_CART_SYSTEM
