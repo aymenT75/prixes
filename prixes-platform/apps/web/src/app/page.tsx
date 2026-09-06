@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { BargainCard } from "@/components/BargainCard";
 import { Icon } from "@/components/Icon";
@@ -13,6 +13,7 @@ import { ScoreLegend } from "@/components/ScoreLegend";
 import { WhatsNew } from "@/components/WhatsNew";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/store";
+import { createVoiceRecognizer, speechSupported } from "@/lib/voice";
 
 // Only surface what the bottom tab bar does NOT already cover — Courses, Scanner,
 // and Deals are permanent tabs, so putting them here too is redundant.
@@ -28,6 +29,13 @@ export default function HomePage() {
   const router = useRouter();
   const { user } = useApp();
   const [query, setQuery] = useState("");
+  const [listening, setListening] = useState(false);
+
+  // Whether this browser can dictate is only knowable in the browser: deciding it
+  // during render would make the prerendered HTML disagree with the first client
+  // render, and React would throw the page away to recover.
+  const [canDictate, setCanDictate] = useState(false);
+  useEffect(() => setCanDictate(speechSupported()), []);
 
   // Popular products (not deals) so tapping a card opens the in-app product sheet
   // rather than leaving to an external merchant site.
@@ -42,10 +50,31 @@ export default function HomePage() {
   });
   const bargains = bargainsData?.items ?? [];
 
+  function go(text: string) {
+    const q = text.trim();
+    router.push(q ? `/courses?q=${encodeURIComponent(q)}` : "/courses");
+  }
+
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
-    const q = query.trim();
-    router.push(q ? `/courses?q=${encodeURIComponent(q)}` : "/courses");
+    go(query);
+  }
+
+  /** Dictate instead of typing — same field, same result. */
+  function dictate() {
+    const recognizer = createVoiceRecognizer();
+    if (!recognizer) return;
+    setListening(true);
+    recognizer.onPartial = setQuery;
+    recognizer.onFinal = (text) => {
+      setQuery(text);
+      setListening(false);
+      recognizer.stop();
+      if (text.trim().length >= 2) go(text);
+    };
+    recognizer.onError = () => setListening(false);
+    recognizer.onEnd = () => setListening(false);
+    recognizer.start();
   }
 
   return (
@@ -103,6 +132,37 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Searching is the first thing people come here to do, so it sits directly
+          under the hero rather than below the feed — and the microphone sits in
+          the field itself, so dictating and typing are the same gesture. */}
+      <form
+        onSubmit={onSearch}
+        role="search"
+        className="mb-6 flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container-lowest py-2 pl-4 pr-2 shadow-card focus-within:border-primary"
+      >
+        <Icon name="search" className="text-on-surface-variant" />
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="min-w-0 flex-1 bg-transparent text-body-md outline-none"
+          placeholder="Rechercher un produit, une marque…"
+          aria-label="Rechercher un produit"
+          enterKeyHint="search"
+        />
+        {canDictate && (
+          <button
+            type="button"
+            onClick={listening ? () => setListening(false) : dictate}
+            aria-label={listening ? "Arrêter la dictée" : "Dicter votre recherche"}
+            className={`grid h-10 w-10 flex-shrink-0 place-items-center rounded-full transition-colors ${
+              listening ? "bg-error text-on-error" : "bg-surface-container text-primary"
+            } active:scale-95`}
+          >
+            <Icon name={listening ? "stop" : "mic"} className="text-[20px]" />
+          </button>
+        )}
+      </form>
+
       <WhatsNew />
 
       {/* Real price drops, own data only — hidden entirely when we have none. */}
@@ -128,23 +188,6 @@ export default function HomePage() {
           Prêt à optimiser vos achats aujourd&apos;hui&nbsp;?
         </p>
       </section>
-
-      {/* Search — jumps straight into the product comparison flow */}
-      <form
-        onSubmit={onSearch}
-        role="search"
-        className="mb-8 flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container-lowest px-4 py-3 shadow-card focus-within:border-primary"
-      >
-        <Icon name="search" className="text-on-surface-variant" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 bg-transparent text-body-md outline-none"
-          placeholder="Rechercher un produit, une marque…"
-          aria-label="Rechercher un produit"
-          enterKeyHint="search"
-        />
-      </form>
 
       <section className="mb-8">
         <h2 className="mb-3 flex items-center gap-2 text-headline-md text-on-surface">
