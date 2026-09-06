@@ -172,6 +172,24 @@ class PricedLine:
     per_store: dict[str, Decimal]
 
 
+def _merge_by_barcode(lines: list[tuple[str, int, str]]) -> list[tuple[str, int, str]]:
+    """One product, one line — however many callers asked for it.
+
+    A week of meals can ask for potatoes on Monday and again on Thursday, and
+    both resolve to the same product. Left alone, the store basket printed
+    "Pommes de terre 1,30 €" twice, which reads as a bug rather than as two
+    dinners. Quantities add up; the first label wins because it is the one the
+    caller chose to show.
+    """
+    merged: dict[str, tuple[str, int, str]] = {}
+    for barcode, quantity, display in lines:
+        if (kept := merged.get(barcode)) is None:
+            merged[barcode] = (barcode, quantity, display)
+        else:
+            merged[barcode] = (barcode, kept[1] + quantity, kept[2])
+    return list(merged.values())
+
+
 async def price_lines(
     db: AsyncSession, lines: list[tuple[str, int, str]]
 ) -> list[PricedLine]:
@@ -181,7 +199,7 @@ async def price_lines(
     disagree about what something costs.
     """
     priced: list[PricedLine] = []
-    for barcode, quantity, display in lines:
+    for barcode, quantity, display in _merge_by_barcode(lines):
         prices = list(
             (
                 await db.execute(

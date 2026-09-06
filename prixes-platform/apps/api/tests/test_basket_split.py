@@ -11,7 +11,13 @@ from decimal import Decimal
 
 import pytest
 
-from app.domains.shopping.service import PricedLine, _allocate, _evaluate, _rank
+from app.domains.shopping.service import (
+    PricedLine,
+    _allocate,
+    _evaluate,
+    _merge_by_barcode,
+    _rank,
+)
 
 
 def line(label: str, quantity: int = 1, **prices: float) -> PricedLine:
@@ -170,3 +176,33 @@ def test_the_saving_is_never_negative_when_it_is_reported() -> None:
     lines = [line("pâtes", Carrefour=1.20, Lidl=0.95), line("café", Carrefour=3.50, Lidl=4.10)]
     _, duo = _options(lines, [("Carrefour",), ("Carrefour", "Lidl")])
     assert duo.saving_vs_single is None or duo.saving_vs_single >= 0
+
+
+# ── Un produit, une ligne ────────────────────────────────────────────────────
+def test_the_same_product_asked_for_twice_becomes_one_line() -> None:
+    """A week of meals asks for potatoes on Monday and again on Thursday.
+
+    The store basket printed "Pommes de terre 1,30 €" twice, which reads as a
+    bug rather than as two dinners.
+    """
+    merged = _merge_by_barcode(
+        [
+            ("fl:potatoes", 2, "Pommes de terre"),
+            ("fl:carrots", 3, "Carottes"),
+            ("fl:potatoes", 4, "pommes de terre"),
+        ]
+    )
+    assert merged == [
+        ("fl:potatoes", 6, "Pommes de terre"),  # quantities add, first label wins
+        ("fl:carrots", 3, "Carottes"),
+    ]
+
+
+def test_merging_keeps_the_order_the_caller_chose() -> None:
+    merged = _merge_by_barcode([("b", 1, "B"), ("a", 1, "A"), ("b", 1, "B")])
+    assert [barcode for barcode, _, _ in merged] == ["b", "a"]
+
+
+def test_a_basket_with_no_duplicates_is_untouched() -> None:
+    lines = [("a", 1, "A"), ("b", 2, "B")]
+    assert _merge_by_barcode(lines) == lines
