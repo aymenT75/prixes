@@ -154,7 +154,12 @@ async def main(per_cat: int) -> None:
                 password_hash=hash_password(DEMO_PASSWORD),
                 reputation=1240,
                 is_verified=True,
-                role="admin",
+                # Jamais "admin" : le mot de passe de ce compte est publié dans
+                # DEPLOY.md, et le rôle admin ouvre /feedback — donc l'email et
+                # le message de chaque personne ayant laissé un avis. Un compte
+                # de démonstration montre l'app, il n'administre rien.
+                # Promouvoir un vrai compte à la main après le seed.
+                role="user",
             )
             db.add(demo)
             await db.flush()

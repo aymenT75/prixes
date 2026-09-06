@@ -37,7 +37,15 @@ docker compose exec api python scripts/scrape_prices.py   # prix réels (toutes 
 docker compose exec api python scripts/ingest_fuel.py     # carburants (API gov)
 # (Le worker ré-ingère les carburants chaque heure automatiquement.)
 ```
-Compte de démo créé par le seed : `demo@prixes.app` / `demo1234`.
+Compte de démo créé par le seed : `demo@prixes.app` / `demo1234` — compte
+**utilisateur ordinaire**. Ce mot de passe étant public, ce compte ne doit
+jamais porter le rôle `admin` : celui-ci ouvre `/feedback`, donc l'email et le
+message de chaque personne ayant laissé un avis. Promouvez votre propre compte
+après le seed :
+
+```sql
+UPDATE users SET role='admin' WHERE email='VOTRE-EMAIL';
+```
 
 ## 4. Vérifier
 - `https://VOTRE-DOMAINE/health` → `{"status":"ok"}`

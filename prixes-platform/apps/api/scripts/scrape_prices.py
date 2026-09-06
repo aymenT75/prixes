@@ -301,7 +301,9 @@ async def main(pages: int, enrich_cap: int,
                 demo = User(
                     email=DEMO_EMAIL, username="Demo Prixes", initials="DP",
                     password_hash=hash_password(DEMO_PASSWORD), reputation=1240,
-                    is_verified=True, role="admin",
+                    # Jamais "admin" : voir la note dans scripts/seed.py — le mot
+                    # de passe est publié et le rôle admin ouvre les avis.
+                    is_verified=True, role="user",
                 )
                 db.add(demo)
                 await db.flush()

@@ -38,7 +38,7 @@ npm run dev                              # http://localhost:3000
 ```
 
 ## 5. Log in
-**Email:** `demo@prixes.app`  ·  **Password:** `demo1234`  (admin, 1240 rep)
+**Email:** `demo@prixes.app`  ·  **Password:** `demo1234`  (utilisateur ordinaire, 1240 rep)
 Or register a fresh account from the app.
 
 ---
