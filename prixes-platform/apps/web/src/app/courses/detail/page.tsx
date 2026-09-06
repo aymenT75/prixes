@@ -326,7 +326,7 @@ function ProductDetail() {
           <button
             onClick={shareResult}
             aria-label="Partager ce produit"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-primary transition-colors hover:bg-surface-container-high active:scale-95"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-primary transition-colors hover:bg-surface-container-high active:scale-95"
           >
             <Icon name={shared ? "check" : "ios_share"} className="text-[22px]" />
           </button>

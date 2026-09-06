@@ -81,14 +81,14 @@ export function PageHeader({
         {user ? (
           <Link
             href="/account"
-            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border-2 border-primary-container/20 bg-primary text-label-md font-bold text-on-primary"
+            className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-primary-container/20 bg-primary text-label-md font-bold text-on-primary"
           >
             {user.initials}
           </Link>
         ) : (
           <button
             onClick={() => openLogin(true)}
-            className="rounded-full bg-primary px-4 py-2 text-label-md text-on-primary active:scale-95"
+            className="inline-flex min-h-[44px] items-center rounded-full bg-primary px-4 py-2 text-label-md text-on-primary active:scale-95"
           >
             Connexion
           </button>

@@ -121,7 +121,8 @@ export default function HomePage() {
             <button
               key={c.label}
               onClick={() => router.push(c.path)}
-              className="rounded-full border border-white/80 bg-white/60 px-5 py-2.5 text-label-md
+              className="inline-flex min-h-[44px] items-center rounded-full border border-white/80
+                         bg-white/60 px-5 py-2.5 text-label-md
                          font-medium text-on-surface shadow-sm backdrop-blur-md
                          transition-transform active:scale-95
                          dark:border-white/10 dark:bg-white/10"

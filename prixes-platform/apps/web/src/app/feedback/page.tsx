@@ -76,7 +76,7 @@ export default function FeedbackPage() {
                 role="radio"
                 aria-checked={rating === n}
                 aria-label={`${n} étoile${n > 1 ? "s" : ""}`}
-                className="rounded-lg p-1 transition-transform active:scale-90"
+                className="grid h-11 w-11 place-items-center rounded-lg transition-transform active:scale-90"
               >
                 <Icon
                   name="star"

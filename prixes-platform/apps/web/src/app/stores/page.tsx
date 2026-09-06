@@ -104,7 +104,7 @@ export default function StoresPage() {
           {!showAddressInput && (
             <button
               onClick={() => setShowAddressInput(true)}
-              className="mb-4 w-full text-center text-label-lg text-primary underline-offset-2 hover:underline"
+              className="mb-4 inline-flex min-h-[44px] w-full items-center justify-center text-center text-label-lg text-primary underline-offset-2 hover:underline"
             >
               Ou saisir une adresse
             </button>

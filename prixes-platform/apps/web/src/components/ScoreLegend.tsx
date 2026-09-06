@@ -40,8 +40,8 @@ export function ScoreLegend({ compact = false }: { compact?: boolean }) {
         aria-label="Pourquoi les produits sont-ils en couleur ? Voir la légende"
         className={
           compact
-            ? "grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-surface-container-high text-on-surface-variant active:scale-90"
-            : "flex items-center gap-1 rounded-full bg-surface-container-high px-3 py-1.5 text-label-md text-on-surface-variant active:scale-95"
+            ? "grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-surface-container-high text-on-surface-variant active:scale-90"
+            : "flex min-h-[44px] items-center gap-1 rounded-full bg-surface-container-high px-3 py-1.5 text-label-md text-on-surface-variant active:scale-95"
         }
       >
         <Icon name="info" className="text-[16px]" />

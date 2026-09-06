@@ -365,7 +365,7 @@ export default function ScannerPage() {
           value={manual}
           onChange={(e) => setManual(e.target.value)}
         />
-        <button className="rounded-full bg-primary px-4 py-1.5 text-label-md text-on-primary active:scale-95">
+        <button className="inline-flex min-h-[44px] items-center rounded-full bg-primary px-4 py-1.5 text-label-md text-on-primary active:scale-95">
           Chercher
         </button>
       </form>

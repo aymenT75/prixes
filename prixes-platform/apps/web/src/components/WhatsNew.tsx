@@ -116,7 +116,7 @@ export function WhatsNew() {
         <button
           onClick={dismiss}
           aria-label="Masquer les nouveautés"
-          className="ml-auto grid h-8 w-8 place-items-center rounded-full text-outline-variant transition-colors hover:text-on-surface-variant"
+          className="ml-auto grid h-11 w-11 place-items-center rounded-full text-outline-variant transition-colors hover:text-on-surface-variant"
         >
           <Icon name="close" className="text-[18px]" />
         </button>

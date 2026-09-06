@@ -290,24 +290,30 @@ summary,
        looked muddy/olive as a big button fill. Dark charcoal text (not
        white) keeps contrast against the light gradient, matching the logo's
        own charcoal-on-gradient look. */
-    @apply inline-flex items-center justify-center gap-2 rounded-full
+    @apply min-h-[44px] inline-flex items-center justify-center gap-2 rounded-full
            bg-gradient-to-r from-primary-fixed-dim to-secondary-fixed-dim px-6 py-2.5
            font-display text-label-lg font-bold text-on-primary-fixed shadow-md transition-all
            hover:-translate-y-0.5 hover:shadow-glow active:scale-95 active:translate-y-0;
   }
   .btn-tonal {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-surface-container-high
+    @apply min-h-[44px] inline-flex items-center justify-center gap-2 rounded-lg bg-surface-container-high
            px-4 py-2 text-label-md text-on-surface-variant transition-colors
            hover:bg-surface-variant active:scale-95;
   }
   .btn-outline {
-    @apply inline-flex items-center justify-center gap-2 rounded-full border border-outline-variant/60
+    @apply min-h-[44px] inline-flex items-center justify-center gap-2 rounded-full border border-outline-variant/60
            bg-surface-container-lowest px-6 py-2.5 text-label-lg text-on-surface transition-all
            hover:border-primary hover:text-primary active:scale-95
            disabled:opacity-60;
   }
+  /* 44 px de haut, partout où l'on touche.
+     Apple et Google donnent le même minimum, et une app qui met en avant le gros
+     texte et la voix ne peut pas offrir des pastilles de 30 px : ce sont
+     précisément les doigts les moins sûrs qui les visent. Le rembourrage
+     vertical suit, l'apparence reste la même. */
   .chip {
-    @apply whitespace-nowrap rounded-full px-4 py-2 text-label-md transition-all active:scale-95;
+    @apply inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full px-4 py-2
+           text-label-md transition-all active:scale-95;
   }
   .chip-active {
     @apply bg-primary text-on-primary shadow-sm;
