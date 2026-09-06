@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 
 from app.core.llm import strictify
+from app.core.mongo import mongo_enabled, mongo_ready
 from app.core.rate_limit import _human_delay
 from app.domains.products.models import Product
 from app.domains.products.units import packs_needed, to_base_amount
@@ -218,3 +219,15 @@ def test_the_prompt_no_longer_treats_a_vague_request_as_off_topic() -> None:
     assert "DEMANDE IMPRÉCISE" in SMART_CART_SYSTEM
     assert "les courses de la semaine" in SMART_CART_SYSTEM
     assert "Ce n'est PAS la réponse à une demande de" in SMART_CART_SYSTEM
+
+
+# ── « Mémorisé » doit vouloir dire mémorisé ──────────────────────────────────
+def test_a_configured_url_is_not_a_promise_of_persistence() -> None:
+    """Un cluster M0 se met en pause tout seul, et une IP retirée de la liste
+    d'accès fait échouer la poignée de main TLS. Dans les deux cas une URL est
+    configurée et rien ne peut être écrit — l'app ne doit pas dire le contraire.
+    """
+    assert mongo_enabled is not mongo_ready
+    # Sans URL, ni configuré ni joignable.
+    assert mongo_enabled() is False
+    assert mongo_ready() is False

@@ -30,6 +30,13 @@ MongoDb = AsyncDatabase[dict[str, Any]]
 
 _client: AsyncMongoClient[dict[str, Any]] | None = None
 
+# Whether Atlas actually answered at startup. `mongo_enabled()` only says a URL
+# was configured, which is not the same thing: an M0 cluster pauses itself after
+# weeks of inactivity, and an IP dropped from the access list fails the TLS
+# handshake. In both cases a URL is set and nothing can be written — so anything
+# that *promises* persistence to the user must ask this, not that.
+_reachable: bool = False
+
 # Collection names, in one place so a typo can't create a phantom collection.
 DRAFTS = "smart_cart_drafts"
 MEAL_PLANS = "meal_plans"
@@ -37,7 +44,18 @@ RECIPES = "recipes"
 
 
 def mongo_enabled() -> bool:
+    """A document store is configured. Says nothing about whether it answers."""
     return bool(settings.mongo_url)
+
+
+def mongo_ready() -> bool:
+    """Atlas answered when we last checked, at startup.
+
+    Restarting the API re-checks. That is deliberate: a per-request health probe
+    would add a round trip to every call to spare a rare, operator-visible
+    outage.
+    """
+    return _reachable
 
 
 def get_client() -> AsyncMongoClient[dict[str, Any]]:
@@ -95,11 +113,17 @@ async def ensure_indexes() -> None:
     keep the whole API from starting, and every query below still works (more
     slowly) without its index.
     """
+    global _reachable
+    _reachable = False
     if not mongo_enabled():
         logger.info("MONGO_URL empty — V3 document features disabled")
         return
     db = get_db()
     try:
+        # Ping first: it tells configured-but-unreachable from configured-and-
+        # working, and that difference is what the UI promises the user.
+        await db.command("ping")
+        _reachable = True
         # Drafts are throwaway: a proposal the user hasn't committed. Let Mongo
         # expire them so the collection can't grow without bound.
         await db[DRAFTS].create_index("created_at", expireAfterSeconds=7 * 24 * 3600)
@@ -111,7 +135,11 @@ async def ensure_indexes() -> None:
         # Imported recipes are cached by URL so re-importing is free.
         await db[RECIPES].create_index("url", unique=True)
     except PyMongoError as exc:
-        logger.warning(f"Mongo index setup skipped: {exc}")
+        logger.warning(
+            f"Mongo unreachable at startup ({exc}) — les menus ne seront pas mémorisés"
+            if not _reachable
+            else f"Mongo index setup skipped: {exc}"
+        )
 
 
 async def ping() -> bool:

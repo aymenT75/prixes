@@ -12,7 +12,7 @@ from fastapi.responses import ORJSONResponse
 from app.core.config import settings
 from app.core.http import close_http_client
 from app.core.llm import llm_enabled
-from app.core.mongo import close_mongo, ensure_indexes, mongo_enabled
+from app.core.mongo import close_mongo, ensure_indexes, mongo_ready
 from app.core.redis import redis_client
 from app.domains.alerts.router import router as alerts_router
 from app.domains.analytics.router import router as analytics_router
@@ -87,7 +87,9 @@ async def meta() -> dict[str, object]:
         "smart_assistant_enabled": llm_enabled(),
         # Composing a week needs a model; only remembering it needs Mongo.
         "meal_plan_enabled": llm_enabled(),
-        "meal_plan_saved": mongo_enabled(),
+        # Ce que l'app promet à l'utilisateur : « ce menu est mémorisé ».
+        # Une URL configurée ne suffit pas — il faut qu'Atlas réponde.
+        "meal_plan_saved": mongo_ready(),
         "environment": settings.environment,
     }
 
