@@ -80,6 +80,20 @@ scp web.tar.gz api.tar.gz root@SERVEUR:/opt/prixes-platform/
 # Sur le serveur :
 cd /opt/prixes-platform && ./scripts/deploy.sh
 ```
+> **Attention : cette construction écrase l'image de développement local.**
+> Les deux utilisent le tag `prixes-platform-web:latest`, mais pas la même
+> `NEXT_PUBLIC_API_BASE_URL` : vide en production (Caddy sert l'API sous
+> `/api/v1` sur le même domaine), `http://localhost:8000` en local. Après un
+> build de production, la pile locale appelle donc `localhost:3000/api/v1` et
+> chaque requête répond 404 — l'écran affiche « Erreur réseau », ce qui ressemble
+> à une panne de l'app alors que c'est l'image qui n'est pas la bonne.
+>
+> Pour remettre le local d'aplomb, une seule commande :
+>
+> ```bash
+> docker compose up -d --build web
+> ```
+
 ### Vérifier l'image avant de l'envoyer
 
 buildx peut servir une construction entièrement en cache et laisser le tag sur
