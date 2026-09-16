@@ -1,6 +1,10 @@
 services:
   db:
     image: postgis/postgis:16-3.4
+    # Without this, the database stays down after a host reboot while api/worker/web
+    # (which do restart) come back and crash-loop against a name that resolves to
+    # nothing: "socket.gaierror: Name or service not known".
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-prixes}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prixes}
@@ -17,6 +21,7 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
       - "6379:6379"
