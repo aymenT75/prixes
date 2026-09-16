@@ -8,14 +8,17 @@ import { PageHeader } from "@/components/PageHeader";
 function Section({
   icon,
   title,
+  id,
   children,
 }: {
   icon: string;
   title: string;
+  /** Anchor for sections linked from outside, e.g. the Google Play listing. */
+  id?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="card mb-4 p-5">
+    <section id={id} className="card mb-4 scroll-mt-4 p-5">
       <h2 className="mb-2 flex items-center gap-2 text-headline-md text-on-surface">
         <Icon name={icon} className="text-primary" /> {title}
       </h2>
@@ -145,8 +148,77 @@ export default function PrivacyPage() {
         </ul>
       </Section>
 
+      {/* Hi Coach is a separate app that shares the Prixes account. Its Google Play
+          listing links here for its privacy policy (#hi-coach) and for the
+          account-deletion page Google requires (#hi-coach-suppression). */}
+      <Section id="hi-coach" icon="fitness_center" title="Hi Coach, l'application coach">
+        <p>
+          Hi Coach est l&apos;application de coaching nutrition et entraînement éditée par Prixes.
+          Elle utilise le même compte de connexion que Prixes, mais ses données sont stockées à
+          part, dans une base qui lui est propre.
+        </p>
+        <ul className="ml-4 list-disc space-y-1.5">
+          <li>
+            <strong className="text-on-surface">Profil santé</strong> — sexe, date de naissance,
+            taille, poids, niveau d&apos;activité, objectif, et si vous êtes diabétique ou sensible
+            au sucre. Enregistré uniquement après votre consentement explicite, pour calculer vos
+            repères du jour avec des formules publiées (Mifflin-St Jeor, seuils de l&apos;OMS).
+          </li>
+          <li>
+            <strong className="text-on-surface">Ce que vous enregistrez</strong> — repas, contenu
+            du frigo, ressenti du matin, eau et café, rappels, matériel de sport.
+          </li>
+          <li>
+            <strong className="text-on-surface">Photos et descriptions de repas</strong> — quand
+            vous photographiez un plat ou votre frigo, ou dictez un repas, la photo ou le texte
+            est envoyé à OpenAI pour reconnaître les aliments. Les idées de recettes partent avec
+            quatre nombres (ce qu&apos;il vous reste en calories, protéines, fibres et sucres).
+            Votre profil santé n&apos;est jamais envoyé à OpenAI ni à aucun autre service
+            d&apos;intelligence artificielle. Les photos ne sont pas conservées par Hi Coach.
+          </li>
+          <li>
+            <strong className="text-on-surface">Voix</strong> — la dictée est reconnue sur votre
+            téléphone. Les phrases du coach peuvent être lues par la synthèse vocale d&apos;OpenAI.
+          </li>
+          <li>
+            <strong className="text-on-surface">Erreurs techniques</strong> — les pannes de
+            l&apos;API sont signalées à Sentry, sans vos données ni votre identité.
+          </li>
+        </ul>
+        <p>
+          Aucune donnée Hi Coach n&apos;est vendue, partagée à des fins commerciales ou utilisée
+          pour de la publicité. Elles sont hébergées en Allemagne (Francfort) et conservées tant
+          que votre compte existe.
+        </p>
+      </Section>
+
+      <Section id="hi-coach-suppression" icon="person_remove" title="Supprimer votre compte Hi Coach">
+        <p>Depuis l&apos;application Hi Coach : <strong className="text-on-surface">Profil → Supprimer mon compte</strong>. Vous choisissez :</p>
+        <ul className="ml-4 list-disc space-y-1.5">
+          <li>
+            <strong className="text-on-surface">Mes données Hi Coach</strong> — profil santé,
+            consentements, repas, frigo, réveils, rappels et matériel sont effacés immédiatement
+            et définitivement. Votre compte reste utilisable sur Prixes.
+          </li>
+          <li>
+            <strong className="text-on-surface">Tout mon compte</strong> — les données Hi Coach
+            et votre compte de connexion, donc aussi votre accès à Prixes.
+          </li>
+        </ul>
+        <p>
+          Sans accès à l&apos;application, écrivez à{" "}
+          <a href="mailto:contact@prixes.app?subject=Suppression%20compte%20Hi%20Coach" className="text-primary underline-offset-2 hover:underline">
+            contact@prixes.app
+          </a>{" "}
+          depuis l&apos;adresse de votre compte, objet « Suppression compte Hi Coach ». La
+          suppression est faite sous 30 jours et vous est confirmée par e-mail. Rien n&apos;est
+          conservé, à l&apos;exception des sauvegardes techniques de la base, effacées
+          automatiquement au bout de 14 jours.
+        </p>
+      </Section>
+
       <Section icon="update" title="Mise à jour">
-        <p>Cette page reflète le fonctionnement actuel de l&apos;app. Dernière mise à jour : août 2026.</p>
+        <p>Cette page reflète le fonctionnement actuel de l&apos;app. Dernière mise à jour : septembre 2026.</p>
       </Section>
     </div>
   );
