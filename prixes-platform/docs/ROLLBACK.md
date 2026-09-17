@@ -133,7 +133,11 @@ dates…).
   séparément).
 - **Pas de copie hors serveur** tant que `OFFSITE_REMOTE` n'est pas configuré
   (voir l'en-tête de `backup-db.sh`) : les dumps restent sur le droplet qu'ils
-  protègent, seule la sauvegarde DigitalOcean les met ailleurs.
+  protègent, seule la sauvegarde DigitalOcean les met ailleurs. **Choix assumé
+  le 2026-09-17** : le stockage reste le droplet + les sauvegardes quotidiennes
+  DigitalOcean, donc `backup-db.sh` affiche « Off-site copy: SKIPPED » à chaque
+  passage sans que ce soit un incident. Le risque qui reste : perdre l'accès au
+  compte DigitalOcean perd le serveur **et** ses sauvegardes d'un seul coup.
 - MongoDB Atlas n'a **pas** de sauvegarde de son côté (offre gratuite M0) : seule
   l'exportation quotidienne de `backup-db.sh` la protège.
 - Un seul niveau de rollback applicatif (`:previous`) — pas d'historique
