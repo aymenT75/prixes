@@ -9,7 +9,7 @@
 // playlist_add…). Fonts are stale-while-revalidate, so without this bump the
 // browser keeps serving the previous subset and every new icon renders as its
 // raw ligature text — "AUTO_AWESOME" in place of the sparkle.
-const CACHE = "prixes-v4";
+const CACHE = "prixes-v5";
 const SHELL = ["/manifest.json"];
 
 self.addEventListener("install", (e) => {

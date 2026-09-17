@@ -35,6 +35,13 @@ export function ProductThumb({
         fill
         className={`object-contain ${className}`}
         sizes={`${size}px`}
+        // Served straight from Open Food Facts, not through /_next/image. Their
+        // image host answers in 7 to 20 s, and Next's optimiser gives up after
+        // 7: nearly every product photo came back 504 and never got cached.
+        // OFF already serves 400 px JPEGs — small enough for a thumbnail — and
+        // skipping the optimiser also spares the droplet a sharp resize per
+        // image on a machine that is short of memory.
+        unoptimized
       />
     );
   }

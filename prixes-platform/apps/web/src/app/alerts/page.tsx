@@ -115,7 +115,7 @@ function AlertRow({
         className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white"
       >
         {alert.image_url ? (
-          <Image src={alert.image_url} alt={alert.name ?? ""} fill className="object-contain p-1" sizes="48px" />
+          <Image src={alert.image_url} alt={alert.name ?? ""} fill className="object-contain p-1" sizes="48px" unoptimized />
         ) : (
           <div className="flex h-full items-center justify-center text-outline-variant">
             <Icon name="grocery" />

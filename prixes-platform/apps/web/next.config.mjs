@@ -11,6 +11,11 @@ const nextConfig = {
   ...(isMobileBuild
     ? { output: "export", trailingSlash: true }
     : {
+        // A self-contained server with only the dependencies the app actually
+        // imports. Without it the image had to ship all of node_modules —
+        // Playwright, Capacitor, TypeScript, the test tooling — to run
+        // `next start`: 2.66 GB, the largest thing on the droplet.
+        output: "standalone",
         async headers() {
           return [
             {

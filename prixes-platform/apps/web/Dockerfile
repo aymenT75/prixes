@@ -22,10 +22,14 @@ FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
-COPY --from=builder /app/.next ./.next
+# Docker sets HOSTNAME to the container id, and the standalone server binds to
+# whatever HOSTNAME says — without this it listens on an address Caddy cannot
+# reach, and the site answers 502 while the container reports itself healthy.
+ENV HOSTNAME=0.0.0.0
+# `output: "standalone"` traces exactly what the server imports. Copying the
+# whole node_modules here instead made this image 2.66 GB.
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/next.config.mjs ./next.config.mjs
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

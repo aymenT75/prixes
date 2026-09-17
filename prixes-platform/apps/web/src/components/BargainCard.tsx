@@ -26,7 +26,7 @@ export function BargainCard({ bargain }: { bargain: Bargain }) {
       </span>
       <div className="relative h-24 w-full overflow-hidden rounded-lg bg-white">
         {bargain.image_url ? (
-          <Image src={bargain.image_url} alt="" fill className="object-contain p-1" sizes="160px" />
+          <Image src={bargain.image_url} alt="" fill className="object-contain p-1" sizes="160px" unoptimized />
         ) : (
           <div className="flex h-full items-center justify-center text-outline-variant">
             <Icon name="grocery" />
