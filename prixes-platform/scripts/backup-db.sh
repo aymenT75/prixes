@@ -8,7 +8,8 @@
 # Usage: ./scripts/backup-db.sh [retention_days]
 #
 # One file per database: prixes-<stamp>.sql.gz, prixes_coach-<stamp>.sql.gz, …
-# restore-db.sh reads the target database back out of that name.
+# restore-db.sh reads the target database back out of that name. The MongoDB
+# document database goes to mongo-prixes-<stamp>.tar.gz (restore-mongo.sh).
 #
 # Off-site copy (optional but strongly recommended): set OFFSITE_REMOTE to an rclone
 # remote such as "b2:prixes-backups" or "spaces:prixes/backups" and every dump is
@@ -29,7 +30,7 @@ COMPOSE="docker compose -p prixes-platform -f docker-compose.yml -f docker-compo
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"
 # Dumps written before this script restricted them were world-readable.
-find "$BACKUP_DIR" -name '*.sql.gz' -exec chmod 600 {} +
+find "$BACKUP_DIR" \( -name '*.sql.gz' -o -name '*.tar.gz' \) -exec chmod 600 {} +
 
 # Every database, not just POSTGRES_DB. Hi Coach keeps its data in prixes_coach
 # inside this same Postgres, and dumping only POSTGRES_DB left it out of every
@@ -65,6 +66,30 @@ for DB in $DBS; do
   fi
 done
 
+# ── MongoDB (Atlas) ──────────────────────────────────────────────────────────
+# The weekly menus, imported recipes and assistant drafts live in Atlas, whose
+# free tier keeps no backup of any kind. Export them with the nightly dumps, so
+# they are also inside the DigitalOcean backups of this droplet. The export runs
+# in the api container, which already holds pymongo and MONGO_URL: no credential
+# passes through this script.
+if $COMPOSE exec -T api sh -c 'test -n "$MONGO_URL"'; then
+  OUT="$BACKUP_DIR/mongo-prixes-$STAMP.tar.gz"
+  echo "== Exporting MongoDB to $OUT =="
+  # The manifest is written last: an export that died partway has none, and is
+  # removed instead of sitting here looking like a backup.
+  if $COMPOSE exec -T api python -c "$(cat scripts/mongo-backup.py)" export > "$OUT" \
+    && tar -xzOf "$OUT" manifest.json >/dev/null 2>&1; then
+    echo "== Done: $OUT ($(du -h "$OUT" | cut -f1)) =="
+    NEW_FILES="$NEW_FILES $OUT"
+  else
+    echo "== FAILED: MongoDB export, $OUT removed ==" >&2
+    rm -f "$OUT"
+    DUMP_STATUS=1
+  fi
+else
+  echo "== MongoDB: MONGO_URL not set — skipped =="
+fi
+
 # ── Off-site copy ────────────────────────────────────────────────────────────
 # Local dumps survive a bad migration or a DROP TABLE, but not the loss of this
 # host. Copy each dump to a remote as well, and *verify* it landed — an upload that
@@ -92,15 +117,15 @@ else
     fi
   done
   # Mirror the local retention window remotely (best-effort: never fail the run on it).
-  rclone delete "$OFFSITE_REMOTE" --min-age "${RETENTION_DAYS}d" --include '*.sql.gz' \
+  rclone delete "$OFFSITE_REMOTE" --min-age "${RETENTION_DAYS}d" --include '*.sql.gz' --include '*.tar.gz' \
     || echo "   (remote pruning skipped — non-fatal)"
 fi
 
 echo "== Pruning backups older than $RETENTION_DAYS days =="
-find "$BACKUP_DIR" -name '*.sql.gz' -mtime "+$RETENTION_DAYS" -print -delete
+find "$BACKUP_DIR" \( -name '*.sql.gz' -o -name '*.tar.gz' \) -mtime "+$RETENTION_DAYS" -print -delete
 
 echo "== Current backups =="
-ls -lh "$BACKUP_DIR"/*.sql.gz 2>/dev/null | tail -10
+ls -lht "$BACKUP_DIR"/*.sql.gz "$BACKUP_DIR"/*.tar.gz 2>/dev/null | head -10
 
 # Non-zero when a dump failed or the off-site copy did not happen, so cron mail /
 # the log makes the failure visible instead of leaving a half-protected backup

@@ -95,6 +95,27 @@ gunzip -c backups/prixes-20260916-030001.sql.gz   | docker exec -i prixes-platfo
 Avec une rétention de 14 jours, plus aucune sauvegarde de l'ancien format ne
 restera après le 2026-10-01.
 
+## Restauration de MongoDB (menus, recettes, brouillons)
+
+MongoDB Atlas en offre gratuite ne sauvegarde rien. `backup-db.sh` exporte donc
+chaque nuit la base documentaire dans `backups/mongo-prixes-<date>.tar.gz`, qui
+profite aussi des sauvegardes DigitalOcean du droplet.
+
+```bash
+cd /opt/prixes-platform
+./scripts/restore-mongo.sh backups/mongo-prixes-20260917-160900.tar.gz
+```
+
+Le script affiche le contenu de l'archive, demande `yes`, arrête `api`+`worker`,
+vide puis remplit chaque collection de l'archive, et redémarre les services même
+en cas d'échec. L'archive est entièrement lue et vérifiée **avant** de toucher à
+la base : un fichier tronqué est refusé sans rien modifier. Les index sont
+conservés (les collections sont vidées, pas supprimées).
+
+Testé le 2026-09-17 dans une base jetable : deux restaurations successives,
+documents identiques un à un à la base en service, types conservés (ObjectId,
+dates…).
+
 ## Scénario complet : déploiement cassé avec migration DB
 
 1. `./scripts/rollback-app.sh` — revient sur le code applicatif précédent.
@@ -113,8 +134,8 @@ restera après le 2026-10-01.
 - **Pas de copie hors serveur** tant que `OFFSITE_REMOTE` n'est pas configuré
   (voir l'en-tête de `backup-db.sh`) : les dumps restent sur le droplet qu'ils
   protègent, seule la sauvegarde DigitalOcean les met ailleurs.
-- Pas de sauvegarde de MongoDB Atlas (menus de la semaine, recettes importées,
-  brouillons de l'assistant) : l'offre gratuite M0 n'en propose pas.
+- MongoDB Atlas n'a **pas** de sauvegarde de son côté (offre gratuite M0) : seule
+  l'exportation quotidienne de `backup-db.sh` la protège.
 - Un seul niveau de rollback applicatif (`:previous`) — pas d'historique
   complet de versions. Pour ça, il faudrait tagger chaque image avec le SHA du
   commit git au lieu d'un simple `:previous`/`:latest` — pas fait pour
