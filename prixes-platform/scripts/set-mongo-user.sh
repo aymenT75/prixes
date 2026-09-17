@@ -4,6 +4,10 @@
 #
 #   ssh -t prixes-droplet /opt/prixes-platform/scripts/set-mongo-user.sh
 #
+# Or from Windows, straight from the clipboard, without pasting anything:
+#
+#   "prixes-app`n$(Get-Clipboard)" | ssh prixes-droplet /opt/prixes-platform/scripts/set-mongo-user.sh
+#
 # The password is typed at an invisible prompt. It never appears on a command
 # line, in the shell history, in a process listing or on screen: it travels
 # through environment variables and pipes only, and ends up in .env alone.
@@ -31,6 +35,12 @@ trap 'stty echo 2>/dev/null || true' EXIT
 read -r MONGO_NEW_PASS
 stty echo 2>/dev/null || true
 echo
+# Input piped from Windows (PowerShell, a clipboard) ends each line with \r\n: the
+# stray \r would become part of the user name and the password, and Atlas would
+# refuse credentials that look right on screen. PowerShell also puts an invisible
+# byte-order mark in front of the first line, that is, in front of the user name.
+MONGO_NEW_USER="$(printf '%s' "$MONGO_NEW_USER" | tr -d '\r' | sed '1s/^\xEF\xBB\xBF//')"
+MONGO_NEW_PASS="$(printf '%s' "$MONGO_NEW_PASS" | tr -d '\r')"
 [ -n "$MONGO_NEW_USER" ] && [ -n "$MONGO_NEW_PASS" ] || { echo "Empty user or password — nothing changed." >&2; exit 1; }
 export MONGO_NEW_USER MONGO_NEW_PASS ENV_FILE
 
