@@ -1,11 +1,14 @@
 #!/bin/sh
-# Dump the Postgres database to a timestamped, gzipped file on the host — outside
-# the Docker volume, so it survives `docker compose down -v` / droplet rebuilds.
-# Run from /opt/prixes-platform on the droplet (or wherever the prod compose files
-# live). Credentials are read from inside the `db` container's own environment —
-# this script never needs to know the password itself.
+# Dump every application database to timestamped, gzipped files on the host —
+# outside the Docker volume, so they survive `docker compose down -v` / droplet
+# rebuilds. Run from /opt/prixes-platform on the droplet (or wherever the prod
+# compose files live). Credentials are read from inside the `db` container's own
+# environment — this script never needs to know the password itself.
 #
 # Usage: ./scripts/backup-db.sh [retention_days]
+#
+# One file per database: prixes-<stamp>.sql.gz, prixes_coach-<stamp>.sql.gz, …
+# restore-db.sh reads the target database back out of that name.
 #
 # Off-site copy (optional but strongly recommended): set OFFSITE_REMOTE to an rclone
 # remote such as "b2:prixes-backups" or "spaces:prixes/backups" and every dump is
@@ -14,21 +17,53 @@
 # the database they protect, so losing the droplet loses both at once.
 set -eu
 
+# The dumps hold every user's email and password hash. Readable by root only.
+umask 077
+
 RETENTION_DAYS="${1:-14}"
 BACKUP_DIR="./backups"
 STAMP="$(date -u +%Y%m%d-%H%M%S)"
-OUT="$BACKUP_DIR/prixes-$STAMP.sql.gz"
 
 COMPOSE="docker compose -p prixes-platform -f docker-compose.yml -f docker-compose.prod.yml"
 
 mkdir -p "$BACKUP_DIR"
+chmod 700 "$BACKUP_DIR"
+# Dumps written before this script restricted them were world-readable.
+find "$BACKUP_DIR" -name '*.sql.gz' -exec chmod 600 {} +
 
-echo "== Dumping database to $OUT =="
-# Single-quoted so $POSTGRES_USER/$POSTGRES_DB expand inside the container, not here.
-$COMPOSE exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$OUT"
+# Every database, not just POSTGRES_DB. Hi Coach keeps its data in prixes_coach
+# inside this same Postgres, and dumping only POSTGRES_DB left it out of every
+# backup without a single warning. Listing them here means the next app to join
+# the server is covered the day it arrives.
+DBS="$(echo "select datname from pg_database where not datistemplate and datname <> 'postgres' order by datname" \
+  | $COMPOSE exec -T db sh -c 'psql -U "$POSTGRES_USER" -d postgres -t -A')"
 
-SIZE=$(du -h "$OUT" | cut -f1)
-echo "== Done: $OUT ($SIZE) =="
+DUMP_STATUS=0
+NEW_FILES=""
+
+for DB in $DBS; do
+  case "$DB" in
+    *[!a-z0-9_]*) echo "== Skipping database with an unexpected name: $DB ==" >&2; DUMP_STATUS=1; continue ;;
+  esac
+  OUT="$BACKUP_DIR/$DB-$STAMP.sql.gz"
+  echo "== Dumping $DB to $OUT =="
+  # --clean --if-exists writes a DROP before every CREATE, so the dump can replace
+  # a live database. Without it, restoring over the running data collides with
+  # every existing table — which is what a real incident looks like.
+  $COMPOSE exec -T db sh -c "pg_dump -U \"\$POSTGRES_USER\" --clean --if-exists \"$DB\"" | gzip > "$OUT"
+
+  # sh has no pipefail: a pg_dump that dies halfway still leaves a valid, smaller
+  # gzip behind, and it would sit in this folder looking like a backup. pg_dump
+  # writes this line last, only when it finished.
+  if gunzip -c "$OUT" | tail -n 5 | grep -q "PostgreSQL database dump complete"; then
+    echo "== Done: $OUT ($(du -h "$OUT" | cut -f1)) =="
+    NEW_FILES="$NEW_FILES $OUT"
+  else
+    echo "== FAILED: $OUT is incomplete, removed ==" >&2
+    rm -f "$OUT"
+    DUMP_STATUS=1
+  fi
+done
 
 # ── Off-site copy ────────────────────────────────────────────────────────────
 # Local dumps survive a bad migration or a DROP TABLE, but not the loss of this
@@ -43,26 +78,31 @@ if [ -z "$OFFSITE_REMOTE" ]; then
 elif ! command -v rclone >/dev/null 2>&1; then
   echo "== Off-site copy: FAILED — rclone is not installed ==" >&2
   OFFSITE_STATUS=1
-elif ! rclone copy "$OUT" "$OFFSITE_REMOTE" --no-traverse; then
-  echo "== Off-site copy: FAILED — rclone could not upload $OUT ==" >&2
-  OFFSITE_STATUS=1
-elif ! rclone lsf "$OFFSITE_REMOTE/$(basename "$OUT")" >/dev/null 2>&1; then
-  # rclone exited 0 but the object is not there: treat as a failure, never as success.
-  echo "== Off-site copy: FAILED — upload reported OK but the object is missing ==" >&2
-  OFFSITE_STATUS=1
 else
-  echo "== Off-site copy verified: $OFFSITE_REMOTE/$(basename "$OUT") =="
+  for OUT in $NEW_FILES; do
+    if ! rclone copy "$OUT" "$OFFSITE_REMOTE" --no-traverse; then
+      echo "== Off-site copy: FAILED — rclone could not upload $OUT ==" >&2
+      OFFSITE_STATUS=1
+    elif ! rclone lsf "$OFFSITE_REMOTE/$(basename "$OUT")" >/dev/null 2>&1; then
+      # rclone exited 0 but the object is not there: a failure, never a success.
+      echo "== Off-site copy: FAILED — upload reported OK but $(basename "$OUT") is missing ==" >&2
+      OFFSITE_STATUS=1
+    else
+      echo "== Off-site copy verified: $OFFSITE_REMOTE/$(basename "$OUT") =="
+    fi
+  done
   # Mirror the local retention window remotely (best-effort: never fail the run on it).
-  rclone delete "$OFFSITE_REMOTE" --min-age "${RETENTION_DAYS}d" --include 'prixes-*.sql.gz' \
+  rclone delete "$OFFSITE_REMOTE" --min-age "${RETENTION_DAYS}d" --include '*.sql.gz' \
     || echo "   (remote pruning skipped — non-fatal)"
 fi
 
 echo "== Pruning backups older than $RETENTION_DAYS days =="
-find "$BACKUP_DIR" -name 'prixes-*.sql.gz' -mtime "+$RETENTION_DAYS" -print -delete
+find "$BACKUP_DIR" -name '*.sql.gz' -mtime "+$RETENTION_DAYS" -print -delete
 
 echo "== Current backups =="
-ls -lh "$BACKUP_DIR"/prixes-*.sql.gz 2>/dev/null | tail -10
+ls -lh "$BACKUP_DIR"/*.sql.gz 2>/dev/null | tail -10
 
-# Non-zero when the off-site copy did not happen, so cron mail / the log makes the
-# failure visible instead of leaving a half-protected backup looking healthy.
-exit "$OFFSITE_STATUS"
+# Non-zero when a dump failed or the off-site copy did not happen, so cron mail /
+# the log makes the failure visible instead of leaving a half-protected backup
+# looking healthy.
+[ "$DUMP_STATUS" -eq 0 ] && [ "$OFFSITE_STATUS" -eq 0 ]
