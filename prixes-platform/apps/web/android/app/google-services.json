@@ -7,12 +7,73 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:469759036890:android:9f43b10b5ac83cb1ac04e3",
+        "android_client_info": {
+          "package_name": "software.omnilink.hicoach"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "469759036890-s2itsu9j7qv8p6o3156h1imeulcm3otm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "software.omnilink.hicoach",
+            "certificate_hash": "fdf685145e8d547b361bf79b124df88d173316ce"
+          }
+        },
+        {
+          "client_id": "469759036890-lmgmv9d3kfu3tomnmfp26qe17rgsjav5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBgRh1NSNe1yYhizIHd0F_1TSBQdLtG6WA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "469759036890-lmgmv9d3kfu3tomnmfp26qe17rgsjav5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:469759036890:android:a9ec092e41fd79beac04e3",
         "android_client_info": {
           "package_name": "software.omnilink.prixes"
         }
       },
       "oauth_client": [
+        {
+          "client_id": "469759036890-9d3trjdv6mpkj8rno6omgpsctbflk6hb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "software.omnilink.prixes",
+            "certificate_hash": "99610e8d8fc93e3847008f540db3fad628d02db1"
+          }
+        },
+        {
+          "client_id": "469759036890-cfmr58qqemcd21hm19a7s9f8tenbgdr5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "software.omnilink.prixes",
+            "certificate_hash": "226ecf82495a26b6d084a9337844afda3a0524cd"
+          }
+        },
+        {
+          "client_id": "469759036890-en7c3ehtfa6asit2qduc0crul4epuetk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "software.omnilink.prixes",
+            "certificate_hash": "fdf685145e8d547b361bf79b124df88d173316ce"
+          }
+        },
         {
           "client_id": "469759036890-lmgmv9d3kfu3tomnmfp26qe17rgsjav5.apps.googleusercontent.com",
           "client_type": 3
