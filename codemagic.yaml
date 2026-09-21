@@ -1,0 +1,94 @@
+# Codemagic — builds the Prixes iPhone app on a cloud Mac and sends it to TestFlight.
+# There is no Mac on the team: this is the only way the iOS app gets compiled.
+#
+# One-time setup in Codemagic (team settings), see prixes-platform/apps/web/MOBILE.md:
+#   - Integrations → App Store Connect → an API key named "Prixes ASC"
+#   - Code signing identities → an "Apple Distribution" certificate
+#   - Environment variables → group "firebase_ios", variable GOOGLE_SERVICE_INFO_PLIST
+#     = the base64 of GoogleService-Info.plist (Firebase console → iOS app).
+#
+# Started by hand from the Codemagic dashboard: no trigger, so a push never
+# spends build minutes by accident.
+
+workflows:
+  ios-testflight:
+    name: Prixes iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    working_directory: prixes-platform/apps/web
+
+    integrations:
+      app_store_connect: Prixes ASC
+
+    environment:
+      node: 22
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: software.omnilink.prixes
+      groups:
+        - firebase_ios
+
+    scripts:
+      - name: Install dependencies
+        script: npm ci
+
+      - name: Firebase configuration for iOS
+        script: |
+          set -e
+          PLIST=ios/App/App/GoogleService-Info.plist
+          if [ -z "$GOOGLE_SERVICE_INFO_PLIST" ]; then
+            echo "GOOGLE_SERVICE_INFO_PLIST is missing (group firebase_ios). See MOBILE.md." >&2
+            exit 1
+          fi
+          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > "$PLIST"
+          plutil -lint "$PLIST"
+
+          # A plist downloaded for another app would build fine and then crash or
+          # fail every sign-in on the phone: refuse it here instead.
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :BUNDLE_ID" "$PLIST")
+          if [ "$BUNDLE_ID" != "software.omnilink.prixes" ]; then
+            echo "GoogleService-Info.plist is for $BUNDLE_ID, not software.omnilink.prixes." >&2
+            exit 1
+          fi
+
+          # Google sign-in returns to the app through a URL scheme that only this
+          # plist knows (REVERSED_CLIENT_ID): register it in Info.plist.
+          REVERSED=$(/usr/libexec/PlistBuddy -c "Print :REVERSED_CLIENT_ID" "$PLIST")
+          INFO=ios/App/App/Info.plist
+          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$INFO" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$INFO"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$INFO"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$INFO"
+          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string $REVERSED" "$INFO"
+          echo "Google sign-in URL scheme registered."
+
+      - name: Build the web app and copy it into iOS
+        script: |
+          npm run build:mobile
+          npx cap sync ios
+
+      - name: Signing profiles
+        script: xcode-project use-profiles
+
+      - name: Build number
+        # TestFlight refuses two uploads with the same build number; Codemagic's
+        # counter only goes up.
+        script: |
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/g" \
+            ios/App/App.xcodeproj/project.pbxproj
+          echo "Build number: $BUILD_NUMBER"
+
+      - name: Build the signed app (.ipa)
+        script: xcode-project build-ipa --workspace ios/App/App.xcworkspace --scheme App
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - prixes-platform/apps/web/build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

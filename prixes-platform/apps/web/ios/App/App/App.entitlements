@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Price-alert notifications (APNs, relayed by Firebase Cloud Messaging). -->
+	<key>aps-environment</key>
+	<string>production</string>
+	<!-- Sign in with Apple, required by the App Store as soon as Google sign-in is offered. -->
+	<key>com.apple.developer.applesignin</key>
+	<array>
+		<string>Default</string>
+	</array>
+</dict>
+</plist>
