@@ -131,7 +131,7 @@ def parse_ingredient(text: str) -> AiLine | None:
     return AiLine(
         product_name=name[:120],
         amount=float(amount),
-        unit=unit,  # type: ignore[arg-type]  # narrowed by _UNIT_MAP's values
+        unit=unit,
         category="épicerie salée",  # the aisle is cosmetic; resolution decides the product
         optional=False,
     )

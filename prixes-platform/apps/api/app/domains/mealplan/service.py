@@ -293,7 +293,9 @@ async def generate(
                 upsert=True,
                 return_document=ReturnDocument.AFTER,
             )
-            doc_id = str(stored["_id"])
+            # upsert + AFTER always returns the document; the driver's type says Optional.
+            if stored is not None:
+                doc_id = str(stored["_id"])
         except PyMongoError as exc:
             # The menu is still worth showing even if we could not save it.
             logger.warning(f"Meal plan not stored: {exc}")

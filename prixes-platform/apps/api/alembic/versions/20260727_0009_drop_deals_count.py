@@ -7,6 +7,8 @@ Create Date: 2026-07-27
 from __future__ import annotations
 
 import sqlalchemy as sa
+from sqlalchemy import inspect
+
 from alembic import op
 
 revision = "0009_drop_deals_count"
@@ -16,7 +18,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.drop_column("users", "deals_count")
+    # Idempotent, like 0002-0008: on a fresh database 0001 create_all() builds the
+    # users table from today's model, which never had deals_count, so the DROP
+    # failed and every install from scratch (CI included) stopped here.
+    columns = {c["name"] for c in inspect(op.get_bind()).get_columns("users")}
+    if "deals_count" in columns:
+        op.drop_column("users", "deals_count")
 
 
 def downgrade() -> None:
