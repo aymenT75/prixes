@@ -30,24 +30,16 @@ jobs:
       - run: npm run build:mobile
       - run: npx cap sync ios
 
-      # The real GoogleService-Info.plist is not in the repository (Codemagic writes
-      # it from a secret). Xcode only needs a file there to copy; a placeholder with
-      # the right bundle id is enough to compile.
-      - name: Placeholder Firebase config
+      # Same check as codemagic.yaml: the plist is for this app, and the Google
+      # sign-in URL scheme in Info.plist is its REVERSED_CLIENT_ID.
+      - name: Check the Firebase configuration
         run: |
-          cat > ios/App/App/GoogleService-Info.plist <<'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>BUNDLE_ID</key><string>software.omnilink.prixes</string>
-            <key>PROJECT_ID</key><string>prixes-b07fb</string>
-            <key>GOOGLE_APP_ID</key><string>1:000000000000:ios:0000000000000000000000</string>
-            <key>GCM_SENDER_ID</key><string>000000000000</string>
-            <key>API_KEY</key><string>placeholder</string>
-          </dict>
-          </plist>
-          PLIST
+          PLIST=ios/App/App/GoogleService-Info.plist
+          plutil -lint "$PLIST"
+          test "$(/usr/libexec/PlistBuddy -c 'Print :BUNDLE_ID' "$PLIST")" = software.omnilink.prixes
+          test "$(/usr/libexec/PlistBuddy -c 'Print :REVERSED_CLIENT_ID' "$PLIST")" = \
+               "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleURLTypes:0:CFBundleURLSchemes:0' ios/App/App/Info.plist)"
+          echo "Firebase config and Google sign-in URL scheme match."
 
       - name: Build for the iOS simulator (unsigned)
         working-directory: prixes-platform/apps/web/ios/App

@@ -11,6 +11,3 @@ capacitor-cordova-ios-plugins
 # Generated Config files
 App/App/capacitor.config.json
 App/App/config.xml
-
-# Written by the Codemagic build from the GOOGLE_SERVICE_INFO_PLIST variable
-App/App/GoogleService-Info.plist

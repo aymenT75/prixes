@@ -4,8 +4,6 @@
 # One-time setup in Codemagic (team settings), see prixes-platform/apps/web/MOBILE.md:
 #   - Integrations → App Store Connect → an API key named "Prixes ASC"
 #   - Code signing identities → an "Apple Distribution" certificate
-#   - Environment variables → group "firebase_ios", variable GOOGLE_SERVICE_INFO_PLIST
-#     = the base64 of GoogleService-Info.plist (Firebase console → iOS app).
 #
 # Started by hand from the Codemagic dashboard: no trigger, so a push never
 # spends build minutes by accident.
@@ -27,42 +25,32 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: software.omnilink.prixes
-      groups:
-        - firebase_ios
 
     scripts:
       - name: Install dependencies
         script: npm ci
 
-      - name: Firebase configuration for iOS
+      - name: Check the Firebase configuration
+        # GoogleService-Info.plist is in the repository, like google-services.json
+        # for Android: Firebase client config is not a secret. A plist for another
+        # app, or a URL scheme out of step with it, would build fine and then crash
+        # or break every Google sign-in on the phone: stop here instead.
         script: |
           set -e
           PLIST=ios/App/App/GoogleService-Info.plist
-          if [ -z "$GOOGLE_SERVICE_INFO_PLIST" ]; then
-            echo "GOOGLE_SERVICE_INFO_PLIST is missing (group firebase_ios). See MOBILE.md." >&2
-            exit 1
-          fi
-          echo "$GOOGLE_SERVICE_INFO_PLIST" | base64 --decode > "$PLIST"
           plutil -lint "$PLIST"
-
-          # A plist downloaded for another app would build fine and then crash or
-          # fail every sign-in on the phone: refuse it here instead.
           BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :BUNDLE_ID" "$PLIST")
           if [ "$BUNDLE_ID" != "software.omnilink.prixes" ]; then
             echo "GoogleService-Info.plist is for $BUNDLE_ID, not software.omnilink.prixes." >&2
             exit 1
           fi
-
-          # Google sign-in returns to the app through a URL scheme that only this
-          # plist knows (REVERSED_CLIENT_ID): register it in Info.plist.
           REVERSED=$(/usr/libexec/PlistBuddy -c "Print :REVERSED_CLIENT_ID" "$PLIST")
-          INFO=ios/App/App/Info.plist
-          /usr/libexec/PlistBuddy -c "Delete :CFBundleURLTypes" "$INFO" 2>/dev/null || true
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$INFO"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$INFO"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$INFO"
-          /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string $REVERSED" "$INFO"
-          echo "Google sign-in URL scheme registered."
+          SCHEME=$(/usr/libexec/PlistBuddy -c "Print :CFBundleURLTypes:0:CFBundleURLSchemes:0" ios/App/App/Info.plist)
+          if [ "$SCHEME" != "$REVERSED" ]; then
+            echo "Info.plist URL scheme ($SCHEME) does not match REVERSED_CLIENT_ID ($REVERSED)." >&2
+            exit 1
+          fi
+          echo "Firebase config and Google sign-in URL scheme match."
 
       - name: Build the web app and copy it into iOS
         script: |

@@ -49,6 +49,17 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- Google sign-in comes back to the app through this scheme: the
+	     REVERSED_CLIENT_ID of GoogleService-Info.plist. Change both together. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.469759036890-q4lhppp2vh3r0omonvods4vdk443r26f</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

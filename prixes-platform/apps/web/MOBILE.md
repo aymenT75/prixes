@@ -22,7 +22,7 @@ App id: `software.omnilink.prixes` · App name: `Prixes`
   - Add an **Android app** (package `software.omnilink.prixes`) → download
     `google-services.json` → place in `android/app/`.
   - Add an **iOS app** (bundle `software.omnilink.prixes`) → download
-    `GoogleService-Info.plist` → add to `ios/App/App/` in Xcode.
+    `GoogleService-Info.plist` → `ios/App/App/` (done, committed).
   - Cloud Messaging → upload the **APNs auth key** (`.p8`) for iOS push.
   - Create a **service account** (Project settings → Service accounts → generate key)
     for the backend to send FCM (see backend section).
@@ -90,12 +90,26 @@ Hand-made changes that a regeneration would lose — redo them if `ios/` is ever
   `CODE_SIGN_ENTITLEMENTS`; `GoogleService-Info.plist` in the Resources phase;
   `TARGETED_DEVICE_FAMILY = 1` (iPhone only: no iPad screenshots or iPad review).
 - `Info.plist`: permission texts, `ITSAppUsesNonExemptEncryption = false`,
-  `UIBackgroundModes = remote-notification`.
+  `UIBackgroundModes = remote-notification`, and the Google sign-in URL scheme
+  (`CFBundleURLTypes` = the plist's `REVERSED_CLIENT_ID` — change both together).
+- `IPHONEOS_DEPLOYMENT_TARGET` and the Podfile `platform` at **15.5**, not 15.0: Google
+  ML Kit 8 (the scanner) refuses anything lower and `pod install` fails.
+
+`ios/App/App/GoogleService-Info.plist` (Firebase iOS app
+`1:469759036890:ios:fd13f63cc0e247efac04e3`) is **in the repository**, like
+`google-services.json` for Android: Firebase client configuration is not a secret, and
+its API key only works for this bundle id.
+
+### Compile check without an Apple account
+`.github/workflows/ios-build.yml` builds the app for the simulator, unsigned, on a
+GitHub macOS runner (free: the repository is public) on every push to `main` touching
+the app. It proves pods, plugins and Swift compile; only signing, real push and Sign in
+with Apple are left for the first Codemagic build.
 
 ### Building iOS without a Mac: Codemagic
-`codemagic.yaml` (repo root) builds on a cloud Mac and uploads to TestFlight. It writes
-`GoogleService-Info.plist` from a variable, checks it belongs to this app, registers the
-Google sign-in URL scheme, and numbers each build. Started by hand from the dashboard.
+`codemagic.yaml` (repo root) builds on a cloud Mac and uploads to TestFlight. It checks
+the Firebase plist belongs to this app and matches the URL scheme, and numbers each
+build. Started by hand from the dashboard.
 
 One-time setup, in this order:
 
@@ -106,13 +120,11 @@ One-time setup, in this order:
    Messaging → Apple app configuration.
 4. **App Store Connect** → create the app with that bundle id; **Users and Access →
    Integrations** → an API key (role App Manager) — keep the `.p8`, it downloads once.
-5. **Firebase** → add an iOS app `software.omnilink.prixes` → download
-   `GoogleService-Info.plist`; Authentication → enable **Apple**.
+5. **Firebase** → ~~add an iOS app~~ (done 2026-09-21, plist committed);
+   Authentication → enable **Apple**.
 6. **Codemagic** → add the repo; Team settings → Integrations → App Store Connect → the
    API key, **named `Prixes ASC`**; Code signing identities → generate an *Apple
-   Distribution* certificate; Environment variables → group **`firebase_ios`**, secure
-   variable `GOOGLE_SERVICE_INFO_PLIST` = the base64 of the plist
-   (PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("GoogleService-Info.plist"))`).
+   Distribution* certificate. No environment variable is needed.
 7. Start the **ios-testflight** workflow. The build lands in TestFlight about 15 minutes
    after the upload, once Apple has processed it.
 
