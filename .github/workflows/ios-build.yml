@@ -1,0 +1,64 @@
+name: iOS build
+
+# Compiles the iPhone app on a GitHub macOS runner, unsigned, for the simulator.
+# It needs no Apple Developer account: it proves the CocoaPods project, the
+# plugins and AppDelegate.swift build, so the first signed build on Codemagic
+# (codemagic.yaml) is not also the first time any of this is compiled.
+# Free here because the repository is public.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "prixes-platform/apps/web/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+jobs:
+  ios-simulator:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: prixes-platform/apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build:mobile
+      - run: npx cap sync ios
+
+      # The real GoogleService-Info.plist is not in the repository (Codemagic writes
+      # it from a secret). Xcode only needs a file there to copy; a placeholder with
+      # the right bundle id is enough to compile.
+      - name: Placeholder Firebase config
+        run: |
+          cat > ios/App/App/GoogleService-Info.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>BUNDLE_ID</key><string>software.omnilink.prixes</string>
+            <key>PROJECT_ID</key><string>prixes-b07fb</string>
+            <key>GOOGLE_APP_ID</key><string>1:000000000000:ios:0000000000000000000000</string>
+            <key>GCM_SENDER_ID</key><string>000000000000</string>
+            <key>API_KEY</key><string>placeholder</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Build for the iOS simulator (unsigned)
+        working-directory: prixes-platform/apps/web/ios/App
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            build > build.log 2>&1 || { grep -E "error:|BUILD FAILED" build.log | head -n 40; tail -n 30 build.log; exit 1; }
+          tail -n 5 build.log
