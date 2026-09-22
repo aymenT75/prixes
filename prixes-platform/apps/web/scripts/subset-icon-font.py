@@ -43,6 +43,28 @@ def fetch(url: str) -> bytes:
         return r.read()
 
 
+def ligature_targets(font) -> dict[str, str]:
+    """Map every ligature string ("location_on") to the glyph it draws.
+
+    Glyph names are not icon names: many icons are aliases of another glyph
+    (location_on draws the glyph "place"). Matching literals against glyph names
+    silently dropped every alias, and the phone then painted the raw word
+    "LOCATION_ON" across the layout. Follow the font's own ligature table instead.
+    """
+    cmap = font.getBestCmap()
+    by_glyph = {glyph: chr(code) for code, glyph in cmap.items()}
+    targets: dict[str, str] = {}
+    for lookup in font["GSUB"].table.LookupList.Lookup:
+        for sub in lookup.SubTable:
+            table = getattr(sub, "ExtSubTable", sub)
+            for first, ligs in getattr(table, "ligatures", {}).items():
+                for lig in ligs:
+                    parts = [first, *lig.Component]
+                    if all(p in by_glyph for p in parts):
+                        targets["".join(by_glyph[p] for p in parts)] = lig.LigGlyph
+    return targets
+
+
 def main() -> int:
     from fontTools.ttLib import TTFont
 
@@ -54,14 +76,16 @@ def main() -> int:
 
     full = ROOT / "public" / "fonts" / ".material-symbols-full.woff2"
     full.write_bytes(fetch(m.group(1)))
-    glyphs = set(TTFont(full).getGlyphOrder())
+    targets = ligature_targets(TTFont(full))
 
     literals: set[str] = set()
     for path in (ROOT / "src").rglob("*"):
         if path.suffix in {".ts", ".tsx"}:
             literals |= {g.group(1) for g in LITERAL.finditer(path.read_text(encoding="utf-8"))}
 
-    keep = sorted(literals & glyphs)
+    icons = sorted(literals & targets.keys())
+    keep = sorted({targets[name] for name in icons})
+    (ROOT / "public" / "fonts" / "icons.txt").write_text("\n".join(icons) + "\n", encoding="utf-8")
     subprocess.run(
         [
             sys.executable, "-m", "fontTools.subset", str(full),
@@ -79,7 +103,7 @@ def main() -> int:
         check=True,
     )
     full.unlink()
-    print(f"{len(keep)} ligatures kept -> {OUT.relative_to(ROOT)} ({OUT.stat().st_size / 1024:.0f} KB)")
+    print(f"{len(icons)} icon names, {len(keep)} glyphs kept -> {OUT.relative_to(ROOT)} ({OUT.stat().st_size / 1024:.0f} KB)")
     return 0
 
 
