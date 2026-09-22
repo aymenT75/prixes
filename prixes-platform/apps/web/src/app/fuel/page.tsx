@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
@@ -23,11 +23,19 @@ export default function FuelPage() {
   const [fuelType, setFuelType] = useState("gazole");
   const [geoError, setGeoError] = useState<string | null>(null);
 
+  // A refusal that arrives after a later attempt has already succeeded must not
+  // put the warning back: on Android the permission dialog keeps the first call
+  // pending, so the two resolve out of order.
+  const attempt = useRef(0);
+
   async function locate() {
+    const mine = ++attempt.current;
     setGeoError(null);
     try {
-      setCoords(await getCurrentPosition());
+      const position = await getCurrentPosition();
+      if (mine === attempt.current) setCoords(position);
     } catch (e) {
+      if (mine !== attempt.current) return;
       setGeoError(
         e instanceof Error && e.message === "unsupported"
           ? "Géolocalisation non disponible."
@@ -94,7 +102,7 @@ export default function FuelPage() {
           <Icon name="my_location" className="text-[18px]" /> Trouver les stations proches
         </button>
       )}
-      {geoError && (
+      {geoError && !coords && (
         <div className="mb-4 flex items-center gap-2 rounded-xl bg-warning-soft p-3 text-label-md text-secondary">
           <Icon name="warning" className="text-[18px]" /> {geoError}
         </div>
