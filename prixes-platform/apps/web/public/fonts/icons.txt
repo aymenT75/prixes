@@ -110,6 +110,7 @@ share
 shield
 shopping_cart
 show_chart
+sort
 star
 stop
 storage
