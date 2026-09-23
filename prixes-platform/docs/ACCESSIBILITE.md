@@ -1,7 +1,7 @@
 # Accessibilité de Prixes — audit et état réel
 
 **Référentiel** : WCAG 2.1 niveau AA (base du RGAA).
-**Date de l'audit** : 23 septembre 2026 · branche `a11y-audit` · commits `79e50c1` et `b8ecc11`.
+**Date de l'audit** : 23 septembre 2026 · branche `a11y-audit` · commits `79e50c1` et `135f1d9`.
 **Périmètre** : l'application web / PWA, qui est aussi le contenu de l'app Android
 (l'APK Capacitor embarque cet export statique). Rien n'a été déployé ni publié.
 
@@ -74,7 +74,7 @@ Les scripts sont dans le dossier de travail de la session (`axe-run.mjs`,
 
 Pour les pastilles, les couleurs officielles sont **conservées** : c'est l'encre
 qui est désormais choisie d'après la luminance du fond (`readableOn()` dans
-`lib/format.ts`). Toutes passent au-dessus de 4,5:1 — sauf une, voir §4.
+`lib/format.ts`). Toutes passent au-dessus de 4,5:1 (voir §4.1 pour le cas du rouge E).
 
 ### 3.2 Utilisable
 
@@ -106,7 +106,7 @@ sa recherche et **rien ne lui disait que la liste avait changé**.
 
 ---
 
-## 4. Ce qui reste — non corrigé, assumé
+## 4. Second passage, et ce qui reste
 
 ### 4.1 ~~Rouge officiel du Nutri-Score E~~ — corrigé le 23/09
 
