@@ -228,16 +228,23 @@ function ListRow({
       <div className="flex flex-shrink-0 items-center gap-1">
         <button
           onClick={() => onQty(Math.max(1, item.quantity - 1))}
-          aria-label="Moins"
-          className="grid h-7 w-7 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90"
+          // A list read line by line gives "Moins" a dozen times otherwise, with
+          // nothing to say which product it belongs to.
+          aria-label={`Retirer un ${label}`}
+          className="grid h-9 w-9 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90"
         >
           <Icon name="remove" className="text-[16px]" />
         </button>
-        <span className="w-6 text-center text-label-lg text-on-surface">{item.quantity}</span>
+        {/* aria-label on a bare <span> is ignored by most screen readers, so the
+            word is real (visually hidden) text instead. */}
+        <span className="w-6 text-center text-label-lg text-on-surface">
+          <span className="sr-only">Quantité : </span>
+          {item.quantity}
+        </span>
         <button
           onClick={() => onQty(Math.min(99, item.quantity + 1))}
-          aria-label="Plus"
-          className="grid h-7 w-7 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90"
+          aria-label={`Ajouter un ${label}`}
+          className="grid h-9 w-9 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90"
         >
           <Icon name="add" className="text-[16px]" />
         </button>

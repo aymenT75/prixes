@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
@@ -23,11 +23,20 @@ export default function StoresPage() {
   const [suggestions, setSuggestions] = useState<GeocodeHit[]>([]);
   const [searchingAddress, setSearchingAddress] = useState(false);
 
+  // Same out-of-order refusal as on the fuel page: the Android permission dialog
+  // leaves the first call pending, so a late rejection must not resurrect the
+  // warning once a later attempt has given us a position.
+  const attempt = useRef(0);
+
   async function locate() {
+    const mine = ++attempt.current;
     setGeoError(null);
     try {
-      setCoords(await getCurrentPosition());
+      const position = await getCurrentPosition();
+      if (mine === attempt.current) setCoords(position);
+      return;
     } catch (e) {
+      if (mine !== attempt.current) return;
       setGeoError(
         e instanceof Error && e.message === "unsupported"
           ? "Géolocalisation non disponible."
@@ -111,7 +120,7 @@ export default function StoresPage() {
           )}
         </>
       )}
-      {geoError && (
+      {geoError && !coords && (
         <div className="mb-4 flex items-center gap-2 rounded-xl bg-warning-soft p-3 text-label-md text-secondary">
           <Icon name="warning" className="text-[18px]" /> {geoError}
         </div>

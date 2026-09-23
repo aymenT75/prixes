@@ -110,8 +110,13 @@ function AlertRow({
         triggered ? "border-2 border-primary bg-primary-container/20" : ""
       }`}
     >
+      {/* Decorative duplicate of the titled link below: keep it out of the
+          screen-reader and keyboard order rather than announcing a second,
+          nameless link to the same product. */}
       <Link
         href={`/courses/detail?barcode=${alert.barcode}`}
+        aria-hidden="true"
+        tabIndex={-1}
         className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white"
       >
         {alert.image_url ? (

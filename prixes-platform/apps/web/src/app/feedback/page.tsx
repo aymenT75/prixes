@@ -67,7 +67,7 @@ export default function FeedbackPage() {
           <legend className="mb-2 text-label-lg text-on-surface-variant">
             Votre note (facultatif)
           </legend>
-          <div className="flex gap-2" role="radiogroup" aria-label="Note sur 5">
+          <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Note sur 5">
             {[1, 2, 3, 4, 5].map((n) => (
               <button
                 key={n}

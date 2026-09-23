@@ -96,13 +96,40 @@ export const temperatureColor: Record<Temperature, string> = {
   cold: "#2563eb", // blue
 };
 
+// Same three signals, lightened for the dark surface: the light-mode red read at
+// 3.58:1 on #161b22 and the blue at 3.35:1 (WCAG 1.4.3 asks 4.5:1).
+export const temperatureColorDark: Record<Temperature, string> = {
+  hot: "#f87171",
+  warm: "#fbbf24",
+  cold: "#60a5fa",
+};
+
 // Nutri/Eco score colour (a..e), ported from the original badge logic.
+// The Nutri-Score / Eco-Score / NOVA palettes are official brand colours, so the
+// background stays put — but white on the light ones lands at 2.3:1 to 4.5:1
+// (WCAG 1.4.3 asks 4.5:1 for this size). Pick the ink instead of the paper.
+const INK_DARK = "#1b1b1f";
+export function readableOn(background: string): string {
+  const hex = background.replace("#", "");
+  const chan = [0, 2, 4].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  const l = 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2];
+  const withWhite = 1.05 / (l + 0.05);
+  const withDark = (l + 0.05) / 0.0637; // luminance of INK_DARK, precomputed
+  return withWhite >= withDark ? "#ffffff" : INK_DARK;
+}
+
 export const scoreColor: Record<string, string> = {
   a: "#038141",
   b: "#85bb2f",
   c: "#fecb02",
   d: "#ee8100",
-  e: "#e63e11",
+  // Nutri-Score E, assombri de 6 % par rapport au rouge officiel #e63e11 : à la
+  // taille des pastilles, ni le blanc (4,15:1) ni l'encre sombre (4,14:1) ne
+  // passaient les 4,5:1 exigés. Teinte inchangée à l'œil, 4,63:1 avec du blanc.
+  e: "#d83a10",
 };
 
 // Plain-language nutritional hint per Nutri-Score, spoken/announced so the meaning

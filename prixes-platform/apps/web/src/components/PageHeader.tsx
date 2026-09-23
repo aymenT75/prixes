@@ -81,6 +81,7 @@ export function PageHeader({
         {user ? (
           <Link
             href="/account"
+            aria-label="Mon compte"
             className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-full border-2 border-primary-container/20 bg-primary text-label-md font-bold text-on-primary"
           >
             {user.initials}

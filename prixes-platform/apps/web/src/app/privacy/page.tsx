@@ -40,7 +40,7 @@ export default function PrivacyPage() {
       <Section icon="badge" title="Qui gère vos données">
         <p>
           Prixes, joignable à{" "}
-          <a href="mailto:contact@prixes.app" className="text-primary underline-offset-2 hover:underline">
+          <a href="mailto:contact@prixes.app" className="text-primary underline underline-offset-2">
             contact@prixes.app
           </a>{" "}
           pour toute question sur vos données ou pour exercer vos droits.
@@ -120,7 +120,7 @@ export default function PrivacyPage() {
         <p>
           Le détail de chaque source, avec un lien vers le site d&apos;origine, est sur la
           page{" "}
-          <Link href="/sources" className="text-primary underline-offset-2 hover:underline">
+          <Link href="/sources" className="text-primary underline underline-offset-2">
             Sources des données
           </Link>
           .
@@ -132,7 +132,7 @@ export default function PrivacyPage() {
         <ul className="ml-4 list-disc space-y-1.5">
           <li>
             <strong className="text-on-surface">Exporter</strong> toutes vos données —
-            depuis <Link href="/account" className="text-primary underline-offset-2 hover:underline">votre compte</Link>.
+            depuis <Link href="/account" className="text-primary underline underline-offset-2">votre compte</Link>.
           </li>
           <li>
             <strong className="text-on-surface">Supprimer</strong> votre compte et vos
@@ -141,7 +141,7 @@ export default function PrivacyPage() {
           <li>
             <strong className="text-on-surface">Nous contacter</strong> pour toute
             question, rectification, ou opposition — {" "}
-            <a href="mailto:contact@prixes.app" className="text-primary underline-offset-2 hover:underline">
+            <a href="mailto:contact@prixes.app" className="text-primary underline underline-offset-2">
               contact@prixes.app
             </a>.
           </li>
@@ -207,7 +207,7 @@ export default function PrivacyPage() {
         </ul>
         <p>
           Sans accès à l&apos;application, écrivez à{" "}
-          <a href="mailto:contact@prixes.app?subject=Suppression%20compte%20Hi%20Coach" className="text-primary underline-offset-2 hover:underline">
+          <a href="mailto:contact@prixes.app?subject=Suppression%20compte%20Hi%20Coach" className="text-primary underline underline-offset-2">
             contact@prixes.app
           </a>{" "}
           depuis l&apos;adresse de votre compte, objet « Suppression compte Hi Coach ». La

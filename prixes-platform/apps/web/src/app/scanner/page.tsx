@@ -355,17 +355,20 @@ export default function ScannerPage() {
             setTimeout(() => setMessage(null), 3000);
           }
         }}
-        className="flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container-lowest px-4 py-2.5 shadow-card focus-within:border-primary"
+        // A pill with a fixed-width button stops fitting at the largest text
+        // setting: the field, the icon and "Chercher" overflowed a 360 px screen.
+        className="flex flex-wrap items-center gap-2 rounded-3xl border border-outline-variant/40 bg-surface-container-lowest px-4 py-2.5 shadow-card focus-within:border-primary"
       >
         <Icon name="barcode_scanner" className="text-on-surface-variant" />
         <input
-          className="flex-1 bg-transparent text-body-md outline-none"
+          className="min-w-0 flex-1 bg-transparent text-body-md outline-none"
+          aria-label="Saisir un code-barres"
           inputMode="numeric"
           placeholder="Saisir un code-barres"
           value={manual}
           onChange={(e) => setManual(e.target.value)}
         />
-        <button className="inline-flex min-h-[44px] items-center rounded-full bg-primary px-4 py-1.5 text-label-md text-on-primary active:scale-95">
+        <button className="ml-auto inline-flex min-h-[44px] shrink-0 items-center rounded-full bg-primary px-4 py-1.5 text-label-md text-on-primary active:scale-95">
           Chercher
         </button>
       </form>

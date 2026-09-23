@@ -19,9 +19,9 @@ import { createVoiceRecognizer, speechSupported } from "@/lib/voice";
 // and Deals are permanent tabs, so putting them here too is redundant.
 // These personal tools have no tab, so this is their quick access.
 const SHORTCUTS = [
-  { href: "/list", label: "Ma liste", icon: "list_alt", box: "bg-primary-fixed-dim/15 text-primary-fixed-dim" },
+  { href: "/list", label: "Ma liste", icon: "list_alt", box: "bg-primary/10 text-primary" },
   { href: "/alerts", label: "Alertes", icon: "notifications_active", box: "bg-secondary-fixed-dim/15 text-secondary-fixed-dim" },
-  { href: "/stores", label: "Magasins", icon: "store", box: "bg-primary-fixed-dim/15 text-primary-fixed-dim" },
+  { href: "/stores", label: "Magasins", icon: "store", box: "bg-primary/10 text-primary" },
   { href: "/feedback", label: "Mon avis", icon: "reviews", box: "bg-secondary-fixed-dim/15 text-secondary-fixed-dim" },
 ];
 
@@ -192,7 +192,7 @@ export default function HomePage() {
 
       <section className="mb-8">
         <h2 className="mb-3 flex items-center gap-2 text-headline-md text-on-surface">
-          <Icon name="apps" className="text-primary-fixed-dim" /> Mes outils
+          <Icon name="apps" className="text-primary" /> Mes outils
         </h2>
         <div className="grid grid-cols-2 gap-gutter">
           {SHORTCUTS.map((s) => (
@@ -214,11 +214,11 @@ export default function HomePage() {
       <section data-tour="products-list">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-headline-md text-on-surface">
-            <Icon name="trending_up" className="text-primary-fixed-dim" /> Produits populaires
+            <Icon name="trending_up" className="text-primary" /> Produits populaires
           </h2>
           <div className="flex items-center gap-2">
             <ScoreLegend compact />
-            <Link href="/courses" className="text-label-lg font-bold text-primary-fixed-dim hover:text-secondary-fixed-dim transition-colors">
+            <Link href="/courses" className="text-label-lg font-bold text-primary underline underline-offset-4 hover:text-secondary transition-colors">
               Tout voir
             </Link>
           </div>

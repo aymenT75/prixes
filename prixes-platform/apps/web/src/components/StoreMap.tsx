@@ -98,7 +98,14 @@ export default function StoreMap({ user, store }: { user: LatLon; store: MapStor
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <Marker position={[store.lat, store.lon]} icon={storeIcon}>
+          {/* Leaflet gives its markers role="button" and tabindex=0 but no name,
+              so a screen reader announces a bare "bouton" (WCAG 4.1.2). */}
+          <Marker
+            position={[store.lat, store.lon]}
+            icon={storeIcon}
+            alt={`${store.name}${store.address ? `, ${store.address}` : ""}`}
+            title={store.name}
+          >
             <Popup>
               <strong>{store.name}</strong>
               {store.address && (
@@ -109,7 +116,7 @@ export default function StoreMap({ user, store }: { user: LatLon; store: MapStor
               )}
             </Popup>
           </Marker>
-          <Marker position={[user.lat, user.lon]} icon={userIcon}>
+          <Marker position={[user.lat, user.lon]} icon={userIcon} alt="Votre position" title="Votre position">
             <Popup>Vous êtes ici</Popup>
           </Marker>
           <Polyline
