@@ -165,13 +165,13 @@ export default function FuelPage() {
           <div key={s.id} className="card overflow-hidden p-gutter transition-all hover:shadow-float">
             <div className="mb-2 flex flex-wrap gap-1">
               {s.id === cheapest && (
-                <span className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-micro text-on-primary">
-                  <Icon name="verified" fill className="text-[12px]" /> Le moins cher
+                <span className="inline-flex items-center gap-1 rounded-md bg-error px-2.5 py-1 text-micro font-bold uppercase tracking-wide text-on-error shadow-card">
+                  <Icon name="verified" fill className="text-[14px]" /> Le moins cher
                 </span>
               )}
               {s.id === nearest && (
-                <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-2 py-1 text-micro text-on-surface-variant">
-                  <Icon name="near_me" fill className="text-[12px]" /> Le plus proche
+                <span className="inline-flex items-center gap-1 rounded-md border-2 border-error bg-surface px-2 py-0.5 text-micro font-bold uppercase tracking-wide text-error">
+                  <Icon name="near_me" fill className="text-[14px]" /> Le plus proche
                 </span>
               )}
             </div>
@@ -194,7 +194,13 @@ export default function FuelPage() {
                 </p>
               </div>
               <div className="text-right">
-                <span className="block text-headline-md text-primary">
+                <span
+                  className={`block ${
+                    s.id === cheapest
+                      ? "text-headline-lg font-extrabold text-error"
+                      : "text-headline-md text-primary"
+                  }`}
+                >
                   {s.prices[fuelType] != null ? eur(s.prices[fuelType]) : "—"}
                 </span>
                 <span className="text-micro text-on-surface-variant">{fuelType} / L</span>
