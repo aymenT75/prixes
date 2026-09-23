@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
@@ -50,7 +50,36 @@ export default function FuelPage() {
     enabled: !!coords,
   });
 
-  const cheapest = data?.items.find((s) => s.prices[fuelType] != null)?.id;
+  // L'API renvoie les stations les plus PROCHES, triées par distance. Le badge
+  // « Le moins cher » prenait la première de cette liste : il désignait donc la
+  // plus proche, pas la moins chère — signalé par un testeur le 23/09/2026 avec
+  // du SP95 badgé à 2,49 € alors que 2,19 € suivait juste en dessous.
+  const stations = useMemo(() => {
+    const items = data?.items ?? [];
+    const price = (s: (typeof items)[number]) => s.prices[fuelType];
+    // distance_km est optionnel côté API : une station sans distance ne doit pas
+    // se retrouver « la plus proche » par accident.
+    const dist = (s: (typeof items)[number]) => s.distance_km ?? Number.POSITIVE_INFINITY;
+    return [...items].sort((x, y) => {
+      const px = price(x);
+      const py = price(y);
+      // Les stations sans prix pour ce carburant passent à la fin.
+      if (px == null && py == null) return dist(x) - dist(y);
+      if (px == null) return 1;
+      if (py == null) return -1;
+      // À prix égal, la plus proche d'abord.
+      return px - py || dist(x) - dist(y);
+    });
+  }, [data, fuelType]);
+
+  const cheapest = stations.find((s) => s.prices[fuelType] != null)?.id;
+  // Le tri par prix fait perdre l'information de proximité : sans ce repère, on
+  // peut faire 9 km pour gagner trois centimes.
+  const nearest = stations.length
+    ? stations.reduce((a, b) =>
+        (b.distance_km ?? Number.POSITIVE_INFINITY) < (a.distance_km ?? Number.POSITIVE_INFINITY) ? b : a,
+      ).id
+    : undefined;
 
   return (
     <div>
@@ -112,7 +141,7 @@ export default function FuelPage() {
         {isFetching
           ? "Recherche des stations en cours…"
           : coords && data
-            ? `${data.items.length} station${data.items.length > 1 ? "s" : ""} trouvée${data.items.length > 1 ? "s" : ""}`
+            ? `${stations.length} station${stations.length > 1 ? "s" : ""} trouvée${stations.length > 1 ? "s" : ""}, classées du moins cher au plus cher`
             : ""}
       </p>
 
@@ -120,16 +149,32 @@ export default function FuelPage() {
         <p aria-hidden className="py-8 text-center text-on-surface-variant">Recherche des stations…</p>
       )}
 
+      {/* « Le moins cher » ne vaut que dans le périmètre interrogé : le dire,
+          plutôt que laisser croire à un classement national. */}
+      {!isFetching && stations.length > 0 && (
+        <p className="mb-3 flex items-center gap-1 text-micro text-on-surface-variant">
+          <Icon name="sort" className="text-[14px] text-primary" />
+          Classées du moins cher au plus cher, parmi les stations proches de vous.
+        </p>
+      )}
+
       <div className="space-y-4">
-        {data?.items.map((s) => {
+        {stations.map((s) => {
           const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lon}`;
           return (
           <div key={s.id} className="card overflow-hidden p-gutter transition-all hover:shadow-float">
-            {s.id === cheapest && (
-              <div className="mb-2 inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-micro text-on-primary">
-                <Icon name="verified" fill className="text-[12px]" /> Le moins cher
-              </div>
-            )}
+            <div className="mb-2 flex flex-wrap gap-1">
+              {s.id === cheapest && (
+                <span className="inline-flex items-center gap-1 rounded bg-primary px-2 py-1 text-micro text-on-primary">
+                  <Icon name="verified" fill className="text-[12px]" /> Le moins cher
+                </span>
+              )}
+              {s.id === nearest && (
+                <span className="inline-flex items-center gap-1 rounded bg-surface-container-high px-2 py-1 text-micro text-on-surface-variant">
+                  <Icon name="near_me" fill className="text-[12px]" /> Le plus proche
+                </span>
+              )}
+            </div>
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-headline-md text-on-surface">
