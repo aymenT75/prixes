@@ -503,11 +503,14 @@ function ProductDetail() {
 
       {/* Best price banner */}
       {data.best_price != null && (
-        <section className="relative mb-6 flex items-center justify-between overflow-hidden rounded-xl bg-primary-container p-6 text-on-primary-container shadow-float">
+        // Price on the left, source chip on the right: at the largest text
+        // setting the two stopped fitting side by side and the price itself was
+        // pushed past the right edge. Let them stack instead.
+        <section className="relative mb-6 flex flex-wrap items-center justify-between gap-3 overflow-hidden rounded-xl bg-primary-container p-6 text-on-primary-container shadow-float">
           <div className="absolute -bottom-4 -right-4 opacity-10">
             <Icon name="local_offer" className="text-[110px]" />
           </div>
-          <div className="relative z-10">
+          <div className="relative z-10 min-w-0">
             <p className="mb-1 text-micro uppercase tracking-widest opacity-90">Meilleur prix</p>
             <span className="text-headline-xl">{eur(data.best_price)}</span>
             {data.best_unit_price != null && (
@@ -532,7 +535,7 @@ function ProductDetail() {
         <Link
           href={`/courses/detail?barcode=${cheaperAlt.barcode}`}
           aria-label={`Alternative moins chère : ${cheaperAlt.name} à ${eur(cheaperAlt.best_price)} — voir la fiche produit`}
-          className="mb-6 flex items-center gap-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 transition-colors hover:border-primary"
+          className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border-2 border-primary/40 bg-primary/5 p-4 transition-colors hover:border-primary"
         >
           <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
             <Icon name="savings" fill className="text-[22px]" />
@@ -541,7 +544,7 @@ function ProductDetail() {
             <p className="text-micro uppercase tracking-wider text-primary">Moins cher</p>
             <p className="truncate text-label-lg text-on-surface">{cheaperAlt.name}</p>
           </div>
-          <div className="text-right">
+          <div className="ml-auto text-right">
             <p className="text-headline-md text-primary">{eur(cheaperAlt.best_price)}</p>
             <p className="text-micro text-on-surface-variant">
               −{eur(data.best_price - cheaperAlt.best_price)}
@@ -600,10 +603,10 @@ function ProductDetail() {
                   </p>
                 </div>
               </div>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <Link
                   href={`/stores/map?store=${encodeURIComponent(targetStore)}&lat=${coords.lat}&lon=${coords.lon}`}
-                  className="btn-outline flex-1 justify-center py-2 text-label-md"
+                  className="btn-outline min-w-[45%] flex-1 justify-center py-2 text-label-md"
                 >
                   <Icon name="map" className="text-[16px]" /> Voir sur la carte
                 </Link>
@@ -612,7 +615,7 @@ function ProductDetail() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Itinéraire vers ${nearestBranch.name} (nouvelle fenêtre)`}
-                  className="btn-primary flex-1 justify-center py-2 text-label-md"
+                  className="btn-primary min-w-[45%] flex-1 justify-center py-2 text-label-md"
                 >
                   <Icon name="directions" className="text-[16px]" /> Itinéraire
                 </a>

@@ -72,11 +72,12 @@ function CoursesInner() {
           e.preventDefault();
           setQuery(input.trim());
         }}
-        className="mb-5 flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container-lowest px-4 py-2.5 shadow-card focus-within:border-primary"
+        className="mb-5 flex items-center gap-2 rounded-full border border-outline-variant/40 bg-surface-container-lowest px-3 py-2.5 shadow-card focus-within:border-primary"
       >
         <Icon name="search" className="text-on-surface-variant" />
         <input
           className="flex-1 bg-transparent text-body-md outline-none"
+          aria-label="Rechercher un produit"
           placeholder="Rechercher un produit…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -84,7 +85,7 @@ function CoursesInner() {
         <Link
           href="/scanner"
           aria-label="Scanner un code-barres"
-          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full text-primary"
+          className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-full text-primary"
         >
           <Icon name="qr_code_scanner" />
         </Link>
@@ -123,9 +124,23 @@ function CoursesInner() {
         </p>
       )}
 
+      {/* Results swap in silently otherwise: a screen-reader user dictates a
+          search and nothing tells them the list underneath has changed. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {isFetching
+          ? "Recherche en cours…"
+          : error
+            ? "La recherche a échoué."
+            : searching && data
+              ? `${data.items.length} résultat${data.items.length > 1 ? "s" : ""} pour ${query}`
+              : ""}
+      </p>
+
       {error && <ApiError error={error} onRetry={() => refetch()} />}
 
-      {!error && isFetching && <p className="py-8 text-center text-on-surface-variant">Chargement…</p>}
+      {!error && isFetching && (
+        <p aria-hidden className="py-8 text-center text-on-surface-variant">Chargement…</p>
+      )}
 
       {!error && (
         <div className="space-y-3">

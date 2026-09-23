@@ -127,7 +127,7 @@ export default function SourcesPage() {
 
       <p className="mb-8 mt-6 text-center text-body-md text-on-surface-variant">
         Une source vous semble erronée ?{" "}
-        <Link href="/feedback" className="text-primary underline-offset-2 hover:underline">
+        <Link href="/feedback" className="text-primary underline underline-offset-2">
           Signalez-le nous
         </Link>
         .

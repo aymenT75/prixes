@@ -10,10 +10,11 @@ import { ALL_ALLERGENS, ALL_DIETS, useA11y, type FontScale } from "@/lib/useA11y
 import { useDialog } from "@/lib/useDialog";
 import { useTour } from "@/lib/useTour";
 
-const SIZES: { key: FontScale; label: string; cls: string }[] = [
-  { key: "normal", label: "A", cls: "text-[16px]" },
-  { key: "large", label: "A+", cls: "text-[20px]" },
-  { key: "xl", label: "A++", cls: "text-[26px]" },
+// "A+" read out loud says nothing; the spoken name has to carry the meaning.
+const SIZES: { key: FontScale; label: string; name: string; cls: string }[] = [
+  { key: "normal", label: "A", name: "Taille normale", cls: "text-[16px]" },
+  { key: "large", label: "A+", name: "Grande taille", cls: "text-[20px]" },
+  { key: "xl", label: "A++", name: "Très grande taille", cls: "text-[26px]" },
 ];
 
 export function AccessibilityFab() {
@@ -124,6 +125,7 @@ export function AccessibilityFab() {
                   <button
                     key={s.key}
                     onClick={() => setFontScale(s.key)}
+                    aria-label={s.name}
                     aria-pressed={fontScale === s.key}
                     className={`flex h-16 items-center justify-center rounded-xl border-2 font-bold transition-all ${
                       fontScale === s.key

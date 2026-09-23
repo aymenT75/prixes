@@ -107,7 +107,18 @@ export default function FuelPage() {
           <Icon name="warning" className="text-[18px]" /> {geoError}
         </div>
       )}
-      {isFetching && <p className="py-8 text-center text-on-surface-variant">Recherche des stations…</p>}
+      {/* Same as the search page: the station list appears with no announcement. */}
+      <p role="status" aria-live="polite" className="sr-only">
+        {isFetching
+          ? "Recherche des stations en cours…"
+          : coords && data
+            ? `${data.items.length} station${data.items.length > 1 ? "s" : ""} trouvée${data.items.length > 1 ? "s" : ""}`
+            : ""}
+      </p>
+
+      {isFetching && (
+        <p aria-hidden className="py-8 text-center text-on-surface-variant">Recherche des stations…</p>
+      )}
 
       <div className="space-y-4">
         {data?.items.map((s) => {
