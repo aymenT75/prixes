@@ -1,20 +1,24 @@
 "use client";
 
 import { Icon } from "@/components/Icon";
-import { priceGapTemperature, temperatureColor } from "@/lib/format";
+import { priceGapTemperature, readableOn, temperatureColor, temperatureColorDark } from "@/lib/format";
+import { useA11y } from "@/lib/useA11y";
 
 // The colour carries the "how big is this price gap" signal at a glance, but
 // never colour-only: an icon (snowflake → thermostat → flame) plus a spoken-
 // out label ("Froid — peu intéressant" etc.) says the same thing in words.
 export function Thermometer({ discountPct, compact = false }: { discountPct: number; compact?: boolean }) {
   const { temperature, label, icon } = priceGapTemperature(discountPct);
-  const color = temperatureColor[temperature];
+  const dark = useA11y((s) => s.dark);
+  const color = (dark ? temperatureColorDark : temperatureColor)[temperature];
+  // The pill keeps the light-mode fill in both themes, so its ink follows the fill.
+  const pill = temperatureColor[temperature];
 
   if (compact) {
     return (
       <span
-        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro font-bold text-white"
-        style={{ backgroundColor: color }}
+        className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-micro font-bold"
+        style={{ backgroundColor: pill, color: readableOn(pill) }}
         title={label}
       >
         <Icon name={icon} fill className="text-[13px]" />-{Math.round(discountPct)}%

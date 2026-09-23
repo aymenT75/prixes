@@ -96,6 +96,14 @@ export const temperatureColor: Record<Temperature, string> = {
   cold: "#2563eb", // blue
 };
 
+// Same three signals, lightened for the dark surface: the light-mode red read at
+// 3.58:1 on #161b22 and the blue at 3.35:1 (WCAG 1.4.3 asks 4.5:1).
+export const temperatureColorDark: Record<Temperature, string> = {
+  hot: "#f87171",
+  warm: "#fbbf24",
+  cold: "#60a5fa",
+};
+
 // Nutri/Eco score colour (a..e), ported from the original badge logic.
 // The Nutri-Score / Eco-Score / NOVA palettes are official brand colours, so the
 // background stays put — but white on the light ones lands at 2.3:1 to 4.5:1
@@ -118,7 +126,10 @@ export const scoreColor: Record<string, string> = {
   b: "#85bb2f",
   c: "#fecb02",
   d: "#ee8100",
-  e: "#e63e11",
+  // Nutri-Score E, assombri de 6 % par rapport au rouge officiel #e63e11 : à la
+  // taille des pastilles, ni le blanc (4,15:1) ni l'encre sombre (4,14:1) ne
+  // passaient les 4,5:1 exigés. Teinte inchangée à l'œil, 4,63:1 avec du blanc.
+  e: "#d83a10",
 };
 
 // Plain-language nutritional hint per Nutri-Score, spoken/announced so the meaning

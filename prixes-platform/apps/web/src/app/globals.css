@@ -95,7 +95,10 @@ html.dark {
   --color-surface-bright: 45 51 59;
   --color-on-primary: 18 31 0;
   --color-primary: 154 217 46;
-  --color-on-error: 179 0 0;
+  /* 105 0 5 (#690005), la valeur Material 3 : le rouge d'origine (179 0 0) ne
+     donnait que 4,24:1 sur le rouge clair du mode sombre, sous les 4,5:1 exigés.
+     Ne sert qu'aux paires bg-error/text-on-error (badge promo, micro actif). */
+  --color-on-error: 105 0 5;
   --color-error-container: 179 0 0;
   --color-accent-warm: 255 168 130;
   /* accent-warm is light in dark mode, so on-accent-warm flips to a dark brown

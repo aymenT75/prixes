@@ -511,16 +511,16 @@ function ProductDetail() {
             <Icon name="local_offer" className="text-[110px]" />
           </div>
           <div className="relative z-10 min-w-0">
-            <p className="mb-1 text-micro uppercase tracking-widest opacity-90">Meilleur prix</p>
+            {/* No opacity here: at 12 px it dropped the label to 3.76:1 on its
+                own container (WCAG 1.4.3 asks 4.5:1). */}
+            <p className="mb-1 text-micro uppercase tracking-widest">Meilleur prix</p>
             <span className="text-headline-xl">{eur(data.best_price)}</span>
             {data.best_unit_price != null && (
-              <p className="mt-1 text-label-md opacity-90">
-                {perUnit(data.best_unit_price, data.unit_label)}
-              </p>
+              <p className="mt-1 text-label-md">{perUnit(data.best_unit_price, data.unit_label)}</p>
             )}
           </div>
           {bestPricePoint && (
-            <div className="relative z-10 rounded-xl border border-white/30 bg-white/20 px-4 py-2 text-center backdrop-blur-sm">
+            <div className="relative z-10 rounded-xl border border-white/30 bg-white/10 px-4 py-2 text-center backdrop-blur-sm">
               <p className="text-micro uppercase">
                 {priceConfidence(bestPricePoint.source, bestPricePoint.created_at).sourceLabel}
               </p>

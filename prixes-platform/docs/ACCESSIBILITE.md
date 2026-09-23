@@ -1,7 +1,7 @@
 # Accessibilité de Prixes — audit et état réel
 
 **Référentiel** : WCAG 2.1 niveau AA (base du RGAA).
-**Date de l'audit** : 23 septembre 2026 · branche `a11y-audit` · commit `79e50c1`.
+**Date de l'audit** : 23 septembre 2026 · branche `a11y-audit` · commits `79e50c1` et `b8ecc11`.
 **Périmètre** : l'application web / PWA, qui est aussi le contenu de l'app Android
 (l'APK Capacitor embarque cet export statique). Rien n'a été déployé ni publié.
 
@@ -68,7 +68,7 @@ Les scripts sont dans le dossier de travail de la session (`axe-run.mjs`,
 | # | Problème | Critère | Gravité | Mesure |
 |---|---|---|---|---|
 | 1 | « Tout voir » (accueil) : vert accent sur fond de page | 1.4.3 | 🔴 Critique | **1,62:1** en clair, **2,03:1** en sombre, **1,70:1** en fort contraste (exigé 4,5) → **6,19:1** après correction |
-| 2 | Pastilles Nutri-Score / Eco-Score / NOVA : texte blanc sur fonds clairs | 1.4.3 | 🔴 Critique | Eco-B **2,29:1**, Eco-D **2,70:1**, Eco-U **4,48:1**, Nutri-E 4,14:1 — 127 occurrences |
+| 2 | Pastilles Nutri-Score / Eco-Score / NOVA : texte blanc sur fonds clairs | 1.4.3 | 🔴 Critique | Eco-B **2,29:1**, Eco-D **2,70:1**, Eco-U **4,48:1**, Nutri-E **4,14:1** — 127 occurrences. Toutes ≥ 4,5:1 après correction |
 | 3 | Liens au fil du texte soulignés seulement au survol (Sources, Confidentialité) | 1.4.1 | 🟡 Majeur | 6 liens |
 | 4 | Icônes de section dans la teinte accent illisible | 1.4.11 | 🟢 Mineur | même teinte que #1 |
 
@@ -108,18 +108,35 @@ sa recherche et **rien ne lui disait que la liste avait changé**.
 
 ## 4. Ce qui reste — non corrigé, assumé
 
-### 4.1 Rouge officiel du Nutri-Score E : 4,14:1 (exigé 4,5:1)
+### 4.1 ~~Rouge officiel du Nutri-Score E~~ — corrigé le 23/09
 
-`#e63e11` avec du blanc donne 4,15:1, avec de l'encre sombre 4,14:1 : **aucune
-encre ne passe**. Le corriger impose de toucher à une couleur normalisée.
+`#e63e11` donnait 4,15:1 avec du blanc et 4,14:1 avec de l'encre sombre :
+**aucune encre ne passait**. Sur décision de l'éditeur, la teinte a été
+assombrie de 6 % → **`#d83a10`, 4,63:1**, écart invisible à l'œil.
+Les cinq pastilles Nutri-Score et les cinq Eco-Score passent désormais le seuil.
 
-- Correctif prêt, une ligne dans `lib/format.ts` : `e: "#d83a10"` → **4,63:1**.
-  C'est un assombrissement de 6 %, imperceptible à l'œil.
-- **C'est votre décision**, pas la mienne : c'est la charte Nutri-Score.
-- À dire à la journaliste si la question vient : *« une seule pastille sur cinq
-  reste 8 % en dessous du seuil, parce que c'est la couleur officielle ; la note
-  est aussi écrite en toutes lettres et lue à voix haute, donc l'information
-  n'est jamais perdue. »* — c'est vrai, et vérifiable.
+À dire à la journaliste si la question vient : *« les couleurs de la charte sont
+conservées ; une seule, le rouge du E, a été assombrie de 6 % pour atteindre le
+seuil de contraste — et la note est de toute façon écrite en toutes lettres et
+lue à voix haute. »*
+
+### 4.1 bis — quatre contrastes trouvés au second passage, corrigés
+
+Le balayage refait après le correctif Nutri-E est tombé sur une fiche produit
+contenant un bandeau « Meilleur prix » et des badges promo que les tirages
+précédents n'avaient jamais rencontrés. **Quatre défauts pré-existants** sont
+apparus, tous du texte de 12 px, tous corrigés :
+
+| Élément | Mesure | Cause | Correction |
+|---|---|---|---|
+| « Meilleur prix », « 1,00 €/kg » | **3,76:1** | `opacity-90` sur le libellé | opacité retirée → 4,55:1 |
+| « Prix relevé » (sombre) | **4,49:1** | `bg-white/20` éclaircissait le fond | `bg-white/10` |
+| « Chaud — bon plan » (sombre) | **3,58:1** | couleurs du thermomètre figées en dur, pensées pour le fond clair | jeu de teintes clair **et** sombre (`temperatureColorDark`) → 6,25:1 |
+| Badge promo « −96 % » (sombre) | **4,24:1** | jeton `--color-on-error` du mode sombre | valeur Material 3 `#690005` → 7,72:1 |
+
+**Leçon de méthode** : un audit automatique ne vaut que par l'échantillon qu'il
+rencontre. Le balayage a donc été rejoué sur **7 écrans × 2 thèmes** avec
+plusieurs produits différents — plus aucun échec.
 
 ### 4.2 Débordement horizontal à la plus grande taille, sur écran 360 px
 
@@ -223,6 +240,8 @@ puis la droite = menu de lecture.
 ## 6. Résumé pour l'interview
 
 **Ce qui est vrai et défendable :**
+- **Zéro violation WCAG détectée** par axe-core sur 90 analyses (15 écrans ×
+  3 thèmes × 2 tailles de texte), écrans peuplés de vraies données.
 - Tous les contrôles de toutes les pages ont un nom lu à voix haute (18/18 vérifiés).
 - Les résultats de recherche et de stations sont annoncés automatiquement.
 - Trois tailles de texte, fort contraste, mode sombre, assistant vocal, lecture
@@ -233,8 +252,8 @@ puis la droite = menu de lecture.
 **Ce qu'il faut dire honnêtement :**
 - L'audit automatique couvre environ un tiers des critères ; **le test TalkBack
   réel reste à faire** (checklist ci-dessus).
-- Une pastille sur cinq (Nutri-Score E) reste légèrement sous le seuil de
-  contraste, parce que c'est la couleur officielle.
+- Le rouge du Nutri-Score E a été assombri de 6 % pour atteindre le seuil : la
+  charte est respectée à l'œil, pas au pixel près.
 - Sur les plus petits écrans, au réglage de texte maximal, il reste un léger
   défilement horizontal sur deux écrans.
 - iOS / VoiceOver n'a pas encore été évalué.
