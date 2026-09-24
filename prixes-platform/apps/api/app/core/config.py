@@ -53,9 +53,13 @@ class Settings(BaseSettings):
     openai_tts_model: str = "gpt-4o-mini-tts"
     openai_tts_voice: str = "nova"
 
-    # One photo per menu dish (OpenAI images, reuses openai_api_key). Drawn once
-    # per title and kept on disk; the daily cap bounds the bill (~1-2 cts each).
-    meal_image_model: str = "gpt-image-1-mini"
+    # One photo per menu dish, drawn by Cloudflare Workers AI (FLUX.1 schnell) once
+    # per title and kept on disk. Empty account/token = no photos, the icon shows.
+    # The cap keeps us inside the free 10,000 neurons/day: a 1024px image at 4
+    # steps is ~58 neurons, so 150 photos ≈ 8,640 neurons — never billed.
+    cloudflare_account_id: str = ""
+    cloudflare_ai_token: str = ""
+    meal_image_model: str = "@cf/black-forest-labs/flux-1-schnell"
     meal_image_dir: str = "/data/meal-images"
     meal_image_daily_cap: int = 150
 

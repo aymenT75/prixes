@@ -1,9 +1,10 @@
 """Une photo par plat — generated once per dish title, then served from disk.
 
 The planner invents its dishes ("Boulgour à la tomate et escalope végétale"), so
-no photo library has them. We ask OpenAI's image model for one the first time a
-title appears and keep the file: the same dish next week, or for another user,
-costs nothing. A daily cap bounds the bill whatever happens.
+no photo library has them. We ask Cloudflare Workers AI (FLUX.1 schnell, Apache
+2.0 — free for commercial use) for one the first time a title appears and keep
+the file: the same dish next week, or for another user, costs nothing. The daily
+cap is set under Cloudflare's free allocation, so the photos cost nothing at all.
 
 Every failure — no key, cap reached, upstream error — returns None, and the page
 shows the dish's icon instead. A menu never waits for, or breaks on, a picture.
@@ -26,7 +27,12 @@ from app.core.redis import redis_client
 
 logger = logging.getLogger(__name__)
 
-_OPENAI_IMAGES_URL = "https://api.openai.com/v1/images/generations"
+_CF_URL = "https://api.cloudflare.com/client/v4/accounts/{account}/ai/run/{model}"
+
+# FLUX answers in JPEG today; files keep whatever format actually came back, told
+# apart by their first bytes, so a provider change never mislabels a photo.
+FORMATS = {"jpg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
+_MAGIC = ((bytes([0xFF, 0xD8, 0xFF]), "jpg"), (bytes([0x89]) + b"PNG", "png"), (b"RIFF", "webp"))
 
 # A key is 24 hex characters; the route refuses anything else, so a request can
 # never name a file outside the image directory.
@@ -55,12 +61,28 @@ def image_key(title: str) -> str:
     return hashlib.sha256(folded.encode()).hexdigest()[:24]
 
 
-def image_path(key: str) -> Path:
-    return Path(settings.meal_image_dir) / f"{key}.webp"
+def image_path(key: str, ext: str) -> Path:
+    return Path(settings.meal_image_dir) / f"{key}.{ext}"
 
 
-def image_url(key: str) -> str:
-    return f"/api/v1/meal-plan/images/{key}.webp"
+def image_url(key: str, ext: str) -> str:
+    return f"/api/v1/meal-plan/images/{key}.{ext}"
+
+
+def _existing(key: str) -> str | None:
+    """The URL of this dish's photo if it has already been drawn, in any format."""
+    for ext in FORMATS:
+        if image_path(key, ext).exists():
+            return image_url(key, ext)
+    return None
+
+
+def _format_of(data: bytes) -> str | None:
+    return next((ext for magic, ext in _MAGIC if data.startswith(magic)), None)
+
+
+def _enabled() -> bool:
+    return bool(settings.cloudflare_account_id and settings.cloudflare_ai_token)
 
 
 async def _take_daily_slot() -> bool:
@@ -87,23 +109,14 @@ def _retry_delay(header: str | None) -> float:
 
 
 async def _generate(title: str) -> bytes | None:
-    payload = {
-        "model": settings.meal_image_model,
-        "prompt": _PROMPT.format(title=title),
-        "size": "1024x1024",
-        "quality": "low",
-        "output_format": "webp",
-        "output_compression": 70,
-        "n": 1,
-    }
-    headers = {"Authorization": f"Bearer {settings.openai_api_key}"}
-    # Seven dishes asked at once can trip the account's per-minute image limit
-    # (429). That is a "not yet", not a "no": wait as told, then try once more.
+    url = _CF_URL.format(account=settings.cloudflare_account_id, model=settings.meal_image_model)
+    payload = {"prompt": _PROMPT.format(title=title), "steps": 4}
+    headers = {"Authorization": f"Bearer {settings.cloudflare_ai_token}"}
+    # Seven dishes asked at once can trip a per-minute limit (429). That is a
+    # "not yet", not a "no": wait as told, then try once more.
     for attempt in range(2):
         try:
-            resp = await get_http_client().post(
-                _OPENAI_IMAGES_URL, json=payload, headers=headers, timeout=90.0
-            )
+            resp = await get_http_client().post(url, json=payload, headers=headers, timeout=90.0)
         except Exception as exc:
             logger.warning(f"Meal image request failed: {exc}")
             return None
@@ -114,8 +127,8 @@ async def _generate(title: str) -> bytes | None:
         logger.warning(f"Meal image upstream {resp.status_code}: {resp.text[:200]}")
         return None
     try:
-        return base64.b64decode(resp.json()["data"][0]["b64_json"])
-    except (KeyError, IndexError, ValueError, TypeError) as exc:
+        return base64.b64decode(resp.json()["result"]["image"])
+    except (KeyError, ValueError, TypeError) as exc:
         logger.warning(f"Meal image response unreadable: {exc}")
         return None
 
@@ -126,30 +139,33 @@ async def photo_for(title: str) -> str | None:
     if not title:
         return None
     key = image_key(title)
-    path = image_path(key)
-    if path.exists():
-        return image_url(key)
-    if not settings.openai_api_key:
+    if found := _existing(key):
+        return found
+    if not _enabled():
         return None
 
     lock = _in_flight.setdefault(key, asyncio.Lock())
     try:
         async with lock:
             # The card that waited on the lock finds the photo the first one drew.
-            if path.exists():
-                return image_url(key)
+            if found := _existing(key):
+                return found
             if not await _take_daily_slot():
                 return None
             async with _concurrency:
                 data = await _generate(title)
-            if not data:
+            ext = _format_of(data) if data else None
+            if not data or not ext:
+                if data:
+                    logger.warning("Meal image in an unknown format, not kept")
                 return None
+            path = image_path(key, ext)
             path.parent.mkdir(parents=True, exist_ok=True)
             # Write then rename: a half-written file must never be served.
             tmp = path.with_suffix(".tmp")
             tmp.write_bytes(data)
             tmp.replace(path)
-            return image_url(key)
+            return image_url(key, ext)
     finally:
         if not lock.locked():
             with contextlib.suppress(KeyError):

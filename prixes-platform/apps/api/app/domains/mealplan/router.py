@@ -47,14 +47,16 @@ async def photo(data: PhotoIn, user: CurrentUser) -> PhotoOut:
 async def image_file(name: str) -> FileResponse:
     """Public and static: it only serves photos that already exist, never draws
     one, so an <img> can load it without a token."""
-    key = name.removesuffix(".webp")
-    path = images.image_path(key)
-    if not name.endswith(".webp") or not images.KEY_PATTERN.match(key) or not path.exists():
+    key, _, ext = name.partition(".")
+    if ext not in images.FORMATS or not images.KEY_PATTERN.match(key):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo introuvable.")
+    path = images.image_path(key, ext)
+    if not path.exists():
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo introuvable.")
     # A key is a hash of the title: the file behind it never changes.
     return FileResponse(
         path,
-        media_type="image/webp",
+        media_type=images.FORMATS[ext],
         headers={"Cache-Control": "public, max-age=31536000, immutable"},
     )
 
