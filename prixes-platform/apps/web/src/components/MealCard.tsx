@@ -84,6 +84,10 @@ function MealPhoto({ title }: { title: string }) {
     queryFn: () => api.mealPhoto(title),
     staleTime: Infinity,
     retry: false,
+    // No photo yet (the image service said "not now") is worth asking again a
+    // little later — twice, then the icon stays.
+    refetchInterval: (query) =>
+      query.state.data?.url === null && query.state.dataUpdateCount < 3 ? 30_000 : false,
   });
   const [loaded, setLoaded] = useState(false);
   const [broken, setBroken] = useState(false);

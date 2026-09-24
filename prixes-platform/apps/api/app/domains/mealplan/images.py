@@ -78,6 +78,14 @@ async def _take_daily_slot() -> bool:
     return int(used) <= settings.meal_image_daily_cap
 
 
+def _retry_delay(header: str | None) -> float:
+    """Seconds to wait after a 429: the server's Retry-After, kept between 2 and 20."""
+    try:
+        return min(max(float(header or 5), 2.0), 20.0)
+    except ValueError:
+        return 5.0
+
+
 async def _generate(title: str) -> bytes | None:
     payload = {
         "model": settings.meal_image_model,
@@ -89,13 +97,19 @@ async def _generate(title: str) -> bytes | None:
         "n": 1,
     }
     headers = {"Authorization": f"Bearer {settings.openai_api_key}"}
-    try:
-        resp = await get_http_client().post(
-            _OPENAI_IMAGES_URL, json=payload, headers=headers, timeout=90.0
-        )
-    except Exception as exc:
-        logger.warning(f"Meal image request failed: {exc}")
-        return None
+    # Seven dishes asked at once can trip the account's per-minute image limit
+    # (429). That is a "not yet", not a "no": wait as told, then try once more.
+    for attempt in range(2):
+        try:
+            resp = await get_http_client().post(
+                _OPENAI_IMAGES_URL, json=payload, headers=headers, timeout=90.0
+            )
+        except Exception as exc:
+            logger.warning(f"Meal image request failed: {exc}")
+            return None
+        if resp.status_code != 429 or attempt == 1:
+            break
+        await asyncio.sleep(_retry_delay(resp.headers.get("retry-after")))
     if resp.status_code != 200:
         logger.warning(f"Meal image upstream {resp.status_code}: {resp.text[:200]}")
         return None

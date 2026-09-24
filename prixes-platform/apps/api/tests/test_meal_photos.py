@@ -103,3 +103,56 @@ def test_a_failed_drawing_leaves_no_file(tmp_path: Path, monkeypatch: pytest.Mon
     monkeypatch.setattr(images, "_generate", fail)
     assert asyncio.run(images.photo_for("Risotto")) is None
     assert not list(tmp_path.iterdir())
+
+
+class _Resp:
+    def __init__(self, status: int, headers: dict[str, str] | None = None) -> None:
+        self.status_code = status
+        self.headers = headers or {}
+        self.text = ""
+
+    def json(self) -> dict[str, object]:
+        import base64
+
+        return {"data": [{"b64_json": base64.b64encode(b"RIFF-webp").decode()}]}
+
+
+def _client(responses: list[_Resp], calls: list[int]):
+    class Client:
+        async def post(self, *args: object, **kwargs: object) -> _Resp:
+            calls.append(1)
+            return responses.pop(0)
+
+    return lambda: Client()
+
+
+def test_a_rate_limit_is_retried_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The bug seen in prod: seven photos at once, one refused with 429, card left bare."""
+    calls: list[int] = []
+    responses = [_Resp(429, {"retry-after": "0"}), _Resp(200)]
+    monkeypatch.setattr(images, "get_http_client", _client(responses, calls))
+    monkeypatch.setattr(images, "_retry_delay", lambda h: 0)
+    assert asyncio.run(images._generate("Riz sauté aux légumes")) == b"RIFF-webp"
+    assert len(calls) == 2
+
+
+def test_a_second_rate_limit_gives_up(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[int] = []
+    monkeypatch.setattr(images, "get_http_client", _client([_Resp(429), _Resp(429)], calls))
+    monkeypatch.setattr(images, "_retry_delay", lambda h: 0)
+    assert asyncio.run(images._generate("Riz sauté aux légumes")) is None
+    assert len(calls) == 2
+
+
+def test_other_errors_are_not_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[int] = []
+    monkeypatch.setattr(images, "get_http_client", _client([_Resp(400)], calls))
+    assert asyncio.run(images._generate("Riz")) is None
+    assert len(calls) == 1
+
+
+def test_retry_delay_is_bounded() -> None:
+    assert images._retry_delay(None) == 5.0
+    assert images._retry_delay("1") == 2.0
+    assert images._retry_delay("120") == 20.0
+    assert images._retry_delay("demain") == 5.0
