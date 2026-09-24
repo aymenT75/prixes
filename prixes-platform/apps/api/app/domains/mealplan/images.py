@@ -81,6 +81,30 @@ def _format_of(data: bytes) -> str | None:
     return next((ext for magic, ext in _MAGIC if data.startswith(magic)), None)
 
 
+# FLUX draws 1024 px JPEGs of ~700 KB; the card shows 80 px. 512 px WebP looks the
+# same at that size and weighs ~35 KB, so a week of photos is ~250 KB, not 5 MB.
+_STORED_SIZE = 512
+_WEBP_QUALITY = 80
+
+
+def shrink(data: bytes) -> bytes | None:
+    """The photo as a 512 px WebP, or None when it cannot be read as an image."""
+    from io import BytesIO
+
+    from PIL import Image, UnidentifiedImageError
+
+    try:
+        with Image.open(BytesIO(data)) as source:
+            rgb = source.convert("RGB")
+        rgb.thumbnail((_STORED_SIZE, _STORED_SIZE), Image.Resampling.LANCZOS)
+        out = BytesIO()
+        rgb.save(out, "WEBP", quality=_WEBP_QUALITY)
+        return out.getvalue()
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        logger.warning(f"Meal image could not be shrunk: {exc}")
+        return None
+
+
 def _enabled() -> bool:
     return bool(settings.cloudflare_account_id and settings.cloudflare_ai_token)
 
@@ -154,11 +178,13 @@ async def photo_for(title: str) -> str | None:
                 return None
             async with _concurrency:
                 data = await _generate(title)
-            ext = _format_of(data) if data else None
-            if not data or not ext:
+            if not data or not _format_of(data):
                 if data:
                     logger.warning("Meal image in an unknown format, not kept")
                 return None
+            # Shrinking is done off the event loop: it is a few hundred ms of CPU.
+            small = await asyncio.to_thread(shrink, data)
+            data, ext = (small, "webp") if small else (data, _format_of(data) or "jpg")
             path = image_path(key, ext)
             path.parent.mkdir(parents=True, exist_ok=True)
             # Write then rename: a half-written file must never be served.

@@ -25,6 +25,7 @@ dependencies = [
     # V3 document store (Atlas). PyMongo's own async client — Motor is EOL.
     # [srv] pulls dnspython, required by mongodb+srv:// Atlas URIs.
     "pymongo[srv]>=4.10",
+    "pillow>=11",
 ]
 
 [dependency-groups]

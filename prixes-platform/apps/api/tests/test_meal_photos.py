@@ -186,3 +186,43 @@ def test_an_unknown_format_is_not_kept(tmp_path: Path, monkeypatch: pytest.Monke
 def test_the_cap_stays_inside_the_free_allocation() -> None:
     """~58 neurons per 1024px FLUX schnell image at 4 steps; 10,000 free a day."""
     assert settings.meal_image_daily_cap * 58 < 10_000
+
+
+def _real_jpeg(size: int = 1024) -> bytes:
+    from io import BytesIO
+
+    from PIL import Image
+
+    out = BytesIO()
+    Image.new("RGB", (size, size), (200, 120, 40)).save(out, "JPEG", quality=95)
+    return out.getvalue()
+
+
+def test_a_photo_is_stored_as_a_small_webp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FLUX draws ~700 KB at 1024 px for an 80 px thumbnail: keep 512 px WebP."""
+    from PIL import Image
+
+    monkeypatch.setattr(settings, "meal_image_dir", str(tmp_path))
+    monkeypatch.setattr(settings, "cloudflare_account_id", "acc")
+    monkeypatch.setattr(settings, "cloudflare_ai_token", "cf-test")
+
+    async def slot() -> bool:
+        return True
+
+    async def draw(title: str) -> bytes:
+        return _real_jpeg()
+
+    monkeypatch.setattr(images, "_take_daily_slot", slot)
+    monkeypatch.setattr(images, "_generate", draw)
+    url = asyncio.run(images.photo_for("Gratin de courgettes"))
+    assert url is not None and url.endswith(".webp")
+    (stored,) = tmp_path.iterdir()
+    with Image.open(stored) as im:
+        assert im.format == "WEBP"
+        assert im.size == (512, 512)
+
+
+def test_shrink_refuses_what_is_not_an_image() -> None:
+    assert images.shrink(b"<html>quota</html>") is None
