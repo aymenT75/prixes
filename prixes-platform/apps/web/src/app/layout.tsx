@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Hanken_Grotesk, JetBrains_Mono, Sora } from "next/font/google";
+import localFont from "next/font/local";
 
 import "./globals.css";
 import { A11yLayer } from "@/components/A11yLayer";
@@ -12,20 +12,29 @@ import { Providers } from "@/components/Providers";
 
 // "Vibrant Glass" design system typography: Hanken Grotesk for body text,
 // Sora for headlines, JetBrains Mono for small technical/data labels.
-const hanken = Hanken_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "500", "700", "800"],
+//
+// The three files are committed rather than fetched from Google at build time:
+// `next/font/google` downloads them during `next build`, so a network hiccup on a
+// CI runner fails the whole build (it broke the iOS workflow on 2026-09-23 with
+// "An error occurred in `next/font`"). These are the latin-subset variable fonts,
+// the exact files Google was serving; `next/font/local` reads them from disk.
+const hanken = localFont({
+  src: "./fonts/HankenGrotesk-Variable.woff2",
+  weight: "400 800",
   variable: "--font-hanken",
+  display: "swap",
 });
-const sora = Sora({
-  subsets: ["latin"],
-  weight: ["700", "800"],
+const sora = localFont({
+  src: "./fonts/Sora-Variable.woff2",
+  weight: "700 800",
   variable: "--font-sora",
+  display: "swap",
 });
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["500", "600"],
+const jetbrainsMono = localFont({
+  src: "./fonts/JetBrainsMono-Variable.woff2",
+  weight: "500 600",
   variable: "--font-jetbrains-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
