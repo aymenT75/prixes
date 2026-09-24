@@ -11,6 +11,8 @@ from app.core.config import settings
 from app.core.deps import CurrentUser, DbSession
 from app.core.mongo import Mongo, OptionalMongo
 from app.core.rate_limit import RateLimit
+from app.domains.billing import service as billing
+from app.domains.billing.deps import PremiumUser
 from app.domains.mealplan import images, service
 from app.domains.mealplan.schemas import MealPlanIn, MealPlanOut, MealPreferences, RegenerateIn
 from app.domains.shopping import service as shopping_service
@@ -91,7 +93,15 @@ async def current(
 async def generate(
     data: MealPlanIn, db: DbSession, mongo: OptionalMongo, user: CurrentUser
 ) -> MealPlanOut:
-    return await service.generate(db, mongo, user.id, data)
+    """Premium, plus one free week a calendar month for everyone else — spent only
+    when the week actually comes back, so a failed generation costs nothing."""
+    free = billing.free_menu_available(user)
+    if not (billing.is_premium(user) or free):
+        raise billing.premium_required()
+    plan = await service.generate(db, mongo, user.id, data)
+    if free:
+        user.free_menu_month = billing.this_month()
+    return plan
 
 
 @router.post(
@@ -103,10 +113,10 @@ async def regenerate(
     data: RegenerateIn,
     db: DbSession,
     mongo: Mongo,
-    user: CurrentUser,
+    user: PremiumUser,
     slot: str = "dîner",
 ) -> MealPlanOut:
-    """Swap one meal without touching the rest of the week."""
+    """Swap one meal without touching the rest of the week. Premium: a model call."""
     return await service.regenerate_meal(
         db, mongo, user.id, week_start, day, slot, data.note
     )

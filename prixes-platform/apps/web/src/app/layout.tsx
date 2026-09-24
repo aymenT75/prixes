@@ -6,6 +6,7 @@ import { A11yLayer } from "@/components/A11yLayer";
 import { BootScreen } from "@/components/BootScreen";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthModal } from "@/components/AuthModal";
+import { PremiumModal } from "@/components/PremiumModal";
 import { NativeSetup } from "@/components/NativeSetup";
 import { ProductTour } from "@/components/ProductTour";
 import { Providers } from "@/components/Providers";
@@ -133,6 +134,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
           <BottomNav />
           <AuthModal />
+          <PremiumModal />
           <A11yLayer />
           <BootScreen />
           <NativeSetup />

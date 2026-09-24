@@ -74,6 +74,7 @@ local_gas_station
 local_offer
 location_on
 lock
+lock_open
 login
 logout
 mail
@@ -119,6 +120,7 @@ search
 search_off
 sell
 send
+settings
 share
 shield
 shopping_cart

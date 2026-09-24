@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { downscaleToBase64 } from "@/lib/vision";
 
 // Shown when a scanned barcode isn't in our catalog (typically a store-internal code
@@ -38,8 +38,12 @@ export function AddProductForm({
       } else {
         setHint("Produit non reconnu — saisissez le nom.");
       }
-    } catch {
-      setHint("Échec de la reconnaissance — saisissez le nom.");
+    } catch (e) {
+      setHint(
+        e instanceof ApiError && e.status === 402
+          ? "Reconnaissance photo réservée à Premium — saisissez le nom."
+          : "Échec de la reconnaissance — saisissez le nom.",
+      );
     } finally {
       setRecognizing(false);
     }

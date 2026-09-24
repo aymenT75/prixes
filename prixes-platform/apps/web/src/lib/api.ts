@@ -19,6 +19,7 @@ import type {
   SmartCartResult,
   SplitResult,
   ImportedRecipe,
+  BillingStatus,
   MealEquipment,
   MealGoal,
   MealPlan,
@@ -31,6 +32,9 @@ import type {
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 const API = BASE ? `${BASE}/api/v1` : "/api/v1";
+
+/** Fired when the API answers 402 — the Premium offer opens on it. */
+export const PREMIUM_REQUIRED_EVENT = "prixes:premium-required";
 
 /** A path the API returns ("/api/v1/…"), made loadable from the app's origin. */
 export const apiAsset = (path: string) => `${BASE}${path}`;
@@ -74,6 +78,11 @@ async function request<T>(
 
   if (res.status === 401 && retry && (await refreshTokens())) {
     return request<T>(path, init, false);
+  }
+  if (res.status === 402 && typeof window !== "undefined") {
+    // A paid feature (billing domain). The Premium offer listens for this, so no
+    // caller has to remember to open it.
+    window.dispatchEvent(new Event(PREMIUM_REQUIRED_EVENT));
   }
   if (!res.ok) {
     const detail = await res.json().catch(() => ({}));
@@ -123,9 +132,13 @@ export const api = {
   // audio, not JSON.
   ttsAudioUrl: async (text: string, voice?: string): Promise<string | null> => {
     try {
+      // The natural voice is Premium: the token says who is asking. Without it
+      // (or without Premium) the API answers 402 and the device's voice speaks.
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (tokenStore.access) headers.Authorization = `Bearer ${tokenStore.access}`;
       const res = await fetch(`${API}/tts`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ text, voice }),
       });
       if (!res.ok) return null;
@@ -242,6 +255,14 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ title }),
     }),
+  // ── Premium ──
+  billingStatus: () => request<BillingStatus>("/billing/status"),
+  billingCheckout: (plan: "monthly" | "yearly") =>
+    request<{ url: string }>("/billing/checkout", {
+      method: "POST",
+      body: JSON.stringify({ plan }),
+    }),
+  billingPortal: () => request<{ url: string }>("/billing/portal", { method: "POST" }),
   getMealPreferences: () =>
     request<MealPreferences | null>("/meal-plan/preferences").then((p) =>
       p ? { ...p, budget_eur: p.budget_eur != null ? Number(p.budget_eur) : null } : null,

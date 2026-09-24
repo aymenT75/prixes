@@ -63,6 +63,16 @@ class Settings(BaseSettings):
     meal_image_dir: str = "/data/meal-images"
     meal_image_daily_cap: int = 150
 
+    # Premium via Stripe (web). Empty key = no checkout offered; the paid features
+    # stay locked for everyone but existing subscribers. Prices are Stripe Price
+    # IDs (price_...) created in the Stripe dashboard.
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_monthly: str = ""
+    stripe_price_yearly: str = ""
+    # Where Stripe sends the user back after paying or managing the subscription.
+    billing_return_url: str = "https://prixes.app/account"
+
     # Upstream open-data
     off_base_url: str = "https://world.openfoodfacts.org"
     openprices_base_url: str = "https://prices.openfoodfacts.org/api"

@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, Integer, String
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -36,3 +37,10 @@ class User(Base, TimestampMixin):
     # account rather than the device, so the answers follow the user. Null until
     # the questionnaire has been answered once.
     meal_preferences: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+
+    # Premium (billing domain). Paid until this instant; null = never subscribed.
+    # Written only by the Stripe webhook, never by the user.
+    premium_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    # "2026-09" once this month's free weekly menu has been used.
+    free_menu_month: Mapped[str | None] = mapped_column(String(7), nullable=True)

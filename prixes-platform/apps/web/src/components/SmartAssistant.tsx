@@ -90,6 +90,7 @@ function messageFor(error: unknown): string {
     return "L'assistant met trop de temps à répondre. Réessayez.";
   }
   if (error instanceof ApiError) {
+    if (error.status === 402) return "L'assistant fait partie de Prixes Premium.";
     if (error.status === 429) return error.message;
     if (error.status === 422) return error.message;
     if (error.status === 504) return "L'assistant met trop de temps à répondre. Réessayez.";

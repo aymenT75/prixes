@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { scanBarcodeNative } from "@/lib/barcode";
 import { isNativeApp } from "@/lib/platform";
 import { logWarn } from "@/lib/logger";
@@ -84,8 +84,12 @@ export default function ScannerPage() {
         speak(`${name}. Voici les résultats.`);
         router.push(`/courses?q=${encodeURIComponent(name)}`);
       }
-    } catch {
-      aiFail("Échec de l'analyse. Réessayez.");
+    } catch (e) {
+      aiFail(
+        e instanceof ApiError && e.status === 402
+          ? "La reconnaissance sur photo fait partie de Premium. Saisissez le code-barres."
+          : "Échec de l'analyse. Réessayez.",
+      );
     }
   }
 

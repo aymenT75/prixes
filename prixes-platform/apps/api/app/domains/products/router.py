@@ -10,6 +10,7 @@ from sqlalchemy import select
 from app.core.config import settings
 from app.core.deps import CurrentUser, DbSession
 from app.core.rate_limit import RateLimit
+from app.domains.billing.deps import PremiumUser
 from app.domains.products import service
 from app.domains.products.models import PricePoint
 from app.domains.products.recognize import recognize_product
@@ -63,9 +64,9 @@ async def browse(
     response_model=RecognizeOut,
     dependencies=[Depends(RateLimit("recognize", times=30, window=3600))],
 )
-async def recognize(data: RecognizeIn, user: CurrentUser) -> RecognizeOut:
+async def recognize(data: RecognizeIn, user: PremiumUser) -> RecognizeOut:
     """AI vision fallback: name a product from a photo when its barcode isn't in our
-    catalog. Returns available=False when no vision key is set."""
+    catalog. Premium (a paid vision call); available=False when no vision key is set."""
     if not (settings.openai_api_key or settings.anthropic_api_key):
         return RecognizeOut(available=False)
     name, brand = await recognize_product(data.image, data.media_type)

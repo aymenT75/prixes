@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 
 import { Icon } from "@/components/Icon";
+import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/store";
@@ -159,6 +160,8 @@ export default function AccountPage() {
           <span className="text-label-lg">{user.reputation} points de réputation</span>
         </div>
       </section>
+
+      <SubscriptionCard />
 
       {/* Stats */}
       <section className="mb-6 grid grid-cols-3 gap-gutter">

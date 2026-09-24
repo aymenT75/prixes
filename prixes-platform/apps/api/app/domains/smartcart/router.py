@@ -1,21 +1,19 @@
 """Smart Assistant HTTP API — a sentence becomes a costed basket.
 
-Composing is open to everyone; committing the result to a shopping list needs an
-account, because a list belongs to someone.
-
-That makes the model call reachable without a token, so two things carry the
-cost: the rate limiter (per account when signed in, per IP otherwise) and the
-Redis cache on the normalised prompt, which answers the repeated questions
-without reaching the model at all.
+Composing calls a paid model, so it is Premium (billing domain); committing the
+result to a shopping list needs an account, because a list belongs to someone.
+The rate limiter and the Redis cache on the normalised prompt still bound what a
+subscriber can spend.
 """
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.core.config import settings
-from app.core.deps import CurrentUser, DbSession, OptionalUser
+from app.core.deps import CurrentUser, DbSession
 from app.core.llm import llm_enabled
 from app.core.rate_limit import RateLimit, refund
+from app.domains.billing.deps import PremiumUser
 from app.domains.smartcart import service
 from app.domains.smartcart.schemas import CommitIn, CommitOut, SmartCartIn, SmartCartOut
 
@@ -42,21 +40,16 @@ async def status_() -> dict[str, object]:
     ],
 )
 async def generate(
-    request: Request, data: SmartCartIn, db: DbSession, user: OptionalUser
+    request: Request, data: SmartCartIn, db: DbSession, user: PremiumUser
 ) -> SmartCartOut:
-    """Open to everyone: asking what a raclette costs should not need an account.
-
-    Committing the result does — a shopping list belongs to someone. The rate
-    limiter falls back to the caller's IP when there is no token, which is looser
-    than a per-account budget; the Redis cache on the normalised prompt is what
-    keeps the repeated questions from reaching the model at all.
+    """Premium: each new sentence is a paid model call. 402 opens the Premium screen.
 
     A request that comes back with no basket hands its quota back. Otherwise the
     first-time user, whose opening attempts are the most likely to be refused,
     spends the whole hour's budget on refusals and is locked out for having tried.
     """
     try:
-        return await service.generate(db, user.id if user else None, data)
+        return await service.generate(db, user.id, data)
     except HTTPException:
         await refund(request)
         raise
