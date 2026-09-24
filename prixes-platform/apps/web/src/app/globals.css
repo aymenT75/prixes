@@ -363,3 +363,37 @@ summary,
 .animate-fade-in-up {
   animation: fade-in-up 200ms ease-out;
 }
+
+/* Menu questionnaire: each question slides in from the side it came from, so the
+   stepper reads as moving forward. Reduced motion is handled by the global override. */
+@keyframes q-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-q-in {
+  animation: q-in 220ms ease-out;
+}
+
+/* Menu waiting screen: a step's check pops once when it completes. */
+@keyframes check-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.animate-check-pop {
+  animation: check-pop 260ms ease-out;
+}

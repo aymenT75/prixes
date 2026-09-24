@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import uuid
+from typing import Any
 
 from sqlalchemy import Boolean, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db import Base, TimestampMixin, uuid_pk
@@ -29,3 +31,8 @@ class User(Base, TimestampMixin):
     role: Mapped[str] = mapped_column(String(16), default="user")  # user|moderator|admin
     is_verified: Mapped[bool] = mapped_column(Boolean, default=False)
     is_banned: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # The meal-plan questionnaire (mealplan.schemas.MealPreferences). On the
+    # account rather than the device, so the answers follow the user. Null until
+    # the questionnaire has been answered once.
+    meal_preferences: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)

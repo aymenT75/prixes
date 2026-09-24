@@ -17,6 +17,13 @@ import { useApp } from "@/lib/store";
 import { tokenStore } from "@/lib/tokens";
 import { useDialog } from "@/lib/useDialog";
 
+// Set only in apps/web/.env.local. That file is kept out of the Docker build but
+// `build:mobile` reads it too, so the flag also requires a local API: an app
+// pointed at the real server can never take this path.
+const DEV_LOGIN =
+  process.env.NEXT_PUBLIC_DEV_LOGIN === "1" &&
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(process.env.NEXT_PUBLIC_API_BASE_URL ?? "");
+
 // Map Firebase error codes to friendly French messages.
 function frError(code: string): string {
   switch (code) {
@@ -75,6 +82,13 @@ export function AuthModal() {
         if (form.username) await updateProfile(cred.user, { displayName: form.username });
         // Force-refresh so the ID token carries the new displayName.
         await finish(await cred.user.getIdToken(true));
+      } else if (DEV_LOGIN) {
+        // Local only: the local API has no Firebase credential to verify an ID
+        // token, so sign in against its own password login (seeded demo account).
+        const tokens = await api.login({ email: form.email, password: form.password });
+        tokenStore.set(tokens.access_token, tokens.refresh_token);
+        await loadMe();
+        openLogin(false);
       } else {
         const cred = await signInWithEmailAndPassword(auth, form.email, form.password);
         await finish(await cred.user.getIdToken());

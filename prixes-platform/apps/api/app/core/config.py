@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     openai_tts_model: str = "gpt-4o-mini-tts"
     openai_tts_voice: str = "nova"
 
+    # One photo per menu dish (OpenAI images, reuses openai_api_key). Drawn once
+    # per title and kept on disk; the daily cap bounds the bill (~1-2 cts each).
+    meal_image_model: str = "gpt-image-1-mini"
+    meal_image_dir: str = "/data/meal-images"
+    meal_image_daily_cap: int = 150
+
     # Upstream open-data
     off_base_url: str = "https://world.openfoodfacts.org"
     openprices_base_url: str = "https://prices.openfoodfacts.org/api"

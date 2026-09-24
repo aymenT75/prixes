@@ -135,6 +135,11 @@ class SplitOption(BaseModel):
     # positive the extra stop is not about price at all — it is what completes the
     # shopping, and the higher total is the cost of the items you were missing.
     extra_items: int = 0
+    # The dearest store that sells every item this plan buys, and what the same
+    # items would cost there. None when no other store stocks the whole basket:
+    # a saving is only quoted against a shop that fills the same trolley.
+    priciest_store: str | None = None
+    saving_vs_priciest: Decimal | None = None
 
 
 class SplitResult(BaseModel):

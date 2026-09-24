@@ -17,6 +17,12 @@ from app.domains.smartcart.schemas import AiLine, ResolvedLine
 
 Slot = Literal["déjeuner", "dîner"]
 
+# The questionnaire's answers. Closed lists, because each one becomes a sentence
+# in the prompt — free text here would be free text sent to the model.
+Goal = Literal["budget", "temps", "sante", "idees"]
+Equipment = Literal["four", "plaques", "micro-ondes", "airfryer", "robot", "autocuiseur"]
+Style = Literal["rapide", "healthy", "classique", "economique", "reconfort", "one-pot", "monde"]
+
 DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 
 
@@ -43,6 +49,11 @@ class MealPlanIn(BaseModel):
     diets: list[str] = Field(default_factory=list, max_length=10)
     # Things the household simply doesn't eat — distinct from an allergy.
     dislikes: list[str] = Field(default_factory=list, max_length=20)
+    # Why they came, what their kitchen can do, what kind of food they want.
+    # Empty means "no constraint" — the menu before the questionnaire existed.
+    goal: Goal | None = None
+    equipment: list[Equipment] = Field(default_factory=list, max_length=6)
+    styles: list[Style] = Field(default_factory=list, max_length=4)
     # Monday of the week being planned. Defaults to the coming Monday.
     week_start: date | None = None
 
@@ -73,6 +84,21 @@ class MealPlanOut(BaseModel):
     # How many times the planner had to retry to land inside the budget. Shown
     # so an unreachable budget reads as "I tried", not as a silent failure.
     budget_attempts: int = 1
+
+
+class MealPreferences(BaseModel):
+    """The questionnaire, kept on the account so it follows the user to any device.
+
+    Allergens and diets are not here: they live in the accessibility profile and
+    apply to the whole app, not only to menus.
+    """
+
+    servings: int = Field(default=2, ge=1, le=12)
+    meals_per_day: Literal[1, 2] = 1
+    budget_eur: Decimal | None = Field(default=None, gt=0, le=1000)
+    goal: Goal | None = None
+    equipment: list[Equipment] = Field(default_factory=list, max_length=6)
+    styles: list[Style] = Field(default_factory=list, max_length=4)
 
 
 class RegenerateIn(BaseModel):

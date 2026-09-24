@@ -377,6 +377,35 @@ def _allocate(lines: list[PricedLine], stores: tuple[str, ...]) -> SplitOption:
     )
 
 
+def _price_against_priciest(lines: list[PricedLine], option: SplitOption) -> None:
+    """Say what the same trolley would have cost in the dearest store that stocks it.
+
+    Only stores that sell every item the plan buys are compared — the same rule
+    as `saving_vs_single`: pricing a smaller basket elsewhere would make any
+    plan look like a bargain.
+    """
+    bought = {item.barcode for basket in option.baskets for item in basket.items}
+    if not bought:
+        return
+    in_basket = [line for line in lines if line.barcode in bought]
+    stores = {store for line in in_basket for store in line.per_store}
+
+    priciest: tuple[str, Decimal] | None = None
+    for store in sorted(stores):
+        if not all(store in line.per_store for line in in_basket):
+            continue
+        total = sum((line.per_store[store] * line.quantity for line in in_basket), Decimal(0))
+        if priciest is None or total > priciest[1]:
+            priciest = (store, total)
+
+    if priciest is None:
+        return
+    saving = (priciest[1] - option.total).quantize(Decimal("0.01"))
+    if saving > 0:
+        option.priciest_store = priciest[0]
+        option.saving_vs_priciest = saving
+
+
 async def split_lines(
     db: AsyncSession, lines: list[tuple[str, int, str]], max_stores: int = 2
 ) -> SplitResult:
@@ -428,6 +457,9 @@ async def split_lines(
                 option.saving_vs_single = (single.total - option.total).quantize(
                     Decimal("0.01")
                 )
+
+    for option in options:
+        _price_against_priciest(sellable, option)
 
     return SplitResult(options=options, unpriced=unpriced)
 

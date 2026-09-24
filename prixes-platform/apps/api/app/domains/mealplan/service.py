@@ -49,6 +49,51 @@ def coming_monday(today: date | None = None) -> date:
     return today - timedelta(days=today.weekday())
 
 
+_GOAL = {
+    "budget": "Priorité : dépenser le moins possible.",
+    "temps": "Priorité : gagner du temps — peu de préparation, peu de vaisselle.",
+    "sante": (
+        "Priorité : manger plus sainement — légumes, légumineuses, "
+        "peu de produits transformés."
+    ),
+    "idees": "Priorité : de la variété et des idées nouvelles, sans plats trop techniques.",
+}
+_EQUIPMENT = {
+    "four": "four",
+    "plaques": "plaques de cuisson",
+    "micro-ondes": "micro-ondes",
+    "airfryer": "airfryer",
+    "robot": "robot cuiseur",
+    "autocuiseur": "autocuiseur",
+}
+_STYLE = {
+    "rapide": "rapide et facile",
+    "healthy": "healthy",
+    "classique": "classique",
+    "economique": "économique",
+    "reconfort": "réconfortant",
+    "one-pot": "one pot (tout dans une seule casserole)",
+    "monde": "cuisine du monde",
+}
+
+
+def _kitchen_lines(data: MealPlanIn) -> list[str]:
+    """The questionnaire, as sentences. Shared by the week and the single-meal redo,
+    so swapping a dinner cannot bring back the oven you said you don't have."""
+    lines: list[str] = []
+    if data.goal:
+        lines.append(_GOAL[data.goal])
+    if data.equipment:
+        lines.append(
+            "Matériel disponible, UNIQUEMENT : "
+            + ", ".join(_EQUIPMENT[e] for e in data.equipment)
+            + ". Aucune recette ne doit demander un autre appareil."
+        )
+    if data.styles:
+        lines.append("Style de repas souhaité : " + ", ".join(_STYLE[s] for s in data.styles) + ".")
+    return lines
+
+
 def _user_prompt(data: MealPlanIn, avoid_titles: list[str] | None = None) -> str:
     meals = 7 * data.meals_per_day
     lines = [
@@ -71,6 +116,7 @@ def _user_prompt(data: MealPlanIn, avoid_titles: list[str] | None = None) -> str
         lines.append("Régime à respecter : " + ", ".join(data.diets) + ".")
     if data.dislikes:
         lines.append("Le foyer n'aime pas : " + ", ".join(data.dislikes) + ".")
+    lines.extend(_kitchen_lines(data))
     if avoid_titles:
         lines.append(
             "Ne propose PAS ces plats, déjà prévus cette semaine : "
@@ -153,6 +199,9 @@ def _document(
             "avoid_allergens": data.avoid_allergens,
             "diets": data.diets,
             "dislikes": data.dislikes,
+            "goal": data.goal,
+            "equipment": data.equipment,
+            "styles": data.styles,
         },
         "meals": [meal.model_dump(mode="json") for meal in meals],
         "updated_at": datetime.now(UTC),
@@ -197,6 +246,10 @@ def _restore_input(doc: dict[str, Any]) -> MealPlanIn:
         avoid_allergens=constraints.get("avoid_allergens", []),
         diets=constraints.get("diets", []),
         dislikes=constraints.get("dislikes", []),
+        # Weeks stored before the questionnaire have none of these: no constraint.
+        goal=constraints.get("goal"),
+        equipment=constraints.get("equipment", []),
+        styles=constraints.get("styles", []),
         week_start=date.fromisoformat(doc["week_start"]),
     )
 
@@ -362,6 +415,7 @@ async def regenerate_meal(
                 else []
             ),
             *(["Régime : " + ", ".join(data.diets) + "."] if data.diets else []),
+            *_kitchen_lines(data),
             f"Renvoie exactement un repas, avec day={day} et slot=« {slot} ».",
         ]
     )

@@ -13,6 +13,13 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
+import { MealCard } from "@/components/MealCard";
+import {
+  DEFAULT_PREFERENCES,
+  MealQuestionnaire,
+  describePreferences,
+} from "@/components/MealQuestionnaire";
+import { MenuWaiting } from "@/components/MenuWaiting";
 import { PageHeader } from "@/components/PageHeader";
 import { RecipeImport } from "@/components/RecipeImport";
 import { StorePlan } from "@/components/StorePlan";
@@ -20,7 +27,7 @@ import { ApiError, api } from "@/lib/api";
 import { eur } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
-import type { MealPlan, MealPlanMeal } from "@/lib/types";
+import type { MealPlan, MealPreferences } from "@/lib/types";
 
 const GENERATE_DEADLINE_MS = 60_000;
 
@@ -49,9 +56,7 @@ export default function MenuPage() {
   const qc = useQueryClient();
   const week = mondayOf();
 
-  const [servings, setServings] = useState(2);
-  const [mealsPerDay, setMealsPerDay] = useState<1 | 2>(1);
-  const [budget, setBudget] = useState("");
+  const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [added, setAdded] = useState<string | null>(null);
 
@@ -72,18 +77,30 @@ export default function MenuPage() {
     enabled: !!user,
   });
 
+  // The questionnaire's answers live on the account. Null means never answered,
+  // which is what opens the questionnaire on a first visit.
+  const { data: savedPrefs, isSuccess: prefsLoaded } = useQuery({
+    queryKey: ["meal-prefs"],
+    queryFn: () => api.getMealPreferences(),
+    enabled: !!user,
+  });
+  const prefs = savedPrefs ?? DEFAULT_PREFERENCES;
+
   const generate = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (p: MealPreferences) => {
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), GENERATE_DEADLINE_MS);
       try {
         return await api.generateMealPlan(
           {
-            servings,
-            meals_per_day: mealsPerDay,
-            budget_eur: budget ? Number(budget.replace(",", ".")) : null,
+            servings: p.servings,
+            meals_per_day: p.meals_per_day,
+            budget_eur: p.budget_eur,
             avoid_allergens: allergens,
             diets,
+            goal: p.goal,
+            equipment: p.equipment,
+            styles: p.styles,
           },
           controller.signal,
         );
@@ -96,6 +113,18 @@ export default function MenuPage() {
       setAdded(null);
     },
     onSuccess: (result) => qc.setQueryData(["meal-plan", week], result),
+    onError: (e) => setError(messageFor(e)),
+  });
+
+  // Saving the answers comes first, then the week: a menu composed from answers
+  // that were not kept would be redone from the old ones on the next visit.
+  const savePrefs = useMutation({
+    mutationFn: (p: MealPreferences) => api.saveMealPreferences(p),
+    onSuccess: (_, p) => {
+      qc.setQueryData(["meal-prefs"], p);
+      setEditing(false);
+      generate.mutate(p);
+    },
     onError: (e) => setError(messageFor(e)),
   });
 
@@ -152,80 +181,56 @@ export default function MenuPage() {
     <div>
       <PageHeader title="Ma semaine" />
 
-      <section className="card p-4">
-        <h2 className="text-label-lg text-on-surface">Votre foyer</h2>
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-micro uppercase tracking-wider text-on-surface-variant">
-              Personnes
-            </span>
-            <input
-              type="number"
-              min={1}
-              max={12}
-              value={servings}
-              onChange={(e) => setServings(Math.max(1, Math.min(12, Number(e.target.value))))}
-              className="rounded-xl border border-outline-variant bg-surface-container-lowest p-2 text-body-md text-on-surface"
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-micro uppercase tracking-wider text-on-surface-variant">
-              Budget (facultatif)
-            </span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-              placeholder="60 €"
-              className="rounded-xl border border-outline-variant bg-surface-container-lowest p-2 text-body-md text-on-surface placeholder:text-on-surface-variant"
-            />
-          </label>
-        </div>
-
-        <div className="mt-3 flex gap-2" role="group" aria-label="Repas par jour">
-          {([1, 2] as const).map((n) => (
+      {editing || (prefsLoaded && savedPrefs === null && !plan && !isLoading) ? (
+        <MealQuestionnaire
+          initial={prefs}
+          allergens={allergens}
+          saving={savePrefs.isPending}
+          onDone={(p) => savePrefs.mutate(p)}
+          onCancel={savedPrefs || plan ? () => setEditing(false) : undefined}
+        />
+      ) : generate.isPending ? (
+        <MenuWaiting
+          meals={7 * (generate.variables?.meals_per_day ?? prefs.meals_per_day)}
+          budget={!!generate.variables?.budget_eur}
+        />
+      ) : (
+        <section className="card p-4">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-label-lg text-on-surface">Votre foyer</h2>
+              <p className="mt-1 text-body-md text-on-surface-variant">
+                {describePreferences(prefs)}
+              </p>
+            </div>
             <button
-              key={n}
-              onClick={() => setMealsPerDay(n)}
-              aria-pressed={mealsPerDay === n}
-              className={`flex-1 rounded-xl py-2 text-label-md ${
-                mealsPerDay === n
-                  ? "bg-primary-container text-on-primary-container"
-                  : "bg-surface-container text-on-surface-variant"
-              }`}
+              onClick={() => {
+                setError(null);
+                setEditing(true);
+              }}
+              className="flex flex-shrink-0 items-center gap-1 rounded-full bg-surface-container px-3 py-1.5 text-label-md text-on-surface active:scale-95"
             >
-              {n === 1 ? "Dîners seulement" : "Midi et soir"}
+              <Icon name="tune" className="text-[16px]" />
+              Modifier
             </button>
-          ))}
-        </div>
+          </div>
 
-        {allergens.length > 0 && (
-          <p className="mt-3 text-micro text-on-surface-variant">
-            <Icon name="shield" className="mr-1 align-[-3px] text-[14px] text-primary" />
-            Vos allergènes ({allergens.join(", ")}) sont exclus de tous les repas.
-          </p>
-        )}
+          {allergens.length > 0 && (
+            <p className="mt-3 text-micro text-on-surface-variant">
+              <Icon name="shield" className="mr-1 align-[-3px] text-[14px] text-primary" />
+              Vos allergènes ({allergens.join(", ")}) sont exclus de tous les repas.
+            </p>
+          )}
 
-        <button
-          onClick={() => generate.mutate()}
-          disabled={generate.isPending}
-          className="btn-primary mt-4 w-full py-3 disabled:opacity-50"
-        >
-          <Icon name="restaurant_menu" className="text-[18px]" />
-          {generate.isPending
-            ? "Composition du menu…"
-            : plan
-              ? "Refaire toute la semaine"
-              : "Composer ma semaine"}
-        </button>
-
-        {generate.isPending && (
-          <p role="status" aria-live="polite" className="mt-3 text-center text-body-md text-on-surface-variant">
-            Sept repas, leurs ingrédients et les prix : comptez une trentaine de secondes.
-          </p>
-        )}
-      </section>
+          <button
+            onClick={() => generate.mutate(prefs)}
+            className="btn-primary mt-4 w-full py-3"
+          >
+            <Icon name="restaurant_menu" className="text-[18px]" />
+            {plan ? "Refaire toute la semaine" : "Composer ma semaine"}
+          </button>
+        </section>
+      )}
 
       {error && (
         <p role="alert" className="mt-4 rounded-xl bg-error-container p-3 text-body-md text-on-error-container">
@@ -247,7 +252,7 @@ export default function MenuPage() {
 
       {isLoading && <p className="py-10 text-center text-on-surface-variant">Chargement…</p>}
 
-      {plan && (
+      {plan && !generate.isPending && !editing && (
         <>
           <PlanSummary plan={plan} onAdd={() => toList.mutate()} adding={toList.isPending} />
           <div className="mt-4 space-y-2">
@@ -317,65 +322,5 @@ function PlanSummary({
         {adding ? "Ajout…" : `Ajouter les ${plan.basket.length} articles à ma liste`}
       </button>
     </section>
-  );
-}
-
-function MealCard({
-  meal,
-  onRegenerate,
-  busy,
-  canRegenerate,
-}: {
-  meal: MealPlanMeal;
-  onRegenerate: () => void;
-  busy: boolean;
-  canRegenerate: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="card p-3">
-      <div className="flex items-center gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-micro uppercase tracking-wider text-on-surface-variant">
-            {meal.day_label} · {meal.slot}
-          </p>
-          <p className="truncate text-label-lg text-on-surface">{meal.title}</p>
-        </div>
-        {canRegenerate && (
-          <button
-            onClick={onRegenerate}
-            disabled={busy}
-            aria-label={`Changer le repas du ${meal.day_label}`}
-            className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90 disabled:opacity-50"
-          >
-            <Icon name="refresh" className="text-[18px]" />
-          </button>
-        )}
-        <button
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          aria-label={open ? "Masquer les ingrédients" : "Voir les ingrédients"}
-          className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90"
-        >
-          <Icon name={open ? "expand_less" : "expand_more"} className="text-[18px]" />
-        </button>
-      </div>
-
-      {open && (
-        <ul className="mt-2 space-y-1 border-t border-outline-variant pt-2">
-          {meal.ingredients.map((line, i) => (
-            <li key={`${line.product_name}-${i}`} className="flex justify-between text-body-md">
-              <span className="min-w-0 truncate text-on-surface">
-                {line.matched_name ?? line.product_name}
-              </span>
-              <span className="ml-3 flex-shrink-0 text-micro text-on-surface-variant">
-                {String(line.amount).replace(/\.0+$/, "").replace(".", ",")} {line.unit}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
   );
 }

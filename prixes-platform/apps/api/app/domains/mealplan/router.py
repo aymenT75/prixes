@@ -4,13 +4,15 @@ from __future__ import annotations
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
+from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.core.deps import CurrentUser, DbSession
 from app.core.mongo import Mongo, OptionalMongo
 from app.core.rate_limit import RateLimit
-from app.domains.mealplan import service
-from app.domains.mealplan.schemas import MealPlanIn, MealPlanOut, RegenerateIn
+from app.domains.mealplan import images, service
+from app.domains.mealplan.schemas import MealPlanIn, MealPlanOut, MealPreferences, RegenerateIn
 from app.domains.shopping import service as shopping_service
 from app.domains.shopping.router import _enrich
 from app.domains.shopping.schemas import BulkAddOut, ShoppingItemIn
@@ -20,6 +22,56 @@ router = APIRouter(prefix="/meal-plan", tags=["meal-plan"])
 # A week is a much larger generation than a single basket, so it gets its own,
 # tighter budget rather than sharing the smart-cart bucket.
 _LIMIT = Depends(RateLimit("mealplan", times=settings.mealplan_rate_per_day, window=86400))
+
+
+class PhotoIn(BaseModel):
+    title: str = Field(min_length=1, max_length=120)
+
+
+class PhotoOut(BaseModel):
+    url: str | None
+
+
+# Generous for a person (a week is 7-14 dishes, plus redos), tight for a script.
+_PHOTO_LIMIT = Depends(RateLimit("mealimg", times=60, window=86400))
+
+
+@router.post("/photo", response_model=PhotoOut, dependencies=[_PHOTO_LIMIT])
+async def photo(data: PhotoIn, user: CurrentUser) -> PhotoOut:
+    """The photo of a dish — drawn on first request, then served from disk.
+    `url` is null when there is no photo to be had; the page shows an icon."""
+    return PhotoOut(url=await images.photo_for(data.title))
+
+
+@router.get("/images/{name}", response_class=FileResponse)
+async def image_file(name: str) -> FileResponse:
+    """Public and static: it only serves photos that already exist, never draws
+    one, so an <img> can load it without a token."""
+    key = name.removesuffix(".webp")
+    path = images.image_path(key)
+    if not name.endswith(".webp") or not images.KEY_PATTERN.match(key) or not path.exists():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Photo introuvable.")
+    # A key is a hash of the title: the file behind it never changes.
+    return FileResponse(
+        path,
+        media_type="image/webp",
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
+
+
+@router.get("/preferences", response_model=MealPreferences | None)
+async def get_preferences(user: CurrentUser) -> MealPreferences | None:
+    """The questionnaire's answers — null until it has been answered once, which
+    is how the page knows to show the questionnaire rather than the summary."""
+    if user.meal_preferences is None:
+        return None
+    return MealPreferences.model_validate(user.meal_preferences)
+
+
+@router.put("/preferences", response_model=MealPreferences)
+async def put_preferences(data: MealPreferences, user: CurrentUser) -> MealPreferences:
+    user.meal_preferences = data.model_dump(mode="json")
+    return data
 
 
 @router.get("", response_model=MealPlanOut | None)

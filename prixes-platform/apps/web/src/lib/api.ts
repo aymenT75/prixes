@@ -19,7 +19,11 @@ import type {
   SmartCartResult,
   SplitResult,
   ImportedRecipe,
+  MealEquipment,
+  MealGoal,
   MealPlan,
+  MealPreferences,
+  MealStyle,
   StoresNearbyResult,
   TokenPair,
   User,
@@ -27,6 +31,9 @@ import type {
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 const API = BASE ? `${BASE}/api/v1` : "/api/v1";
+
+/** A path the API returns ("/api/v1/…"), made loadable from the app's origin. */
+export const apiAsset = (path: string) => `${BASE}${path}`;
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -222,9 +229,28 @@ export const api = {
       avoid_allergens?: string[];
       diets?: string[];
       dislikes?: string[];
+      goal?: MealGoal | null;
+      equipment?: MealEquipment[];
+      styles?: MealStyle[];
     },
     signal?: AbortSignal,
   ) => request<MealPlan>("/meal-plan", { method: "POST", body: JSON.stringify(body), signal }),
+  // The API sends budget_eur as a decimal string; the form works in numbers.
+  /** A dish's photo — drawn on first request. `url` null means: show the icon. */
+  mealPhoto: (title: string) =>
+    request<{ url: string | null }>("/meal-plan/photo", {
+      method: "POST",
+      body: JSON.stringify({ title }),
+    }),
+  getMealPreferences: () =>
+    request<MealPreferences | null>("/meal-plan/preferences").then((p) =>
+      p ? { ...p, budget_eur: p.budget_eur != null ? Number(p.budget_eur) : null } : null,
+    ),
+  saveMealPreferences: (prefs: MealPreferences) =>
+    request<MealPreferences>("/meal-plan/preferences", {
+      method: "PUT",
+      body: JSON.stringify(prefs),
+    }),
   regenerateMeal: (weekStart: string, day: number, slot: string, note?: string) =>
     request<MealPlan>(
       `/meal-plan/${weekStart}/meals/${day}/regenerate?slot=${encodeURIComponent(slot)}`,

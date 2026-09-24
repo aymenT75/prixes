@@ -44,6 +44,9 @@ services:
     depends_on:
       db: { condition: service_healthy }
       redis: { condition: service_healthy }
+    # Menu dish photos: drawn once per title (paid), so they must outlive the container.
+    volumes:
+      - meal_images:/data/meal-images
     ports:
       - "8000:8000"
     healthcheck:
@@ -89,3 +92,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  meal_images:

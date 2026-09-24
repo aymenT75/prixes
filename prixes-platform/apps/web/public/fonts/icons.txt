@@ -8,12 +8,15 @@ analytics
 android
 apps
 arrow_back
+arrow_forward
 assistant
 auto_awesome
 badge
 bar_chart
 barcode
 barcode_scanner
+blender
+bolt
 browse
 calendar_month
 check
@@ -24,6 +27,7 @@ cloud_off
 colors
 contrast
 cookie
+cooking
 dark_mode
 database
 delete
@@ -38,6 +42,7 @@ edit
 edit_note
 email
 error
+euro
 expand_less
 expand_more
 explore
@@ -60,6 +65,8 @@ input
 ios
 ios_share
 light
+light_mode
+lightbulb
 link
 list_alt
 local_fire_department
@@ -72,6 +79,8 @@ logout
 mail
 map
 mic
+microwave
+mode_fan
 my_location
 near_me
 notifications
@@ -79,6 +88,7 @@ notifications_active
 notifications_off
 nutrition
 open_in_new
+oven_gen
 pageview
 password
 person
@@ -87,6 +97,7 @@ photo_camera
 playlist_add
 privacy_tip
 progress_activity
+public
 qr_code
 qr_code_scanner
 radio
@@ -98,9 +109,11 @@ resize
 restaurant
 restaurant_menu
 reviews
+robot
 savings
 scan
 scanner
+schedule
 schema
 search
 search_off
@@ -110,7 +123,10 @@ share
 shield
 shopping_cart
 show_chart
+skillet
 sort
+soup_kitchen
+spa
 star
 stop
 storage
@@ -123,6 +139,7 @@ touch_app
 transform
 trending_down
 trending_up
+tune
 update
 verified
 verified_user

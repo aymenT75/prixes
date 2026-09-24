@@ -95,6 +95,22 @@ export function StorePlan({
         </p>
       </div>
 
+      {/* The number people share. Quoted only against a store that sells every
+          item of this plan, so it compares one trolley with the same trolley. */}
+      {option.saving_vs_priciest != null && option.priciest_store && (
+        <div className="card flex items-center gap-3 p-4" role="status">
+          <span className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-primary-container text-on-primary-container">
+            <Icon name="savings" fill className="text-[22px]" />
+          </span>
+          <p className="min-w-0 text-body-md text-on-surface-variant">
+            <span className="block text-headline-md text-primary">
+              {eur(option.saving_vs_priciest)} économisés
+            </span>
+            par rapport au même panier chez {option.priciest_store}
+          </p>
+        </div>
+      )}
+
       {option.baskets.map((basket) => (
         <section key={basket.store} className="card p-4">
           <div className="flex items-baseline justify-between gap-3">

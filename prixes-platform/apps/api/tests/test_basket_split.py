@@ -206,3 +206,71 @@ def test_merging_keeps_the_order_the_caller_chose() -> None:
 def test_a_basket_with_no_duplicates_is_untouched() -> None:
     lines = [("a", 1, "A"), ("b", 2, "B")]
     assert _merge_by_barcode(lines) == lines
+
+
+# ── Ce que le même caddie coûterait ailleurs ─────────────────────────────────
+def _priced(lines: list[PricedLine], stores: tuple[str, ...]):
+    from app.domains.shopping.service import _price_against_priciest
+
+    option = _allocate(lines, stores)
+    _price_against_priciest(lines, option)
+    return option
+
+
+def test_the_saving_is_quoted_against_the_dearest_store_that_fills_the_basket() -> None:
+    lines = [
+        line("pâtes", Lidl=0.95, Carrefour=1.20, Monoprix=1.60),
+        line("café", 2, Lidl=3.40, Carrefour=3.50, Monoprix=4.20),
+    ]
+    option = _priced(lines, ("Lidl",))
+    assert option.total == Decimal("7.75")
+    assert option.priciest_store == "Monoprix"
+    assert option.saving_vs_priciest == Decimal("2.25")  # 10,00 − 7,75
+
+
+def test_a_store_missing_an_item_is_never_the_comparison() -> None:
+    """Monoprix is dearer on what it has, but it has no café: pricing a smaller
+    trolley there would invent a saving."""
+    lines = [
+        line("pâtes", Lidl=0.95, Carrefour=1.20, Monoprix=3.00),
+        line("café", Lidl=3.40, Carrefour=3.50),
+    ]
+    option = _priced(lines, ("Lidl",))
+    assert option.priciest_store == "Carrefour"
+    assert option.saving_vs_priciest == Decimal("0.35")
+
+
+def test_no_saving_when_no_other_store_fills_the_basket() -> None:
+    lines = [line("pâtes", Lidl=0.95, Carrefour=1.20), line("café", Lidl=3.40)]
+    option = _priced(lines, ("Lidl",))
+    assert option.priciest_store is None
+    assert option.saving_vs_priciest is None
+
+
+def test_no_saving_when_every_store_charges_the_same() -> None:
+    lines = [line("pâtes", Lidl=1.00, Carrefour=1.00)]
+    option = _priced(lines, ("Lidl",))
+    assert option.saving_vs_priciest is None
+
+
+def test_a_two_store_plan_is_compared_on_everything_it_buys() -> None:
+    lines = [
+        line("pâtes", Carrefour=1.20, Lidl=0.95),
+        line("café", Carrefour=3.50, Lidl=4.10),
+    ]
+    option = _priced(lines, ("Carrefour", "Lidl"))
+    assert option.total == Decimal("4.45")
+    assert option.priciest_store == "Lidl"
+    assert option.saving_vs_priciest == Decimal("0.60")  # 5,05 − 4,45
+
+
+def test_items_the_plan_does_not_buy_are_left_out_of_the_comparison() -> None:
+    """The wasabi is bought elsewhere whatever happens; it can't count here."""
+    lines = [
+        line("pâtes", Lidl=0.95, Carrefour=1.20),
+        line("wasabi", Carrefour=4.90),
+    ]
+    option = _priced(lines, ("Lidl",))
+    assert option.missing == ["wasabi"]
+    assert option.priciest_store == "Carrefour"
+    assert option.saving_vs_priciest == Decimal("0.25")

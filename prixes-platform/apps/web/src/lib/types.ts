@@ -255,6 +255,27 @@ export interface AnalyticsSummary {
 
 
 // ── Menu de la semaine ──
+export type MealGoal = "budget" | "temps" | "sante" | "idees";
+export type MealEquipment = "four" | "plaques" | "micro-ondes" | "airfryer" | "robot" | "autocuiseur";
+export type MealStyle =
+  | "rapide"
+  | "healthy"
+  | "classique"
+  | "economique"
+  | "reconfort"
+  | "one-pot"
+  | "monde";
+
+/** The questionnaire's answers, kept on the account. */
+export interface MealPreferences {
+  servings: number;
+  meals_per_day: 1 | 2;
+  budget_eur: number | null;
+  goal: MealGoal | null;
+  equipment: MealEquipment[];
+  styles: MealStyle[];
+}
+
 export interface MealPlanMeal {
   day: number;
   day_label: string;
@@ -318,6 +339,10 @@ export interface SplitOption {
   saving_vs_single: number | null;
   /** How many more items this plan finds than the best single store. */
   extra_items: number;
+  /** The dearest store that sells everything this plan buys — null when none does. */
+  priciest_store: string | null;
+  /** What the same items would cost there, minus this plan's total. */
+  saving_vs_priciest: number | null;
 }
 
 export interface SplitResult {
