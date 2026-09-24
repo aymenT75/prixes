@@ -106,6 +106,35 @@ GitHub macOS runner (free: the repository is public) on every push to `main` tou
 the app. It proves pods, plugins and Swift compile; only signing, real push and Sign in
 with Apple are left for the first Codemagic build.
 
+### État iOS au 2026-09-24 (version 1.6)
+
+`MARKETING_VERSION` passé de 1.0 à **1.6**, pour coller à Android 1.6 (versionCode 7).
+`CURRENT_PROJECT_VERSION` reste à 1 : Codemagic l'écrase avec son compteur `$BUILD_NUMBER`
+à chaque build (étape « Build number » de `codemagic.yaml`), il n'y a rien à incrémenter
+à la main.
+
+Configuration vérifiée ce jour, sans Mac :
+
+| Point | État |
+|---|---|
+| `appId` cohérent (capacitor.config / pbxproj / GoogleService-Info) | ✅ `software.omnilink.prixes` |
+| `CFBundleURLSchemes` = `REVERSED_CLIENT_ID` | ✅ identiques |
+| 5 `*UsageDescription` en français (caméra, micro, parole, position, photos) | ✅ |
+| Entitlements `aps-environment` + Sign in with Apple | ✅ |
+| Podfile : `platform :ios, '15.5'`, sous-spec `.../Google`, FirebaseMessaging ~> 12.7 | ✅ |
+| `FirebaseApp.configure()` + relais APNs → FCM dans AppDelegate | ✅ |
+| API embarquée | ✅ `https://prixes.app`, aucun `localhost` |
+| `Podfile.lock` / `Pods/` | ❌ absents — `pod install` n'a jamais tourné (Windows) |
+| `AppIcon.appiconset` | ⚠️ une seule image `AppIcon-512@2x.png` |
+
+Les deux derniers ne se règlent qu'au premier build sur un Mac (ou sur Codemagic).
+Aucune dépendance native n'est figée tant que `Podfile.lock` n'existe pas : le premier
+build résout les versions et peut donc surprendre.
+
+⚠️ `ios/App/App/public` est **gitignoré** et régénéré par `npx cap sync ios` : le dossier
+présent en local peut dater d'avant le dernier correctif. Codemagic le reconstruit à
+chaque fois, il n'y a rien à committer.
+
 ### Building iOS without a Mac: Codemagic
 `codemagic.yaml` (repo root) builds on a cloud Mac and uploads to TestFlight. It checks
 the Firebase plist belongs to this app and matches the URL scheme, and numbers each
