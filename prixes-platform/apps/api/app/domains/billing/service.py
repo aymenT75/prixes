@@ -1,9 +1,10 @@
 """Premium: who has it, how they get it, and the one free menu a month.
 
-Four features call a paid model — the weekly menu, the text-to-cart assistant,
-photo recognition and the natural voice. They are Premium (2,99 €/month or
-24,99 €/year, paid on the web through Stripe). Everything else stays free, and a
-free account still gets one weekly menu per calendar month to see what it is.
+Four features call a paid model — the invented weekly menu, the free-text
+assistant, photo recognition and the natural voice. They are Premium (2,99 €/month
+or 24,99 €/year, paid on the web through Stripe). Nothing is locked for the
+others: each has a free version that costs nothing to run (menus and assistant
+from the recipe catalogue, barcode scan, the device's voice).
 
 Stripe is spoken to over plain HTTPS (form-encoded, like its own docs) rather than
 through its SDK: three calls and one signature check do not justify the package.
@@ -47,14 +48,6 @@ def now() -> datetime:
 
 def is_premium(user: User) -> bool:
     return user.premium_until is not None and user.premium_until + _GRACE > now()
-
-
-def this_month() -> str:
-    return now().strftime("%Y-%m")
-
-
-def free_menu_available(user: User) -> bool:
-    return not is_premium(user) and user.free_menu_month != this_month()
 
 
 def checkout_available() -> bool:

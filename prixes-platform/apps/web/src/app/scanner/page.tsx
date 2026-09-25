@@ -10,6 +10,7 @@ import { scanBarcodeNative } from "@/lib/barcode";
 import { isNativeApp } from "@/lib/platform";
 import { logWarn } from "@/lib/logger";
 import { useApp } from "@/lib/store";
+import { usePremium } from "@/lib/usePremium";
 import { hapticDanger, hapticSuccess, speak } from "@/lib/voice";
 import { detectBarcodeInFile, downscaleToBase64 } from "@/lib/vision";
 
@@ -44,6 +45,7 @@ export default function ScannerPage() {
 
   // AI "identify by photo" fallback for products with no readable barcode.
   const { user, openLogin } = useApp();
+  const premium = usePremium();
   const photoRef = useRef<HTMLInputElement>(null);
   const [aiBusy, setAiBusy] = useState(false);
   const [aiMsg, setAiMsg] = useState<string | null>(null);
@@ -66,7 +68,14 @@ export default function ScannerPage() {
       goToProduct(code);
       return;
     }
-    // 2) Vision AI (GPT-4o) → product name → search our catalogue.
+    // 2) Vision AI → product name → search our catalogue. Premium only (a paid
+    // call): without it, the free way — the barcode — is what we point to.
+    if (!premium) {
+      return aiFail(
+        "Pas de code-barres lisible sur la photo. Reprenez-la plus près du code, ou tapez-le. " +
+          "Reconnaître un produit sans code-barres fait partie de Premium.",
+      );
+    }
     try {
       const b64 = await downscaleToBase64(file);
       const r = await api.recognizeProduct(b64, "image/jpeg");

@@ -354,8 +354,6 @@ export interface SplitResult {
 export interface BillingStatus {
   premium: boolean;
   premium_until: string | null;
-  /** A free account's one weekly menu this calendar month is still unused. */
-  free_menu_available: boolean;
   /** False until Stripe is configured: offer "bientôt", not a button that fails. */
   checkout_available: boolean;
   can_manage: boolean;

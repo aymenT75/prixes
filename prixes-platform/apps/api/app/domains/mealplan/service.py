@@ -11,7 +11,7 @@ import logging
 import uuid
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from fastapi import HTTPException, status
 from pydantic import ValidationError
@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.llm import generate_json, llm_enabled
 from app.core.mongo import MEAL_PLANS, MongoDb
+from app.domains.mealplan import catalog
 from app.domains.mealplan.schemas import (
     DAYS,
     AiMeal,
@@ -28,6 +29,7 @@ from app.domains.mealplan.schemas import (
     MealOut,
     MealPlanIn,
     MealPlanOut,
+    Slot,
 )
 from app.domains.shopping import service as shopping_service
 from app.domains.shopping.schemas import OptimizeResult, SplitResult
@@ -283,22 +285,39 @@ def _payable(split: SplitResult | None, fallback: Decimal | None) -> Decimal | N
     return fallback
 
 
-async def generate(
-    db: AsyncSession, mongo: MongoDb | None, user_id: uuid.UUID, data: MealPlanIn
-) -> MealPlanOut:
-    if not llm_enabled():
-        raise HTTPException(
-            status.HTTP_503_SERVICE_UNAVAILABLE, "Le planificateur n'est pas disponible."
-        )
-    week_start = data.week_start or coming_monday()
+def _no_recipe() -> HTTPException:
+    return HTTPException(
+        status.HTTP_422_UNPROCESSABLE_ENTITY,
+        "Aucune recette ne correspond à vos réponses. Ajoutez du matériel de cuisine "
+        "ou retirez un style de repas.",
+    )
 
-    plan = await _ask_model(MEAL_PLAN_SYSTEM, _user_prompt(data), max_tokens=6000)
-    if plan is None or not plan.meals:
+
+async def generate(
+    db: AsyncSession,
+    mongo: MongoDb | None,
+    user_id: uuid.UUID,
+    data: MealPlanIn,
+    use_ai: bool = True,
+) -> MealPlanOut:
+    """A week of meals: invented by the model for Premium, drawn from the recipe
+    catalogue for everyone else — and for Premium too when the model is down,
+    rather than no menu at all."""
+    week_start = data.week_start or coming_monday()
+    use_ai = use_ai and llm_enabled()
+
+    if use_ai:
+        plan = await _ask_model(MEAL_PLAN_SYSTEM, _user_prompt(data), max_tokens=6000)
+        meals = plan.meals[:_MAX_MEALS] if plan else []
+    else:
+        meals = catalog.compose(data)
+    if not meals:
+        if not use_ai:
+            raise _no_recipe()
         raise HTTPException(
             status.HTTP_502_BAD_GATEWAY,
             "Le menu n'a pas pu être généré. Réessayez dans un instant.",
         )
-    meals = plan.meals[:_MAX_MEALS]
     out_meals, basket, stores, split = await _price_week(db, meals, data.avoid_allergens)
     attempts = 1
 
@@ -313,16 +332,20 @@ async def generate(
         and over > data.budget_eur
     ):
         logger.info(f"Meal plan over budget ({over} > {data.budget_eur}), retrying")
-        retry = await _ask_model(
-            MEAL_PLAN_SYSTEM,
-            _user_prompt(data)
-            + _over_budget_note(over, data.budget_eur),
-            max_tokens=6000,
-        )
+        if use_ai:
+            retry = await _ask_model(
+                MEAL_PLAN_SYSTEM,
+                _user_prompt(data)
+                + _over_budget_note(over, data.budget_eur),
+                max_tokens=6000,
+            )
+            cheaper = retry.meals[:_MAX_MEALS] if retry else []
+        else:
+            # The catalogue's answer to "too dear": only its cheapest recipes.
+            cheaper = catalog.compose(data, cheaper=True)
         attempts += 1
-        if retry is None or not retry.meals:
+        if not cheaper:
             break
-        cheaper = retry.meals[:_MAX_MEALS]
         c_meals, c_basket, c_stores, c_split = await _price_week(
             db, cheaper, data.avoid_allergens
         )
@@ -386,8 +409,10 @@ async def regenerate_meal(
     day: int,
     slot: str,
     note: str | None,
+    use_ai: bool = True,
 ) -> MealPlanOut:
-    """Replace one meal, leaving the rest of the week alone."""
+    """Replace one meal, leaving the rest of the week alone. Premium gets a dish
+    invented for it; everyone else another recipe from the catalogue."""
     doc = await mongo[MEAL_PLANS].find_one(
         {"user_id": str(user_id), "week_start": week_start.isoformat()}
     )
@@ -399,6 +424,13 @@ async def regenerate_meal(
     target = next((m for m in meals if m.day == day and m.slot == slot), None)
     if target is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Ce repas n'est pas au menu.")
+
+    if not (use_ai and llm_enabled()):
+        others = [m.title for m in meals]
+        swap = catalog.replacement(data, day, cast(Slot, slot), others)
+        if swap is None:
+            raise _no_recipe()
+        return await _replace_and_price(db, mongo, doc, week_start, data, meals, target, swap)
 
     prompt = "\n".join(
         [
@@ -426,6 +458,20 @@ async def regenerate_meal(
         )
 
     fresh = replacement.meals[0].model_copy(update={"day": day, "slot": slot})
+    return await _replace_and_price(db, mongo, doc, week_start, data, meals, target, fresh)
+
+
+async def _replace_and_price(
+    db: AsyncSession,
+    mongo: MongoDb,
+    doc: dict[str, Any],
+    week_start: date,
+    data: MealPlanIn,
+    meals: list[AiMeal],
+    target: AiMeal,
+    fresh: AiMeal,
+) -> MealPlanOut:
+    """Swap `target` for `fresh`, remember the week, and price it again."""
     meals = [fresh if m is target else m for m in meals]
 
     try:

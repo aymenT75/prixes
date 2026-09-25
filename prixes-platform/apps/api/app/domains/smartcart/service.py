@@ -28,6 +28,7 @@ from app.core.llm import generate_json, llm_enabled
 from app.core.mongo import DRAFTS, mongo_enabled
 from app.core.mongo import get_db as get_mongo
 from app.core.redis import redis_client
+from app.domains.mealplan import catalog
 from app.domains.shopping import service as shopping_service
 from app.domains.shopping.schemas import ShoppingItemIn
 from app.domains.smartcart.prompt import SMART_CART_SYSTEM, smart_cart_user_prompt
@@ -145,6 +146,39 @@ async def generate(
             "L'assistant met trop de temps à répondre. Réessayez.",
         ) from exc
 
+    return await _basket(user_id, data, draft, lines, cached)
+
+
+async def generate_from_catalog(
+    db: AsyncSession, user_id: uuid.UUID | None, data: SmartCartIn
+) -> SmartCartOut:
+    """The free assistant: the request names a dish of the recipe catalogue.
+
+    Free text is Premium (a model call); without it, "une raclette pour 6" still
+    works because the catalogue has a raclette. Anything it cannot place gets
+    examples of what it can, not a refusal.
+    """
+    recipe = catalog.find(data.prompt)
+    if recipe is None:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Je n'ai pas trouvé ce plat dans nos recettes. Essayez un nom de plat "
+            "(« raclette », « lasagnes », « couscous »…), ou passez à Premium pour "
+            "demander n'importe quoi.",
+        )
+    servings = data.servings or catalog.servings_in(data.prompt) or 4
+    draft = AiDraft(title=recipe.title, servings=servings, lines=recipe.lines(servings))
+    lines = await resolve_lines(db, draft.lines, data.avoid_allergens)
+    return await _basket(user_id, data, draft, lines, cached=False)
+
+
+async def _basket(
+    user_id: uuid.UUID | None,
+    data: SmartCartIn,
+    draft: AiDraft,
+    lines: list[ResolvedLine],
+    cached: bool,
+) -> SmartCartOut:
     draft_id = await _store_draft(user_id, data, draft, lines)
 
     priced = [line for line in lines if line.best_price is not None]

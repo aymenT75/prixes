@@ -22,8 +22,8 @@ import { useApp } from "@/lib/store";
 import { useDialog } from "@/lib/useDialog";
 
 const INCLUDED = [
-  { icon: "restaurant_menu", label: "Menus de la semaine illimités", hint: "avec photos, à refaire repas par repas" },
-  { icon: "auto_awesome", label: "Assistant « une phrase → une liste »", hint: "« une raclette pour 6 » devient un panier chiffré" },
+  { icon: "restaurant_menu", label: "Menus inventés sur mesure", hint: "par l'IA, au-delà de nos recettes" },
+  { icon: "auto_awesome", label: "Assistant qui comprend tout", hint: "n'importe quelle phrase devient un panier chiffré" },
   { icon: "photo_camera", label: "Reconnaissance d'un produit sur photo", hint: "quand le code-barres est inconnu" },
   { icon: "record_voice_over", label: "Voix naturelle de l'assistant vocal", hint: "au lieu de la voix du téléphone" },
 ];
@@ -122,7 +122,8 @@ export function PremiumModal() {
 
         <p className="mt-4 rounded-xl bg-surface-container p-3 text-body-md text-on-surface-variant">
           Toujours gratuit : le comparateur, le scanner, le carburant, la liste de courses, les
-          alertes prix et <strong className="text-on-surface">un menu de la semaine par mois</strong>.
+          alertes prix, <strong className="text-on-surface">les menus de la semaine avec nos recettes</strong>{" "}
+          et l&apos;assistant pour les plats de nos recettes.
         </p>
 
         {!status?.premium &&

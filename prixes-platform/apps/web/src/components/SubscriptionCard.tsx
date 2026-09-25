@@ -76,9 +76,7 @@ export function SubscriptionCard() {
           <p className="text-body-md text-on-surface-variant">
             {status.premium
               ? until && `Actif, renouvelé le ${until}`
-              : status.free_menu_available
-                ? "Votre menu gratuit du mois est disponible"
-                : "Menu gratuit du mois utilisé"}
+              : "Menus avec nos recettes, comparateur, scanner et liste inclus"}
           </p>
         </div>
       </div>

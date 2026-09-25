@@ -76,17 +76,6 @@ def test_long_expired_is_not_premium() -> None:
     assert not service.is_premium(user(premium_until=datetime.now(UTC) - timedelta(days=3)))
 
 
-def test_one_free_menu_a_month() -> None:
-    assert service.free_menu_available(user())
-    assert not service.free_menu_available(user(free_menu_month=service.this_month()))
-    assert service.free_menu_available(user(free_menu_month="2020-01"))
-
-
-def test_a_subscriber_does_not_spend_the_free_menu() -> None:
-    subscriber = user(premium_until=datetime.now(UTC) + timedelta(days=20))
-    assert not service.free_menu_available(subscriber)
-
-
 # ── Webhook events ───────────────────────────────────────────────────────────
 class FakeDb:
     def __init__(self, found: Any) -> None:

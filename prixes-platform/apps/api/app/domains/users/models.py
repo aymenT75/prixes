@@ -42,5 +42,6 @@ class User(Base, TimestampMixin):
     # Written only by the Stripe webhook, never by the user.
     premium_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     stripe_customer_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
-    # "2026-09" once this month's free weekly menu has been used.
+    # Unused since the free menu comes from the recipe catalogue (it counted the
+    # one free AI menu a month). Kept: dropping a column is a migration of its own.
     free_menu_month: Mapped[str | None] = mapped_column(String(7), nullable=True)

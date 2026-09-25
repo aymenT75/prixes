@@ -79,6 +79,7 @@ login
 logout
 mail
 map
+menu_book
 mic
 microwave
 mode_fan

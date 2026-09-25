@@ -18,7 +18,6 @@ router = APIRouter(prefix="/billing", tags=["billing"])
 class BillingStatus(BaseModel):
     premium: bool
     premium_until: datetime | None
-    free_menu_available: bool
     # False while Stripe isn't configured: the page then says "bientôt" instead of
     # offering a button that would fail.
     checkout_available: bool
@@ -38,7 +37,6 @@ async def billing_status(user: CurrentUser) -> BillingStatus:
     return BillingStatus(
         premium=service.is_premium(user),
         premium_until=user.premium_until,
-        free_menu_available=service.free_menu_available(user),
         checkout_available=service.checkout_available(),
         can_manage=bool(user.stripe_customer_id and settings.stripe_secret_key),
     )

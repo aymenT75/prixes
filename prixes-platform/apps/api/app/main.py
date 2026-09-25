@@ -86,8 +86,9 @@ async def meta() -> dict[str, object]:
     return {
         "tts_enabled": bool(settings.openai_api_key),
         "smart_assistant_enabled": llm_enabled(),
-        # Composing a week needs a model; only remembering it needs Mongo.
-        "meal_plan_enabled": llm_enabled(),
+        # The free week comes from the recipe catalogue, so there is always a
+        # planner; only remembering the week needs Mongo.
+        "meal_plan_enabled": True,
         # Ce que l'app promet à l'utilisateur : « ce menu est mémorisé ».
         # Une URL configurée ne suffit pas — il faut qu'Atlas réponde.
         "meal_plan_saved": mongo_ready(),

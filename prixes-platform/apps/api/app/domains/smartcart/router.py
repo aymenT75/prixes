@@ -1,19 +1,19 @@
 """Smart Assistant HTTP API — a sentence becomes a costed basket.
 
-Composing calls a paid model, so it is Premium (billing domain); committing the
-result to a shopping list needs an account, because a list belongs to someone.
-The rate limiter and the Redis cache on the normalised prompt still bound what a
-subscriber can spend.
+Free text calls a paid model, so it is Premium (billing domain). Everyone else
+still gets an answer when the request names a dish of the recipe catalogue
+("une raclette pour 6") — no model, no cost. Committing the result to a shopping
+list needs an account, because a list belongs to someone.
 """
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.core.config import settings
-from app.core.deps import CurrentUser, DbSession
+from app.core.deps import CurrentUser, DbSession, OptionalUser
 from app.core.llm import llm_enabled
 from app.core.rate_limit import RateLimit, refund
-from app.domains.billing.deps import PremiumUser
+from app.domains.billing.service import is_premium
 from app.domains.smartcart import service
 from app.domains.smartcart.schemas import CommitIn, CommitOut, SmartCartIn, SmartCartOut
 
@@ -40,16 +40,19 @@ async def status_() -> dict[str, object]:
     ],
 )
 async def generate(
-    request: Request, data: SmartCartIn, db: DbSession, user: PremiumUser
+    request: Request, data: SmartCartIn, db: DbSession, user: OptionalUser
 ) -> SmartCartOut:
-    """Premium: each new sentence is a paid model call. 402 opens the Premium screen.
+    """Premium: any sentence, read by the model. Everyone else: the catalogue
+    recipe the sentence names — never a locked door.
 
     A request that comes back with no basket hands its quota back. Otherwise the
     first-time user, whose opening attempts are the most likely to be refused,
     spends the whole hour's budget on refusals and is locked out for having tried.
     """
     try:
-        return await service.generate(db, user.id, data)
+        if user is not None and is_premium(user):
+            return await service.generate(db, user.id, data)
+        return await service.generate_from_catalog(db, user.id if user else None, data)
     except HTTPException:
         await refund(request)
         raise

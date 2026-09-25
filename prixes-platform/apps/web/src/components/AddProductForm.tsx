@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { ApiError, api } from "@/lib/api";
+import { usePremium } from "@/lib/usePremium";
 import { downscaleToBase64 } from "@/lib/vision";
 
 // Shown when a scanned barcode isn't in our catalog (typically a store-internal code
@@ -22,8 +23,14 @@ export function AddProductForm({
   const [hint, setHint] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const premium = usePremium();
 
   async function recogniseFromFile(file: File) {
+    // Naming a product from a photo is Premium; typing the name is the free way.
+    if (!premium) {
+      setHint("Saisissez le nom du produit. (Le nommer depuis une photo fait partie de Premium.)");
+      return;
+    }
     setRecognizing(true);
     setHint(null);
     try {

@@ -44,9 +44,6 @@ function messageFor(error: unknown): string {
     return "Le menu met trop de temps à se générer. Réessayez.";
   }
   if (error instanceof ApiError) {
-    if (error.status === 402) {
-      return "Votre menu gratuit du mois est utilisé. Les menus illimités font partie de Premium.";
-    }
     if (error.status === 503) return "Le planificateur n'est pas disponible pour le moment.";
     return error.message;
   }
@@ -236,12 +233,10 @@ export default function MenuPage() {
 
           {billing && !billing.premium && (
             <p className="mt-3 text-micro text-on-surface-variant">
-              <Icon name="workspace_premium" className="mr-1 align-[-3px] text-[14px] text-primary" />
-              {billing.free_menu_available
-                ? "1 menu gratuit ce mois-ci. "
-                : "Menu gratuit du mois utilisé. "}
+              <Icon name="menu_book" className="mr-1 align-[-3px] text-[14px] text-primary" />
+              Menus composés avec nos recettes.{" "}
               <button onClick={() => openPremium(true)} className="font-semibold text-primary underline">
-                Menus illimités avec Premium
+                Des menus inventés sur mesure avec Premium
               </button>
             </p>
           )}
