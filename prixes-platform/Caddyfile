@@ -1,10 +1,33 @@
 # Prixes reverse proxy — automatic HTTPS via Let's Encrypt.
+#
+# CE FICHIER EST LA SOURCE DE VÉRITÉ. Il est monté en lecture seule dans le
+# conteneur Caddy depuis /opt/prixes-platform/Caddyfile sur le droplet. Il avait
+# divergé : le bloc Hi Coach et tout le bloc formation.prixes.app n'existaient
+# que sur le serveur, et une réinstallation les aurait perdus. Toute
+# modification se fait ici, puis se copie sur le droplet et se recharge :
+#
+#     scp prixes-platform/Caddyfile prixes-droplet:/opt/prixes-platform/Caddyfile
+#     ssh prixes-droplet "docker exec prixes-platform-caddy-1 caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile"
+#
+# Validez AVANT de recharger — une erreur de syntaxe coupe les deux sites :
+#
+#     ssh prixes-droplet "docker exec prixes-platform-caddy-1 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile"
+#
+# Et gardez une copie de l'ancienne version à côté avant d'écraser : c'est la
+# seule façon de revenir en arrière vite si le rechargement passe mais que le
+# site se comporte mal.
 # {$DOMAIN} comes from the environment (set it in .env.production).
 # For a quick local TLS test you can set DOMAIN=localhost (Caddy issues a
 # local cert) or DOMAIN=:80 (plain HTTP, no cert).
 
 {$DOMAIN} {
 	encode zstd gzip
+
+	# Hi Coach API. Before /api/*: handle_path strips /coach, so
+	# https://prixes.app/coach/api/v1/... reaches the coach as /api/v1/...
+	handle_path /coach/* {
+		reverse_proxy hicoach-api:8000
+	}
 
 	# API + health go to FastAPI; everything else to the Next.js server.
 	handle /api/* {
@@ -25,4 +48,46 @@
 		Referrer-Policy "strict-origin-when-cross-origin"
 		-Server
 	}
+}
+
+# Partie gratuite de la formation : des fichiers statiques, rien d autre.
+# Aucun formulaire, aucune collecte : on mesure seulement si les gens lisent.
+formation.prixes.app {
+	encode zstd gzip
+	root * /srv/formation
+
+	# Un dossier sert son index.html ; tout le reste qui n'existe pas repond 404.
+	# Le repli sur /index.html renvoyait la page d'accueil avec un code 200 pour
+	# n'importe quelle adresse : les moteurs indexaient des pages fantomes, et une
+	# faute de frappe passait pour une page valide.
+	try_files {path} {path}/index.html
+	file_server
+
+	header {
+		# Un an, sous-domaines compris, comme le site principal.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# Ce site ne charge que ses propres fichiers : ni script, ni police, ni
+		# image venue d'ailleurs. La regle le dit et le navigateur l'applique,
+		# ce qui limite les degats si une page etait un jour modifiee.
+		# 'unsafe-inline' reste necessaire : les styles et le script de la page
+		# de lecture sont ecrits dans la page elle-meme.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'"
+
+		# Personne n'encadre ces pages dans les siennes.
+		X-Frame-Options "DENY"
+
+		# Le site n'a besoin d'aucune de ces capacites : on les refuse toutes.
+		Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
+
+		-Server
+	}
+
+	# Les polices et le convertisseur Markdown ne changent jamais sans changer
+	# de nom : ils peuvent etre gardes un an. Les pages, elles, doivent rester
+	# revalidees a chaque visite.
+	@fige path /polices/* /lire/marked.min.js
+	header @fige Cache-Control "public, max-age=31536000, immutable"
 }
