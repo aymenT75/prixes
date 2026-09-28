@@ -10,6 +10,7 @@ import { scanBarcodeNative } from "@/lib/barcode";
 import { isNativeApp } from "@/lib/platform";
 import { logWarn } from "@/lib/logger";
 import { useApp } from "@/lib/store";
+import { useVoiceTask } from "@/lib/voiceTasks";
 import { usePremium } from "@/lib/usePremium";
 import { hapticDanger, hapticSuccess, speak } from "@/lib/voice";
 import { detectBarcodeInFile, downscaleToBase64 } from "@/lib/vision";
@@ -143,6 +144,12 @@ export default function ScannerPage() {
       );
     }
   }, [goToProduct]);
+
+  // Asked by voice ("scanne un produit"): the camera opens on arrival anyway,
+  // so the task only has to be marked done.
+  useEffect(() => {
+    useVoiceTask.getState().take("scan");
+  }, []);
 
   useEffect(() => {
     if (native) {

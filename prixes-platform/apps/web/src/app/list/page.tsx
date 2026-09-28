@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
@@ -13,6 +13,7 @@ import { api } from "@/lib/api";
 import { eur, nutriBarStyle, nutriHint } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import type { ShoppingItem, SplitResult } from "@/lib/types";
+import { spokenPrice, useVoiceTask } from "@/lib/voiceTasks";
 
 export default function ListPage() {
   const { user, openLogin } = useApp();
@@ -54,6 +55,35 @@ export default function ListPage() {
     mutationFn: () => api.splitBasket(2),
     onSuccess: setPlan,
   });
+
+  // Asked by voice ("où faire mes courses ?"): run the comparison and say it.
+  useEffect(() => {
+    if (!useVoiceTask.getState().take("split")) return;
+    const { finish } = useVoiceTask.getState();
+    if (!user) {
+      finish("Connectez-vous pour que je compare les magasins de votre liste.", "roule", false);
+      openLogin(true);
+      return;
+    }
+    organise.mutate(undefined, {
+      onSuccess: (result) => {
+        const best = result.options[0];
+        if (!best) {
+          finish("Je ne connais aucun prix pour votre liste. Ajoutez des produits, puis redemandez.", "plein", false);
+          return;
+        }
+        const where = best.stores.join(" puis ");
+        const saving =
+          best.saving_vs_priciest != null && best.priciest_store
+            ? ` ${spokenPrice(best.saving_vs_priciest)} de moins que chez ${best.priciest_store}.`
+            : "";
+        const missing = best.missing.length ? ` ${best.missing.length} article${best.missing.length > 1 ? "s" : ""} à trouver ailleurs.` : "";
+        finish(`Le moins cher : ${where}, ${spokenPrice(best.total)}.${saving}${missing}`, "plein");
+      },
+      onError: () => finish("Je n'ai pas pu comparer les magasins. Réessayez.", "plein", false),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
 
   // Signed out, the assistant still runs — trying it is how people understand
   // what the app does. Only keeping the result needs an account, so the sign-in

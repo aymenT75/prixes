@@ -26,6 +26,7 @@ import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
 import { createVoiceRecognizer, speechSupported } from "@/lib/voice";
 import type { SmartCartLine, SmartCartResult } from "@/lib/types";
+import { spokenPrice, useVoiceTask } from "@/lib/voiceTasks";
 
 // The client gives up slightly after the server's own 25s deadline, so a server
 // timeout surfaces as its own message rather than as a generic abort.
@@ -156,6 +157,27 @@ export function SmartAssistant() {
       setDraft({ ...result, lines: result.lines.map((l) => ({ ...l, keep: !l.optional })) }),
     onError: (e) => setError(messageFor(e)),
   });
+
+  // Asked by voice ("une raclette pour 6"): fill the box, run it, say the basket.
+  useEffect(() => {
+    const task = useVoiceTask.getState().take("cart");
+    if (!task) return;
+    const { finish } = useVoiceTask.getState();
+    setPrompt(task.prompt);
+    generate.mutate(task.prompt, {
+      onSuccess: (result) => {
+        const n = result.lines.length;
+        const total = result.estimated_total != null ? `, environ ${spokenPrice(result.estimated_total)}` : "";
+        finish(
+          `${result.title} pour ${result.servings} : ${n} article${n > 1 ? "s" : ""}${total}. ` +
+            "Touchez « Ajouter à ma liste » pour les garder.",
+          "plein",
+        );
+      },
+      onError: (e) => finish(messageFor(e), "roule", false),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
 
   const commit = useMutation({
     mutationFn: async (current: Draft) => {

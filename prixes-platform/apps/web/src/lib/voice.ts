@@ -5,6 +5,7 @@
 
 // Web Speech API types are declared in web-speech-api.d.ts
 import { isNativeApp } from "./platform";
+import type { FuelId, VoiceTask } from "./voiceTasks";
 
 export type Intent =
   | { type: "navigate"; path: string; say: string }
@@ -12,6 +13,12 @@ export type Intent =
   | { type: "setting"; action: "dark" | "light" | "bigger" | "smaller" | "contrast"; say: string }
   | { type: "read"; say: string }
   | { type: "help"; say: string }
+  // A job a page does on arrival (fuel search, nearby stores, best store…).
+  | { type: "task"; task: VoiceTask; path: string; say: string }
+  | { type: "list-add"; query: string; say: string }
+  | { type: "list-read"; say: string }
+  | { type: "alert-add"; query: string; say: string }
+  | { type: "premium"; say: string }
   | { type: "unknown"; say: string };
 
 export function speechSupported(): boolean {
@@ -414,36 +421,76 @@ function strip(s: string): string {
 }
 
 // Order matters: NAV returns the first keyword hit, so the specific pages (list,
-// alerts, stores) sit BEFORE the broad "/courses" — otherwise "liste de courses"
-// would match "course" and open Courses instead of the shopping list.
+// alerts) sit BEFORE the broad "/courses" — otherwise "liste de courses" would
+// match "course" and open Courses instead of the shopping list. Stores, fuel and
+// the scanner are not here: they are tasks (see parseIntent), not just pages.
 const NAV = [
   { path: "/", say: "J'ouvre l'accueil.", words: ["accueil", "maison", "page d'accueil", "menu principal"] },
-  { path: "/list", say: "J'ouvre votre liste.", words: ["ma liste", "liste de course", "liste de courses", "panier", "ma course"] },
+  { path: "/menu", say: "J'ouvre votre menu de la semaine.", words: ["menu de la semaine", "mes menus", "mon menu", "menu", "repas de la semaine"] },
+  { path: "/list", say: "J'ouvre votre liste.", words: ["ma liste", "liste de course", "liste de courses", "panier", "ma course", "liste"] },
   { path: "/alerts", say: "J'ouvre vos alertes.", words: ["alerte", "alertes", "baisse de prix", "notification"] },
-  { path: "/stores", say: "J'ouvre les magasins.", words: ["magasin", "magasins", "boutique", "magasin proche", "magasins proches", "ou acheter"] },
-  { path: "/fuel", say: "J'ouvre les prix des carburants.", words: ["carburant", "essence", "gazole", "diesel", "gasoil", "station", "sp95", "sp98", "e85", "gpl", "plein"] },
-  { path: "/scanner", say: "J'ouvre le scanner.", words: ["scan", "scanner", "code barre", "code-barres"] },
+  { path: "/feedback", say: "J'ouvre la page pour donner votre avis.", words: ["avis", "signaler", "probleme", "suggestion"] },
   { path: "/account", say: "J'ouvre votre compte.", words: ["compte", "profil", "mon compte", "parametre", "reglage"] },
-  { path: "/courses", say: "J'ouvre les courses.", words: ["course", "produit", "epicerie", "supermarche", "aliment"] },
+  { path: "/courses", say: "J'ouvre les courses.", words: ["course", "produit", "epicerie", "aliment"] },
 ];
 
+const DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
+
+const FUEL_LABEL: Record<FuelId, string> = {
+  gazole: "gazole",
+  sp95: "SP95",
+  sp98: "SP98",
+  e85: "E85",
+  gplc: "GPL",
+};
+
+/** The fuel a phrase names, or null when it does not talk about fuel at all. */
+export function fuelIn(t: string): FuelId | null {
+  if (/\b(e ?85|ethanol|superethanol|bioethanol)\b/.test(t)) return "e85";
+  if (/\b(gpl|gplc)\b/.test(t)) return "gplc";
+  if (/\b(sp ?98|98)\b/.test(t)) return "sp98";
+  if (/\b(sp ?95|95|sans plomb|sans-plomb|e10)\b/.test(t)) return "sp95";
+  if (/\b(gazole|gasoil|gas-oil|diesel)\b/.test(t)) return "gazole";
+  if (/\b(essence)\b/.test(t)) return "sp95";
+  if (/\b(carburant|station|stations|plein|pompe)\b/.test(t)) return "gazole";
+  return null;
+}
+
 const HELP_TEXT =
-  "Vous pouvez me demander d'ouvrir l'accueil, les courses ou les bons plans. " +
-  "Dites par exemple : cherche du lait. " +
-  "Je peux aussi agrandir le texte, activer le mode sombre ou le fort contraste, et lire la page.";
+  "Je peux tout faire à la voix. Par exemple : une raclette pour 6, ajoute du lait à ma liste, " +
+  "lis ma liste, où faire mes courses, essence la moins chère, magasins proches, " +
+  "compose mon menu, change le repas de mardi, scanne un produit, alerte sur le café. " +
+  "Je peux aussi agrandir le texte, activer le mode sombre et lire la page.";
+
+/** Drop the article in front of a product name: "du lait" → "lait". */
+function bare(q: string): string {
+  return q.replace(/^(l'|la |le |les |du |de la |de l'|des |d'|un |une |mon |ma |mes )/, "").trim();
+}
 
 export function parseIntent(raw: string): Intent {
   const t = strip(raw);
   if (!t) return { type: "unknown", say: "Je n'ai pas entendu. Pouvez-vous répéter ?" };
 
   // Help
-  if (/\b(aide|aidez|que peux|qu'est-ce que tu|comment|fonctionne|aider)\b/.test(t)) {
+  if (/\b(aide|aidez|que peux|qu'est-ce que tu|fonctionne|aider|que sais-tu)\b/.test(t)) {
     return { type: "help", say: HELP_TEXT };
   }
 
+  // Shopping list — before "read", which would otherwise take "lis ma liste".
+  if (/\b(lis|lire|dis-moi|dis moi|qu'y a-t-il|que contient|qu'est-ce qu'il y a|rappelle)\b.*\bliste\b/.test(t)) {
+    return { type: "list-read", say: "" };
+  }
+  const add =
+    t.match(/\b(?:ajoute|ajouter|rajoute|mets|met|note|noter)\s+(.+?)\s+(?:a|dans|sur)\s+(?:ma|la|mes)\s+(?:liste|courses)\b/) ??
+    t.match(/\b(?:ajoute|ajouter|rajoute|note)\s+(.+)$/);
+  if (add && bare(add[1]).length > 1) {
+    const q = bare(add[1]);
+    return { type: "list-add", query: q, say: `J'ajoute ${q} à votre liste.` };
+  }
+
   // Settings
-  if (/\b(mode sombre|sombre|nuit|noir)\b/.test(t)) return { type: "setting", action: "dark", say: "Mode sombre activé." };
-  if (/\b(mode clair|clair|jour|blanc)\b/.test(t)) return { type: "setting", action: "light", say: "Mode clair activé." };
+  if (/\b(mode sombre|sombre|nuit)\b/.test(t)) return { type: "setting", action: "dark", say: "Mode sombre activé." };
+  if (/\b(mode clair|clair)\b/.test(t)) return { type: "setting", action: "light", say: "Mode clair activé." };
   // \b(agrandi)\b alone would miss "agrandis" ("tu" imperative, e.g. the
   // "Agrandis le texte" example command) — \b requires a boundary right after
   // "agrandi", but the following "s" is a word char, so no boundary there.
@@ -462,9 +509,77 @@ export function parseIntent(raw: string): Intent {
   )
     return { type: "read", say: "" };
 
+  if (/\b(premium|abonnement|abonner|m'abonner)\b/.test(t)) {
+    return { type: "premium", say: "Voici l'offre Premium." };
+  }
+
+  // A price alert on a product: "alerte sur le café", "préviens-moi si le beurre baisse".
+  const alert =
+    t.match(/\balertes?\s+(?:sur|pour|quand|si)\s+(.+)/) ??
+    t.match(/\bpreviens?-?\s?moi\s+(?:quand|si)\s+(.+?)\s+(?:baisse|est moins cher|diminue)/);
+  if (alert && bare(alert[1]).length > 1) {
+    const q = bare(alert[1]);
+    return { type: "alert-add", query: q, say: `Je crée une alerte sur ${q}.` };
+  }
+
+  // Where to shop the list — before "stores", which also talks about shops.
+  if (
+    /\b(ou (faire|acheter) (mes|les|ma|mon) (courses|liste|panier)|magasin le (moins cher|plus economique)|meilleur magasin|moins cher pour (ma|la|mes) (liste|courses)|organise (mes|les|ma) (courses|liste)|ou aller faire)\b/.test(
+      t,
+    )
+  ) {
+    return { type: "task", task: { kind: "split" }, path: "/list", say: "Je compare les magasins pour votre liste." };
+  }
+
+  // Weekly menu: swap one meal, or compose the week.
+  const dayIndex = DAYS.findIndex((d) => t.includes(d));
+  if (/\b(change|changer|remplace|remplacer|autre)\b/.test(t) && /\b(repas|plat|diner|dejeuner|menu)\b/.test(t) && dayIndex >= 0) {
+    return {
+      type: "task",
+      task: { kind: "menu-swap", day: dayIndex },
+      path: "/menu",
+      say: `Je change le repas de ${DAYS[dayIndex]}.`,
+    };
+  }
+  if (
+    /\b(compose|composer|prepare|preparer|fais|faire|refais|refaire|genere|cree|planifie|propose)\b.*\b(menu|menus|repas|semaine)\b/.test(t) ||
+    /\b(idees? de repas|quoi manger|qu'est-ce qu'on mange|on mange quoi)\b/.test(t)
+  ) {
+    return { type: "task", task: { kind: "menu-compose" }, path: "/menu", say: "Je compose votre semaine." };
+  }
+
+  // A dish or a recipe: the assistant turns it into a costed list.
+  if (
+    /\b(ingredients?|recette)\b/.test(t) ||
+    /\b(pour (faire|preparer|cuisiner)|je (fais|prepare|cuisine|veux faire|voudrais faire))\b/.test(t) ||
+    /\b(un|une|des|du)\s+[a-z' -]{3,40}\s+pour\s+\d{1,2}\b/.test(t)
+  ) {
+    return { type: "task", task: { kind: "cart", prompt: raw.trim() }, path: "/list", say: "Je prépare la liste." };
+  }
+
+  // Fuel: open the fuel page on the right fuel, find the cheapest around.
+  const fuel = fuelIn(t);
+  if (fuel) {
+    return {
+      type: "task",
+      task: { kind: "fuel", fuel },
+      path: "/fuel",
+      say: `Je cherche le ${FUEL_LABEL[fuel]} le moins cher près de vous.`,
+    };
+  }
+
+  // Nearby shops.
+  if (/\b(magasins?|supermarches?|superettes?|boutiques?|hypermarches?|epiceries? proche)\b/.test(t)) {
+    return { type: "task", task: { kind: "stores" }, path: "/stores", say: "Je cherche les magasins autour de vous." };
+  }
+
+  // Scanner: open straight onto the camera.
+  if (/\b(scanne|scanner|scan|code barre|code-barre|code-barres|codes barres)\b/.test(t)) {
+    return { type: "task", task: { kind: "scan" }, path: "/scanner", say: "J'ouvre la caméra. Visez le code-barres." };
+  }
+
   // Navigation by keyword — checked before the generic search phrase below so
-  // that "prix du carburant" routes to /fuel instead of becoming a literal
-  // search for "carburant" (the "prix d[eu]s? X" pattern would otherwise win).
+  // that "mon menu" routes to /menu instead of becoming a literal search.
   for (const n of NAV) {
     if (n.words.some((w) => t.includes(w))) {
       return { type: "navigate", path: n.path, say: n.say };
@@ -474,7 +589,7 @@ export function parseIntent(raw: string): Intent {
   // Search: "cherche X", "trouve X", "recherche X", "je veux X", "prix du X"
   const m = t.match(/\b(?:cherche|chercher|trouve|trouver|recherche|rechercher|je veux|je cherche|prix d[eu]s?|combien coute|trouvez)\s+(.*)/);
   if (m && m[1]) {
-    const q = m[1].replace(/^(l'|la |le |les |du |de la |des |un |une )/, "").trim();
+    const q = bare(m[1]);
     if (q.length > 1) return { type: "search", query: q, say: `Je cherche ${q}.` };
   }
 

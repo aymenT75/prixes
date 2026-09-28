@@ -7,6 +7,7 @@ import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
 import { getCurrentPosition } from "@/lib/geo";
+import { spokenDistance, useVoiceTask } from "@/lib/voiceTasks";
 import type { GeocodeHit } from "@/lib/types";
 
 const RADII = [1, 5, 10, 25];
@@ -79,6 +80,36 @@ export default function StoresPage() {
   });
 
   const stores = data?.items ?? [];
+
+  // Asked by voice ("magasins proches"): locate, then say how many and the nearest.
+  const voicePending = useRef(false);
+  useEffect(() => {
+    if (!useVoiceTask.getState().take("stores")) return;
+    voicePending.current = true;
+    void locate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
+  useEffect(() => {
+    if (!voicePending.current) return;
+    const { finish } = useVoiceTask.getState();
+    if (geoError) {
+      voicePending.current = false;
+      finish("Je n'ai pas votre position. Autorisez la localisation, ou donnez une adresse sur cette page.", "loupe", false);
+      return;
+    }
+    if (!coords || isFetching || !data) return;
+    voicePending.current = false;
+    if (stores.length === 0) {
+      finish(`Je n'ai trouvé aucun magasin à moins de ${radius} kilomètres.`, "loupe", false);
+      return;
+    }
+    const nearest = stores[0];
+    finish(
+      `${stores.length} magasin${stores.length > 1 ? "s" : ""} à moins de ${radius} kilomètres. ` +
+        `Le plus proche : ${nearest.name}, à ${spokenDistance(nearest.distance_km)}.`,
+      "loupe",
+    );
+  }, [coords, data, isFetching, geoError, stores, radius]);
   // Show skeletons only when we have nothing to display yet (first load or a
   // radius change) — never hide already-visible results behind them.
   const loading = isFetching && stores.length === 0;

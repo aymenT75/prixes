@@ -10,7 +10,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { MealCard } from "@/components/MealCard";
@@ -28,6 +28,7 @@ import { eur } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
 import type { MealPlan, MealPreferences } from "@/lib/types";
+import { spokenPrice, useVoiceTask } from "@/lib/voiceTasks";
 
 const GENERATE_DEADLINE_MS = 60_000;
 
@@ -86,6 +87,7 @@ export default function MenuPage() {
   });
   const prefs = savedPrefs ?? DEFAULT_PREFERENCES;
 
+
   const { data: billing } = useQuery({
     queryKey: ["billing"],
     queryFn: () => api.billingStatus(),
@@ -143,6 +145,53 @@ export default function MenuPage() {
     onSuccess: (result) => qc.setQueryData(["meal-plan", week], result),
     onError: (e) => setError(messageFor(e)),
   });
+
+  // Asked by voice: compose the week, or swap one day's meal, then say it.
+  const voiceTaken = useRef(false);
+  useEffect(() => {
+    if (voiceTaken.current) return;
+    const store = useVoiceTask.getState();
+    const compose = store.task?.kind === "menu-compose" ? store.take("menu-compose") : null;
+    const swap = !compose && store.task?.kind === "menu-swap" ? store.take("menu-swap") : null;
+    if (!compose && !swap) return;
+    voiceTaken.current = true;
+    const { finish } = store;
+    if (!user) {
+      finish("Connectez-vous pour que je compose votre menu.", "assiette", false);
+      openLogin(true);
+      return;
+    }
+    const tell = (plan: MealPlan, intro: string) => {
+      const total = plan.split?.options[0]?.total ?? plan.estimated_total;
+      const firsts = plan.meals.slice(0, 3).map((m) => `${m.day_label}, ${m.title}`).join(" ; ");
+      finish(`${intro} ${total != null ? `Environ ${spokenPrice(total)}. ` : ""}${firsts}.`, "assiette");
+    };
+    if (compose) {
+      generate.mutate(prefs, {
+        onSuccess: (plan) => tell(plan, `Votre semaine est prête : ${plan.meals.length} repas.`),
+        onError: (e) => finish(messageFor(e), "assiette", false),
+      });
+      return;
+    }
+    if (swap) {
+      const current = qc.getQueryData<MealPlan | null>(["meal-plan", week]);
+      const meal = current?.meals.find((m) => m.day === swap.day);
+      if (!meal) {
+        finish("Vous n'avez pas encore de menu cette semaine. Dites : compose mon menu.", "assiette", false);
+        return;
+      }
+      regenerate.mutate(
+        { day: meal.day, slot: meal.slot },
+        {
+          onSuccess: (plan) => {
+            const fresh = plan.meals.find((m) => m.day === meal.day && m.slot === meal.slot);
+            finish(`C'est changé. ${meal.day_label} : ${fresh?.title ?? "un autre plat"}.`, "assiette");
+          },
+          onError: (e) => finish(messageFor(e), "assiette", false),
+        },
+      );
+    }
+  }, [user, plan, prefs, generate, regenerate, openLogin, qc, week]);
 
   const toList = useMutation({
     mutationFn: () =>

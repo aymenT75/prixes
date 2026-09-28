@@ -2,13 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
 import { eur } from "@/lib/format";
 import { getCurrentPosition } from "@/lib/geo";
+import { spokenDistance, spokenPrice, useVoiceTask, type FuelId } from "@/lib/voiceTasks";
 
 const FUEL_TYPES = [
   { id: "gazole", label: "Gazole" },
@@ -80,6 +81,40 @@ export default function FuelPage() {
         (b.distance_km ?? Number.POSITIVE_INFINITY) < (a.distance_km ?? Number.POSITIVE_INFINITY) ? b : a,
       ).id
     : undefined;
+
+  // Asked by voice ("essence la moins chère"): pick the fuel, locate, and say
+  // the answer once the stations are in — the user may not see the list.
+  const voicePending = useRef(false);
+  useEffect(() => {
+    const task = useVoiceTask.getState().take("fuel");
+    if (!task) return;
+    voicePending.current = true;
+    setFuelType(task.fuel);
+    void locate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
+  useEffect(() => {
+    if (!voicePending.current) return;
+    const { finish } = useVoiceTask.getState();
+    const label = FUEL_TYPES.find((f) => f.id === fuelType)?.label ?? fuelType;
+    if (geoError) {
+      voicePending.current = false;
+      finish("Je n'ai pas votre position. Autorisez la localisation, puis redemandez.", "pompe", false);
+      return;
+    }
+    if (!coords || isFetching || !data) return;
+    voicePending.current = false;
+    const best = stations.find((s) => s.prices[fuelType as FuelId] != null);
+    if (!best) {
+      finish(`Aucune station ne vend du ${label} près de vous.`, "pompe", false);
+      return;
+    }
+    finish(
+      `${label} le moins cher : ${spokenPrice(best.prices[fuelType])} le litre chez ${best.brand ?? "une station"}, ` +
+        `à ${spokenDistance(best.distance_km)}. ${stations.length} stations trouvées.`,
+      "pompe",
+    );
+  }, [coords, data, isFetching, geoError, stations, fuelType]);
 
   return (
     <div>
