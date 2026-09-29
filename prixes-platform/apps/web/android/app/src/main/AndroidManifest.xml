@@ -27,6 +27,9 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="https" android:host="prixes.app" />
             </intent-filter>
+
+            <!-- Long-press shortcut "Parler à Prixes" (res/xml/shortcuts.xml). -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
 
         <provider

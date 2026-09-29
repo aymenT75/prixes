@@ -48,6 +48,10 @@ interface A11yState {
   diets: string[];
   autoRead: boolean;
   naturalVoice: boolean;
+  /** After each answer the mic reopens by itself, until silence or "merci". */
+  conversation: boolean;
+  /** The assistant greets and listens as soon as the app opens. */
+  listenOnOpen: boolean;
   ready: boolean;
   voiceOpen: boolean;
   setVoiceOpen: (v: boolean) => void;
@@ -64,6 +68,8 @@ interface A11yState {
   toggleDiet: (d: string) => void;
   setAutoRead: (v: boolean) => void;
   setNaturalVoice: (v: boolean) => void;
+  setConversation: (v: boolean) => void;
+  setListenOnOpen: (v: boolean) => void;
 }
 
 function apply(state: { fontScale: FontScale; highContrast: boolean; dark: boolean }) {
@@ -96,6 +102,8 @@ function persist(get: () => A11yState) {
         diets: s.diets,
         autoRead: s.autoRead,
         naturalVoice: s.naturalVoice,
+        conversation: s.conversation,
+        listenOnOpen: s.listenOnOpen,
       }),
     );
   } catch {
@@ -111,6 +119,8 @@ export const useA11y = create<A11yState>((set, get) => ({
   diets: [],
   autoRead: false,
   naturalVoice: false,
+  conversation: true,
+  listenOnOpen: false,
   ready: false,
   voiceOpen: false,
   setVoiceOpen: (voiceOpen) => set({ voiceOpen }),
@@ -140,6 +150,9 @@ export const useA11y = create<A11yState>((set, get) => ({
       diets: Array.isArray(saved.diets) ? saved.diets : [],
       autoRead: !!saved.autoRead,
       naturalVoice: !!saved.naturalVoice,
+      // On unless turned off: talking should not need a tap per sentence.
+      conversation: saved.conversation !== false,
+      listenOnOpen: !!saved.listenOnOpen,
       ready: true,
     });
   },
@@ -186,6 +199,14 @@ export const useA11y = create<A11yState>((set, get) => ({
   },
   setNaturalVoice(naturalVoice) {
     set({ naturalVoice });
+    persist(get);
+  },
+  setConversation(conversation) {
+    set({ conversation });
+    persist(get);
+  },
+  setListenOnOpen(listenOnOpen) {
+    set({ listenOnOpen });
     persist(get);
   },
 }));

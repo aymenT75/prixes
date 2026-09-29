@@ -22,6 +22,7 @@ account rows…), so scanning for `name="…"` alone would miss them.
 
 from __future__ import annotations
 
+import hashlib
 import re
 import subprocess
 import sys
@@ -103,6 +104,20 @@ def main() -> int:
         check=True,
     )
     full.unlink()
+    # The file keeps its name, so browsers and the service worker kept serving the
+    # previous subset and new icons showed as raw text ("ARROW_DOWNWARD", seen on
+    # the site 29/09). The URL carries a hash of the content: a new subset is a new URL.
+    digest = hashlib.sha256(OUT.read_bytes()).hexdigest()[:10]
+    css = ROOT / "src" / "app" / "globals.css"
+    text = css.read_text(encoding="utf-8")
+    text, n = re.subn(
+        r'url\("/fonts/material-symbols-outlined\.woff2(?:\?v=[0-9a-f]+)?"\)',
+        f'url("/fonts/material-symbols-outlined.woff2?v={digest}")',
+        text,
+    )
+    if n != 1:
+        raise SystemExit("globals.css: icon font url not found")
+    css.write_text(text, encoding="utf-8")
     print(f"{len(icons)} icon names, {len(keep)} glyphs kept -> {OUT.relative_to(ROOT)} ({OUT.stat().st_size / 1024:.0f} KB)")
     return 0
 

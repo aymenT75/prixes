@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { openWithGreeting } from "@/components/VoiceAssistant";
 import { isNativeApp, nativePlatform } from "@/lib/platform";
 import { initPushNotifications } from "@/lib/push";
 import { useApp } from "@/lib/store";
@@ -29,6 +30,7 @@ export function NativeSetup() {
   useEffect(() => {
     if (!isNativeApp()) return;
     let removeBackListener: (() => void) | undefined;
+    let removeLinkListener: (() => void) | undefined;
 
     (async () => {
       const [{ StatusBar, Style }, { App }] = await Promise.all([
@@ -48,6 +50,31 @@ export function NativeSetup() {
         /* status bar not available */
       }
 
+      // "Parler à Prixes" (long press on the icon) opens https://prixes.app/?voice=1
+      // in the app: at launch it is the launch URL, later an appUrlOpen event.
+      const openLink = (link: string | undefined) => {
+        if (!link) return;
+        try {
+          const u = new URL(link);
+          if (u.searchParams.get("voice") === "1") {
+            openWithGreeting();
+            return;
+          }
+          if (u.host === "prixes.app" && u.pathname !== "/") router.push(u.pathname + u.search);
+        } catch {
+          /* not a URL we handle */
+        }
+      };
+      try {
+        openLink((await App.getLaunchUrl())?.url);
+        const linkHandle = await App.addListener("appUrlOpen", ({ url }) => openLink(url));
+        removeLinkListener = () => {
+          linkHandle.remove();
+        };
+      } catch {
+        /* App plugin not available */
+      }
+
       try {
         const handle = await App.addListener("backButton", ({ canGoBack }) => {
           if (canGoBack && window.history.length > 1) {
@@ -64,7 +91,10 @@ export function NativeSetup() {
       }
     })();
 
-    return () => removeBackListener?.();
+    return () => {
+      removeBackListener?.();
+      removeLinkListener?.();
+    };
   }, [router]);
 
   return null;

@@ -22,6 +22,7 @@ export type Intent =
   // Answers to the assistant's own question ("Je l'ajoute à votre liste ?").
   | { type: "confirm"; say: string }
   | { type: "cancel"; say: string }
+  | { type: "bye"; say: string }
   | { type: "unknown"; say: string };
 
 export function speechSupported(): boolean {
@@ -57,7 +58,8 @@ export interface VoiceRecognizer {
   stop(): void;
   onPartial?: (text: string) => void;
   onFinal?: (text: string) => void;
-  onError?: (kind: "not-allowed" | "other") => void;
+  /** "silence": nothing was said — ends a conversation quietly, not an error. */
+  onError?: (kind: "not-allowed" | "silence" | "other") => void;
   onEnd?: () => void;
 }
 
@@ -91,7 +93,9 @@ function webRecognizer(): VoiceRecognizer | null {
     if (e.results[e.results.length - 1].isFinal) r.onFinal?.(txt);
   };
   rec.onerror = (e: any) =>
-    r.onError?.(e.error === "not-allowed" ? "not-allowed" : "other");
+    r.onError?.(
+      e.error === "not-allowed" ? "not-allowed" : e.error === "no-speech" || e.error === "aborted" ? "silence" : "other",
+    );
   rec.onend = () => r.onEnd?.();
   return r;
 }
@@ -482,6 +486,10 @@ export function parseIntent(raw: string): Intent {
   // A yes / no to the assistant's last question — and "ajoute-le", which means
   // "the product you just told me about". Before list-add, which would read
   // "ajoute-le" as a product called "le".
+  // Ends a conversation: the mic stops reopening.
+  if (/^(merci|merci beaucoup|merci bien|c'est tout|ce sera tout|ca ira|au revoir|a bientot|bonne journee|bonne soiree|c'est bon merci|fini|termine|j'ai fini)\b/.test(t)) {
+    return { type: "bye", say: "Avec plaisir. À bientôt." };
+  }
   if (/^(oui|ouais|d'accord|ok|okay|vas-y|vas y|allez|volontiers|je veux bien|bien sur|c'est ca|parfait|oui merci)\b/.test(t) ||
       /\b(ajoute-le|ajoute le|ajoute-la|ajoute la|ajoute-les|ajoute les|mets-le|mets le|mets-les|garde-le|garde les)\s*$/.test(t)) {
     return { type: "confirm", say: "" };

@@ -36,6 +36,7 @@ import {
 } from "@/lib/voice";
 import {
   spokenPrice,
+  useVoiceGreeting,
   useVoicePhrase,
   useVoiceTask,
   workingPose,
@@ -77,6 +78,21 @@ function allergensIn(productAllergens: string | null | undefined, profile: strin
   );
 }
 
+/** Lowercase, no accents — to compare a spoken word with a product name. */
+function strip(t: string): string {
+  return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+const STOP = new Set(["des", "les", "une", "pour", "avec", "sans", "aux"]);
+
+/** Once per launch: the shortcut or "listen on open" must not reopen it on every page. */
+let launchHandled = false;
+
+/** Opens the assistant as if the user had asked: greets with the question, then listens. */
+export function openWithGreeting() {
+  useVoiceGreeting.getState().set("Bonjour. Que voulez-vous faire ?");
+  useA11y.getState().setVoiceOpen(true);
+}
+
 /** A page that never reports back (location refused, network down) must not leave the Caddie rolling forever. */
 const TASK_TIMEOUT_MS = 45_000;
 
@@ -97,10 +113,12 @@ export function VoiceAssistant() {
   const [transcript, setTranscript] = useState("");
   const [response, setResponse] = useState("");
   const [supported, setSupported] = useState(true);
-  const [handsFree, setHandsFree] = useState(false);
   const recRef = useRef<VoiceRecognizer | null>(null);
   const handledRef = useRef(false);
-  const handsFreeRef = useRef(false);
+  // Conversation: after each answer the mic reopens, until silence or "merci".
+  const conversation = useA11y((s) => s.conversation);
+  const setConversation = useA11y((s) => s.setConversation);
+  const conversationRef = useRef(true);
   const openRef = useRef(false);
   const startRef = useRef<() => void>(() => {});
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -109,13 +127,19 @@ export function VoiceAssistant() {
   const pendingRef = useRef<{ yes: () => void; no?: () => void } | null>(null);
   // The product last talked about, so "ajoute-le" needs no name.
   const lastProductRef = useRef<{ barcode: string; name: string } | null>(null);
+  // Read at the moment of acting: a question asked before the session loaded
+  // (the app just opened) must not answer "connectez-vous" to a signed-in user.
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   useEffect(() => {
     setSupported(speechSupported());
   }, []);
   useEffect(() => {
-    handsFreeRef.current = handsFree;
-  }, [handsFree]);
+    conversationRef.current = conversation;
+  }, [conversation]);
   useEffect(() => {
     openRef.current = open;
   }, [open]);
@@ -154,7 +178,7 @@ export function VoiceAssistant() {
       vibrate(next.ok ? 40 : [60, 60, 60]);
       const asked = !!next.ask;
       speak(say, () => {
-        if ((asked || handsFreeRef.current) && openRef.current) setTimeout(() => startRef.current(), 400);
+        if ((asked || conversationRef.current) && openRef.current) setTimeout(() => startRef.current(), 400);
       });
     },
     [],
@@ -242,7 +266,15 @@ export function VoiceAssistant() {
         found = null;
       }
     }
-    return { q, items: (found?.items ?? []).filter((i) => i.barcode).slice(0, 6) };
+    const items = (found?.items ?? []).filter((i) => i.barcode);
+    // "lait" must not offer "Laitue" as another choice: keep the products whose
+    // name has the searched word, when there are any.
+    const words = strip(q).split(" ").filter((w) => w.length > 2 && !STOP.has(w));
+    const named = items.filter((i) => {
+      const name = strip(i.name ?? "");
+      return words.every((w) => new RegExp(`(^|[^a-z])${w}s?($|[^a-z])`).test(name));
+    });
+    return { q, items: (named.length ? named : items).slice(0, 6) };
   }, []);
 
   /** The first catalogue product a spoken name designates, or null. */
@@ -254,6 +286,26 @@ export function VoiceAssistant() {
       return null;
     }
   }, []);
+
+  /** Says goodbye and closes: the conversation is over, the mic stops reopening. */
+  const goodbye = useCallback(
+    (say: string) => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      setPose("ecoute");
+      setPhase("done");
+      setResponse(say);
+      earcon("success");
+      let closed = false;
+      const end = () => {
+        if (closed) return;
+        closed = true;
+        close();
+      };
+      speak(say, end);
+      setTimeout(end, 4000); // never stay open if the voice never reports its end
+    },
+    [close],
+  );
 
   const needAccount = useCallback(() => {
     answer("Il faut d'abord vous connecter. J'ouvre la connexion.", { pose: "ecoute", ok: false });
@@ -277,7 +329,7 @@ export function VoiceAssistant() {
         case "confirm":
           // "ajoute-le" answers both questions at once: straight onto the list.
           if (/\b(ajoute|mets)\b/.test(text.toLowerCase()) && lastProductRef.current) {
-            if (!user) return needAccount();
+            if (!userRef.current) return needAccount();
             void addProduct(lastProductRef.current);
             return;
           }
@@ -293,7 +345,11 @@ export function VoiceAssistant() {
             pending.no();
             return;
           }
-          answer(intent.say, { pose: "ecoute", ok: true });
+          goodbye(intent.say);
+          return;
+
+        case "bye":
+          goodbye(intent.say);
           return;
 
         case "search": {
@@ -329,7 +385,7 @@ export function VoiceAssistant() {
                 pose: "plein",
                 ok: true,
                 ask: () => {
-                  if (!user) {
+                  if (!userRef.current) {
                     needAccount();
                     return;
                   }
@@ -380,7 +436,7 @@ export function VoiceAssistant() {
         }
 
         case "list-add": {
-          if (!user) return needAccount();
+          if (!userRef.current) return needAccount();
           const last = lastProductRef.current;
           if (PRONOUN.test(intent.query.trim().toLowerCase())) {
             if (last) void addProduct(last);
@@ -404,7 +460,7 @@ export function VoiceAssistant() {
         }
 
         case "list-read": {
-          if (!user) return needAccount();
+          if (!userRef.current) return needAccount();
           setPose("roule");
           setPhase("working");
           void (async () => {
@@ -429,7 +485,7 @@ export function VoiceAssistant() {
         }
 
         case "alert-add": {
-          if (!user) return needAccount();
+          if (!userRef.current) return needAccount();
           setPose("loupe");
           setPhase("working");
           earcon("radar");
@@ -492,7 +548,7 @@ export function VoiceAssistant() {
           return;
       }
     },
-    [router, a11y, runSearch, productFor, answer, addProduct, close, needAccount, openPremium, queueTask, setOpen, stopListening, user],
+    [router, a11y, runSearch, productFor, answer, addProduct, close, goodbye, needAccount, openPremium, queueTask, setOpen, stopListening, user],
   );
 
   const startListening = useCallback(() => {
@@ -521,6 +577,11 @@ export function VoiceAssistant() {
       }
     };
     rec.onError = (kind) => {
+      if (kind === "silence") {
+        // Nothing said: the conversation just stops, quietly — no error sound.
+        setPhase("idle");
+        return;
+      }
       setPhase("error");
       earcon("error");
       setResponse(
@@ -555,12 +616,38 @@ export function VoiceAssistant() {
         act(phrase);
         return;
       }
-      speak("Je vous écoute.");
-      setTimeout(startListening, 450);
+      const { greeting, set: clearGreeting } = useVoiceGreeting.getState();
+      clearGreeting(null);
+      // Listen once the greeting has been said — starting the mic earlier cut it off.
+      let started = false;
+      const listen = () => {
+        if (started || !openRef.current) return;
+        started = true;
+        startListening();
+      };
+      speak(greeting ?? "Je vous écoute.", listen);
+      setTimeout(listen, greeting ? 4000 : 1500);
     } else if (!open) {
       greetedRef.current = false;
     }
   }, [open, startListening, act]);
+
+  // Opened without a tap: the "Parler à Prixes" shortcut (?voice=1 — web; the
+  // native app gets it through NativeSetup), or "Écouter à l'ouverture".
+  const a11yReady = useA11y((s) => s.ready);
+  const listenOnOpen = useA11y((s) => s.listenOnOpen);
+  useEffect(() => {
+    if (!a11yReady || launchHandled) return;
+    launchHandled = true;
+    const params = new URLSearchParams(window.location.search);
+    const fromShortcut = params.get("voice") === "1";
+    if (fromShortcut) {
+      params.delete("voice");
+      const rest = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
+    }
+    if (fromShortcut || listenOnOpen) openWithGreeting();
+  }, [a11yReady, listenOnOpen]);
 
   const dialogRef = useDialog(open, close);
 
@@ -640,16 +727,16 @@ export function VoiceAssistant() {
             </div>
 
             <button
-              onClick={() => setHandsFree((v) => !v)}
+              onClick={() => setConversation(!conversation)}
               role="switch"
-              aria-checked={handsFree}
+              aria-checked={conversation}
               className="mt-4 flex w-full items-center justify-between rounded-xl border border-outline-variant/30 p-3 text-left"
             >
               <span className="flex items-center gap-2 text-label-lg text-on-surface">
-                <Icon name="hearing" className="text-primary" /> Écoute mains-libres
+                <Icon name="forum" className="text-primary" /> Conversation continue
               </span>
-              <span className={`relative h-7 w-12 rounded-full transition-colors ${handsFree ? "bg-primary" : "bg-surface-variant"}`}>
-                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${handsFree ? "left-6" : "left-1"}`} />
+              <span className={`relative h-7 w-12 rounded-full transition-colors ${conversation ? "bg-primary" : "bg-surface-variant"}`}>
+                <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${conversation ? "left-6" : "left-1"}`} />
               </span>
             </button>
 

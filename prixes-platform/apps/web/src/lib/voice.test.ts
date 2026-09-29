@@ -141,4 +141,12 @@ describe("parseIntent", () => {
     expect(parseIntent("ajoute-le à ma liste")).toMatchObject({ type: "list-add", query: "le" });
     expect(parseIntent("ajoute ça à ma liste")).toMatchObject({ type: "list-add", query: "ca" });
   });
+
+  it("ends the conversation on merci / c'est tout, but not on « oui merci »", () => {
+    for (const t of ["merci", "c'est tout", "au revoir", "ça ira", "merci beaucoup"]) {
+      expect(parseIntent(t)).toMatchObject({ type: "bye" });
+    }
+    expect(parseIntent("oui merci")).toMatchObject({ type: "confirm" });
+    expect(parseIntent("non merci")).toMatchObject({ type: "cancel" });
+  });
 });

@@ -21,6 +21,7 @@ blender
 bolt
 browse
 calendar_month
+cancel
 check
 check_circle
 chevron_right
@@ -54,11 +55,11 @@ feedback
 fitness_center
 flashlight_off
 flashlight_on
+forum
 graphic_eq
 grocery
 group
 health_and_safety
-hearing
 help
 home
 hourglass_top

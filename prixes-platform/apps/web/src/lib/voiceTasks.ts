@@ -103,6 +103,15 @@ export function spokenPrice(value: number | string): string {
  * A sentence to run as if it had been spoken — a tapped example on the home page.
  * The assistant takes it when it opens instead of listening.
  */
+/**
+ * Opens the assistant from outside a tap — the app opening, the "Parler à
+ * Prixes" shortcut — with a greeting that says what to do, then listens.
+ */
+export const useVoiceGreeting = create<{ greeting: string | null; set: (g: string | null) => void }>((set) => ({
+  greeting: null,
+  set: (greeting) => set({ greeting }),
+}));
+
 export const useVoicePhrase = create<{ phrase: string | null; set: (p: string | null) => void }>((set) => ({
   phrase: null,
   set: (phrase) => set({ phrase }),

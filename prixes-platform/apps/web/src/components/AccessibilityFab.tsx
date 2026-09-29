@@ -33,6 +33,10 @@ export function AccessibilityFab() {
     toggleDiet,
     setAutoRead,
     setNaturalVoice,
+    conversation,
+    setConversation,
+    listenOnOpen,
+    setListenOnOpen,
     setVoiceOpen,
     a11yOpen: open,
     setA11yOpen: setOpen,
@@ -153,6 +157,20 @@ export function AccessibilityFab() {
               subtitle="Réduit l'éblouissement"
               on={dark}
               onToggle={toggleDark}
+            />
+            <ToggleRow
+              icon="forum"
+              title="Conversation continue"
+              subtitle="Le micro se rouvre après chaque réponse. Dites « merci » pour finir"
+              on={conversation}
+              onToggle={() => setConversation(!conversation)}
+            />
+            <ToggleRow
+              icon="mic"
+              title="Écouter à l'ouverture"
+              subtitle="Dès que l'app s'ouvre, elle demande ce que vous voulez faire"
+              on={listenOnOpen}
+              onToggle={() => setListenOnOpen(!listenOnOpen)}
             />
             <ToggleRow
               icon="record_voice_over"

@@ -9,7 +9,10 @@
 // playlist_add…). Fonts are stale-while-revalidate, so without this bump the
 // browser keeps serving the previous subset and every new icon renders as its
 // raw ligature text — "AUTO_AWESOME" in place of the sparkle.
-const CACHE = "prixes-v5";
+// v6: same trap again with ARROW_DOWNWARD (29/09). The font URL now carries a
+// content hash (scripts/subset-icon-font.py), so this bump should be the last
+// one an icon ever needs.
+const CACHE = "prixes-v6";
 const SHELL = ["/manifest.json"];
 
 self.addEventListener("install", (e) => {

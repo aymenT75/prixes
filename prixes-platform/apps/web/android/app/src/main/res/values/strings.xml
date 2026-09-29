@@ -4,4 +4,6 @@
     <string name="title_activity_main">Prixes</string>
     <string name="package_name">software.omnilink.prixes</string>
     <string name="custom_url_scheme">software.omnilink.prixes</string>
+    <string name="shortcut_voice_short">Parler</string>
+    <string name="shortcut_voice_long">Parler à Prixes</string>
 </resources>
