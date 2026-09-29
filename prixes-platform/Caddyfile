@@ -50,44 +50,12 @@
 	}
 }
 
-# Partie gratuite de la formation : des fichiers statiques, rien d autre.
-# Aucun formulaire, aucune collecte : on mesure seulement si les gens lisent.
-formation.prixes.app {
-	encode zstd gzip
-	root * /srv/formation
-
-	# Un dossier sert son index.html ; tout le reste qui n'existe pas repond 404.
-	# Le repli sur /index.html renvoyait la page d'accueil avec un code 200 pour
-	# n'importe quelle adresse : les moteurs indexaient des pages fantomes, et une
-	# faute de frappe passait pour une page valide.
-	try_files {path} {path}/index.html
-	file_server
-
-	header {
-		# Un an, sous-domaines compris, comme le site principal.
-		Strict-Transport-Security "max-age=31536000; includeSubDomains"
-		X-Content-Type-Options "nosniff"
-		Referrer-Policy "strict-origin-when-cross-origin"
-
-		# Ce site ne charge que ses propres fichiers : ni script, ni police, ni
-		# image venue d'ailleurs. La regle le dit et le navigateur l'applique,
-		# ce qui limite les degats si une page etait un jour modifiee.
-		# 'unsafe-inline' reste necessaire : les styles et le script de la page
-		# de lecture sont ecrits dans la page elle-meme.
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'"
-
-		# Personne n'encadre ces pages dans les siennes.
-		X-Frame-Options "DENY"
-
-		# Le site n'a besoin d'aucune de ces capacites : on les refuse toutes.
-		Permissions-Policy "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
-
-		-Server
-	}
-
-	# Les polices et le convertisseur Markdown ne changent jamais sans changer
-	# de nom : ils peuvent etre gardes un an. Les pages, elles, doivent rester
-	# revalidees a chaque visite.
-	@fige path /polices/* /lire/marked.min.js
-	header @fige Cache-Control "public, max-age=31536000, immutable"
-}
+# formation.prixes.app est DÉPUBLIÉ depuis le 29 septembre 2026, à la demande
+# d'Aymen : « nous verrons plus tard ». Rien n'est perdu — le bloc qui le
+# servait est conservé tel quel dans Caddyfile.formation-depublie, le site
+# complet reste dans /opt/prixes-platform/site-formation sur le droplet, et
+# tout se refabrique de toute façon depuis le dépôt formation-appli-mobile.
+#
+# Pour le remettre en ligne : recoller le contenu de Caddyfile.formation-depublie
+# à la fin de ce fichier, le copier sur le droplet, valider, recharger. Le
+# certificat se redemande tout seul.
