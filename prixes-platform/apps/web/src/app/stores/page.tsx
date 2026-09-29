@@ -100,7 +100,13 @@ export default function StoresPage() {
     if (!coords || isFetching || !data) return;
     voicePending.current = false;
     if (stores.length === 0) {
-      finish(`Je n'ai trouvé aucun magasin à moins de ${radius} kilomètres.`, "loupe", false);
+      finish(
+        data.unavailable
+          ? "Le service des cartes ne répond pas pour le moment. Réessayez dans une minute."
+          : `Je n'ai trouvé aucun magasin à moins de ${radius} kilomètres.`,
+        "loupe",
+        false,
+      );
       return;
     }
     const nearest = stores[0];
@@ -258,7 +264,9 @@ export default function StoresPage() {
         })}
         {coords && stores.length === 0 && !loading && (
           <p className="py-8 text-center text-on-surface-variant">
-            Aucun magasin trouvé à proximité.
+            {data?.unavailable
+              ? "Le service des cartes ne répond pas. Réessayez dans une minute."
+              : "Aucun magasin trouvé à proximité."}
           </p>
         )}
       </div>

@@ -102,7 +102,9 @@ function StoreMapView() {
 
       {coords && !isFetching && !branch && (
         <p className="py-10 text-center text-on-surface-variant">
-          Aucun magasin trouvé à proximité.
+          {data?.unavailable
+              ? "Le service des cartes ne répond pas. Réessayez dans une minute."
+              : "Aucun magasin trouvé à proximité."}
         </p>
       )}
     </div>

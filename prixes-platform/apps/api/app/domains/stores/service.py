@@ -10,9 +10,16 @@ upstream fetch, and we keep serving during rate-limit windows. Distances are
 computed per-request from the caller's exact position, so the cached, distance-
 free POI list stays reusable across slightly different locations. Failures are
 never cached, and any upstream error yields an empty list rather than a 500.
+
+The main Overpass instance regularly times out or rate-limits: a request then
+tries the public mirrors, and when all of them fail it serves the last list
+fetched for that spot (kept a week), flagged `stale`. Only when there is nothing
+at all does it answer "unavailable" — not "no store here", which is a lie a
+blind user has no way to check.
 """
 from __future__ import annotations
 
+import logging
 from math import asin, cos, radians, sin, sqrt
 from typing import Any, cast
 
@@ -22,7 +29,15 @@ from app.core.http import get_http_client
 from app.core.redis import redis_client
 from app.domains.stores.schemas import GeocodeHit, StoreOut
 
-OVERPASS_URL = "https://overpass-api.de/api/interpreter"
+# Tried in order; the first answer wins. The main instance gets the query's own
+# 20 s budget (it is usually the one that answers, just slowly at peak); the
+# mirrors, often down themselves, get a short one so the user is not kept waiting.
+OVERPASS_URLS = (
+    ("https://overpass-api.de/api/interpreter", 22.0),
+    ("https://maps.mail.ru/osm/tools/overpass/api/interpreter", 8.0),
+    ("https://overpass.private.coffee/api/interpreter", 8.0),
+)
+logger = logging.getLogger(__name__)
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
 # Address lookups don't change; cache aggressively to spare the (free, shared)
@@ -34,6 +49,8 @@ _SHOP_TYPES = ("supermarket", "convenience", "grocery")
 
 # Supermarket POIs are stable; cache the raw list for 6h to spare the upstream.
 _CACHE_TTL = 6 * 3600
+# The fallback copy, served only when every Overpass instance fails.
+_STALE_TTL = 7 * 24 * 3600
 
 
 def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -73,17 +90,20 @@ def _build_query(lat: float, lon: float, radius_m: int) -> str:
     )
 
 
-async def _fetch_pois(lat: float, lon: float, radius_km: float) -> list[dict[str, Any]]:
-    """Raw supermarket POIs (no distance) from Overpass. Empty on any failure."""
+async def _fetch_pois(lat: float, lon: float, radius_km: float) -> list[dict[str, Any]] | None:
+    """Raw supermarket POIs (no distance) from Overpass; None when every instance failed."""
     query = _build_query(lat, lon, int(radius_km * 1000))
-    try:
-        resp = await get_http_client().post(
-            OVERPASS_URL, data={"data": query}, timeout=25.0
-        )
-        resp.raise_for_status()
-        elements = resp.json().get("elements", [])
-    except Exception:  # noqa: BLE001 — never propagate upstream failures
-        return []
+    elements: list[dict[str, Any]] | None = None
+    for url, timeout in OVERPASS_URLS:
+        try:
+            resp = await get_http_client().post(url, data={"data": query}, timeout=timeout)
+            resp.raise_for_status()
+            elements = resp.json().get("elements", [])
+            break
+        except Exception as exc:  # noqa: BLE001 — never propagate upstream failures
+            logger.warning("overpass %s failed: %s", url, type(exc).__name__)
+    if elements is None:
+        return None
 
     pois: list[dict[str, Any]] = []
     for el in elements:
@@ -107,23 +127,36 @@ async def _fetch_pois(lat: float, lon: float, radius_km: float) -> list[dict[str
     return pois
 
 
-async def _cached_pois(lat: float, lon: float, radius_km: float) -> list[dict[str, Any]]:
-    """Cache-aside on a ~110 m grid. Only successful (non-empty) fetches are cached."""
+async def _cached_pois(
+    lat: float, lon: float, radius_km: float
+) -> tuple[list[dict[str, Any]], str]:
+    """Cache-aside on a ~110 m grid. Only successful (non-empty) fetches are cached.
+
+    Returns the POIs and where they came from: "live", "stale" (the week-old
+    copy, every upstream failed) or "unavailable" (nothing to serve at all).
+    """
     key = f"stores:osm:{round(lat, 3)}:{round(lon, 3)}:{radius_km}"
     cached = await redis_client.get(key)
     if cached is not None:
-        return cast("list[dict[str, Any]]", orjson.loads(cached))
+        return cast("list[dict[str, Any]]", orjson.loads(cached)), "live"
     pois = await _fetch_pois(lat, lon, radius_km)
     if pois:  # don't cache empty/failed responses (avoids poisoning during rate-limits)
         await redis_client.set(key, orjson.dumps(pois), ex=_CACHE_TTL)
-    return pois
+        await redis_client.set(f"{key}:stale", orjson.dumps(pois), ex=_STALE_TTL)
+        return pois, "live"
+    if pois is not None:
+        return [], "live"  # Overpass answered: there really is nothing here
+    stale = await redis_client.get(f"{key}:stale")
+    if stale is not None:
+        return cast("list[dict[str, Any]]", orjson.loads(stale)), "stale"
+    return [], "unavailable"
 
 
 async def nearby(
     lat: float, lon: float, radius_km: float = 5.0, limit: int = 20
-) -> list[StoreOut]:
-    """Supermarkets near (lat, lon), nearest first. Empty on any upstream failure."""
-    pois = await _cached_pois(lat, lon, radius_km)
+) -> tuple[list[StoreOut], str]:
+    """Supermarkets near (lat, lon), nearest first, and their source (see _cached_pois)."""
+    pois, source = await _cached_pois(lat, lon, radius_km)
     stores = [
         StoreOut(
             id=p["id"],
@@ -137,7 +170,7 @@ async def nearby(
         for p in pois
     ]
     stores.sort(key=lambda s: s.distance_km)
-    return stores[:limit]
+    return stores[:limit], source
 
 
 async def geocode(query: str) -> list[GeocodeHit]:

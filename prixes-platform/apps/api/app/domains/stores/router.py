@@ -20,8 +20,8 @@ async def nearby_stores(
     limit: Annotated[int, Query(ge=1, le=50)] = 20,
 ) -> StoresNearbyResult:
     """Supermarkets near the given coordinates, nearest first."""
-    items = await service.nearby(lat, lon, radius_km, limit)
-    return StoresNearbyResult(items=items)
+    items, source = await service.nearby(lat, lon, radius_km, limit)
+    return StoresNearbyResult(items=items, unavailable=source == "unavailable")
 
 
 @router.get(

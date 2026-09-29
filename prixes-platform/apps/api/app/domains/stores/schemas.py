@@ -18,6 +18,9 @@ class StoreOut(BaseModel):
 
 class StoresNearbyResult(BaseModel):
     items: list[StoreOut]
+    # The map service did not answer and there was no earlier list to fall back
+    # on: an empty `items` then means "unknown", not "no store nearby".
+    unavailable: bool = False
 
 
 class GeocodeHit(BaseModel):

@@ -216,6 +216,8 @@ export interface Store {
 
 export interface StoresNearbyResult {
   items: Store[];
+  /** The map service did not answer: an empty list means "unknown", not "none". */
+  unavailable?: boolean;
 }
 
 export interface GeocodeHit {
