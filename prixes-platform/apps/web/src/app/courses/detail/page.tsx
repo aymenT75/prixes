@@ -76,6 +76,9 @@ function ProductDetail() {
   // a product turns a signal into noise. The allergen warning still buzzes,
   // however you got here — that one is a safety alert, not a receipt.
   const fromScan = params.get("from") === "scan";
+  // Opened by the voice assistant, which has already said the product, its price
+  // and any allergen, and is now asking a question: speaking here would cut it.
+  const fromVoice = params.get("from") === "voice";
   const barcode = isValidBarcode(rawBarcode) ? rawBarcode : "";
   const qc = useQueryClient();
   const { user, openLogin } = useApp();
@@ -283,7 +286,7 @@ function ProductDetail() {
     }
     // A safety allergen warning must be spoken instantly (on-device) — never wait on a
     // network round-trip for the natural voice.
-    if (parts.length) speak(parts.join(" "), undefined, { instant: hasAllergen });
+    if (parts.length && !fromVoice) speak(parts.join(" "), undefined, { instant: hasAllergen });
     if (hasAllergen) hapticDanger();
     else if (fromScan) hapticSuccess();
     // eslint-disable-next-line react-hooks/exhaustive-deps

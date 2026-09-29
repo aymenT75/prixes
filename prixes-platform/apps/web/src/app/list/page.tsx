@@ -57,6 +57,9 @@ export default function ListPage() {
   });
 
   // Asked by voice ("où faire mes courses ?"): run the comparison and say it.
+  // Through mutateAsync's promise: it settles even when the page re-mounts while
+  // the request is in flight, which dropped both per-call callbacks and a
+  // state watcher, and left the assistant silent (seen in testing, 29/09).
   useEffect(() => {
     if (!useVoiceTask.getState().take("split")) return;
     const { finish } = useVoiceTask.getState();
@@ -65,8 +68,9 @@ export default function ListPage() {
       openLogin(true);
       return;
     }
-    organise.mutate(undefined, {
-      onSuccess: (result) => {
+    organise
+      .mutateAsync()
+      .then((result) => {
         const best = result.options[0];
         if (!best) {
           finish("Je ne connais aucun prix pour votre liste. Ajoutez des produits, puis redemandez.", "plein", false);
@@ -77,11 +81,12 @@ export default function ListPage() {
           best.saving_vs_priciest != null && best.priciest_store
             ? ` ${spokenPrice(best.saving_vs_priciest)} de moins que chez ${best.priciest_store}.`
             : "";
-        const missing = best.missing.length ? ` ${best.missing.length} article${best.missing.length > 1 ? "s" : ""} à trouver ailleurs.` : "";
+        const missing = best.missing.length
+          ? ` ${best.missing.length} article${best.missing.length > 1 ? "s" : ""} à trouver ailleurs.`
+          : "";
         finish(`Le moins cher : ${where}, ${spokenPrice(best.total)}.${saving}${missing}`, "plein");
-      },
-      onError: () => finish("Je n'ai pas pu comparer les magasins. Réessayez.", "plein", false),
-    });
+      })
+      .catch(() => finish("Je n'ai pas pu comparer les magasins. Réessayez.", "plein", false));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
   }, []);
 

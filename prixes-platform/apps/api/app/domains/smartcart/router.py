@@ -22,8 +22,9 @@ router = APIRouter(prefix="/smart-cart", tags=["smart-cart"])
 
 @router.get("/status")
 async def status_() -> dict[str, object]:
-    """Whether the assistant can be offered at all — the UI hides itself if not."""
-    return {"available": llm_enabled(), "rate_per_hour": settings.smartcart_rate_per_hour}
+    """Whether the assistant can be offered. Always: without a model it still
+    answers from the recipe catalogue, and hiding it left voice requests silent."""
+    return {"available": True, "rate_per_hour": settings.smartcart_rate_per_hour}
 
 
 @router.post(
@@ -50,7 +51,7 @@ async def generate(
     spends the whole hour's budget on refusals and is locked out for having tried.
     """
     try:
-        if user is not None and is_premium(user):
+        if user is not None and is_premium(user) and llm_enabled():
             return await service.generate(db, user.id, data)
         return await service.generate_from_catalog(db, user.id if user else None, data)
     except HTTPException:

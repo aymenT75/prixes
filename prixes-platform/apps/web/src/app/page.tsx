@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { BargainCard } from "@/components/BargainCard";
 import { Icon } from "@/components/Icon";
@@ -14,8 +14,6 @@ import { VoiceHero } from "@/components/VoiceHero";
 import { WhatsNew } from "@/components/WhatsNew";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/store";
-import { useA11y } from "@/lib/useA11y";
-import { speechSupported } from "@/lib/voice";
 
 // Only surface what the bottom tab bar does NOT already cover — Courses, Scanner,
 // and Deals are permanent tabs, so putting them here too is redundant.
@@ -30,14 +28,8 @@ const SHORTCUTS = [
 export default function HomePage() {
   const router = useRouter();
   const { user } = useApp();
-  const openVoice = useA11y((st) => st.setVoiceOpen);
   const [query, setQuery] = useState("");
 
-  // Whether this browser can dictate is only knowable in the browser: deciding it
-  // during render would make the prerendered HTML disagree with the first client
-  // render, and React would throw the page away to recover.
-  const [canDictate, setCanDictate] = useState(false);
-  useEffect(() => setCanDictate(speechSupported()), []);
 
   // Popular products (not deals) so tapping a card opens the in-app product sheet
   // rather than leaving to an external merchant site.
@@ -87,18 +79,6 @@ export default function HomePage() {
           aria-label="Rechercher un produit"
           enterKeyHint="search"
         />
-        {canDictate && (
-          <button
-            type="button"
-            // Same brain as every other mic: "station essence pour du 95" must not
-            // turn into a product search (heard on a tester's phone, 28/09).
-            onClick={() => openVoice(true)}
-            aria-label="Parler à Prixes, assistant vocal"
-            className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-full bg-surface-container text-primary transition-colors active:scale-95"
-          >
-            <Icon name="mic" className="text-[20px]" />
-          </button>
-        )}
       </form>
 
       <WhatsNew />

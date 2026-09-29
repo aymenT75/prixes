@@ -14,10 +14,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Icon } from "@/components/Icon";
 import { MascotScene, type SceneState } from "@/components/MascotScene";
 import { ApiError, api } from "@/lib/api";
+import type { SearchHit } from "@/lib/types";
 import { earcon, type Earcon } from "@/lib/earcons";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
@@ -32,7 +34,15 @@ import {
   vibrate,
   type VoiceRecognizer,
 } from "@/lib/voice";
-import { useVoicePhrase, useVoiceTask, workingPose, type Pose, type VoiceTask } from "@/lib/voiceTasks";
+import {
+  spokenPrice,
+  useVoicePhrase,
+  useVoiceTask,
+  workingPose,
+  type Pose,
+  type BasketLine,
+  type VoiceTask,
+} from "@/lib/voiceTasks";
 
 type Phase = "idle" | "listening" | "working" | "done" | "error";
 
@@ -56,11 +66,23 @@ const TASK_SOUND: Record<VoiceTask["kind"], Earcon> = {
   scan: "scan",
 };
 
+/** "ajoute-le", "ajoute ça à ma liste": the product just talked about. */
+const PRONOUN = /^(le|la|les|l'|ca|ça|cela|celui-ci|celle-ci|ce produit)$/;
+
+/** Matches the product page's rule: a profile allergen named in the product's list. */
+function allergensIn(productAllergens: string | null | undefined, profile: string[]): string[] {
+  const list = (productAllergens ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  return list.filter((a) =>
+    profile.some((p) => a.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(a.toLowerCase())),
+  );
+}
+
 /** A page that never reports back (location refused, network down) must not leave the Caddie rolling forever. */
 const TASK_TIMEOUT_MS = 45_000;
 
 export function VoiceAssistant() {
   const router = useRouter();
+  const qc = useQueryClient();
   const a11y = useA11y();
   const { user, openLogin, openPremium } = useApp();
   const open = useA11y((s) => s.voiceOpen);
@@ -82,6 +104,11 @@ export function VoiceAssistant() {
   const openRef = useRef(false);
   const startRef = useRef<() => void>(() => {});
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The follow-up the assistant just offered ("Je l'ajoute à votre liste ?"),
+  // done on a spoken "oui". One step instead of finding and touching a button.
+  const pendingRef = useRef<{ yes: () => void; no?: () => void } | null>(null);
+  // The product last talked about, so "ajoute-le" needs no name.
+  const lastProductRef = useRef<{ barcode: string; name: string } | null>(null);
 
   useEffect(() => {
     setSupported(speechSupported());
@@ -110,21 +137,76 @@ export function VoiceAssistant() {
     setBadge(null);
   }, [setOpen, stopListening]);
 
-  /** Show, say and sound an answer; then listen again in hands-free mode. */
+  /**
+   * Show, say and sound an answer; then listen again in hands-free mode. With
+   * `ask`, the answer ends on a question: the mic reopens by itself once it has
+   * been said, and a "oui" runs `ask` — no second tap on the mic.
+   */
   const answer = useCallback(
-    (say: string, next: { pose: Pose; ok: boolean; badge?: string | null }) => {
+    (say: string, next: { pose: Pose; ok: boolean; badge?: string | null; ask?: () => void; no?: () => void }) => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      pendingRef.current = next.ask ? { yes: next.ask, no: next.no } : null;
       setPose(next.pose);
       setBadge(next.badge ?? null);
       setPhase(next.ok ? "done" : "error");
       setResponse(say);
       earcon(next.ok ? "success" : "error");
       vibrate(next.ok ? 40 : [60, 60, 60]);
+      const asked = !!next.ask;
       speak(say, () => {
-        if (handsFreeRef.current && openRef.current) setTimeout(() => startRef.current(), 500);
+        if ((asked || handsFreeRef.current) && openRef.current) setTimeout(() => startRef.current(), 400);
       });
     },
     [],
+  );
+
+  /** Put one product on the list and say how long the list is now. */
+  const addProduct = useCallback(
+    async (product: { barcode: string; name: string }) => {
+      setPose("roule");
+      setPhase("working");
+      earcon("drop");
+      try {
+        await api.addToList({ barcode: product.barcode, name: product.name });
+        qc.invalidateQueries({ queryKey: ["shopping"] });
+        const list = await api.getShoppingList();
+        const left = list.items.filter((i) => !i.checked).length;
+        answer(`${product.name} ajouté à votre liste. Vous avez ${left} article${left > 1 ? "s" : ""}.`, {
+          pose: "plein",
+          ok: true,
+          badge: `${left} article${left > 1 ? "s" : ""}`,
+        });
+      } catch {
+        answer("Je n'ai pas pu l'ajouter. Réessayez.", { pose: "roule", ok: false });
+      }
+    },
+    [answer, qc],
+  );
+
+  /** The week's menu groceries onto the list — the "oui" after "compose mon menu". */
+  const addMenuBasket = useCallback(
+    async (items: BasketLine[]) => {
+      setPose("roule");
+      setPhase("working");
+      earcon("drop");
+      if (!items.length) {
+        answer("Je ne trouve pas de courses pour ce menu.", { pose: "assiette", ok: false });
+        return;
+      }
+      try {
+        const res = await api.addBasketToList(items);
+        qc.invalidateQueries({ queryKey: ["shopping"] });
+        const n = res.added + res.merged;
+        answer(`C'est fait : ${n} article${n > 1 ? "s" : ""} du menu dans votre liste.`, {
+          pose: "plein",
+          ok: true,
+          badge: `${n} article${n > 1 ? "s" : ""}`,
+        });
+      } catch {
+        answer("Je n'ai pas pu mettre les courses dans votre liste.", { pose: "roule", ok: false });
+      }
+    },
+    [answer, qc],
   );
 
   // A page finished the task it was given: show and say its answer.
@@ -136,16 +218,17 @@ export function VoiceAssistant() {
       speak(result.say);
       return;
     }
-    answer(result.say, { pose: result.pose, ok: result.ok });
-  }, [result, clearResult, answer]);
+    const offer = result.offer;
+    const ask = offer?.kind === "menu-basket" ? () => void addMenuBasket(offer.items) : undefined;
+    answer(result.say, { pose: result.pose, ok: result.ok, ask });
+  }, [result, clearResult, answer, addMenuBasket]);
 
   // Runs a product search, retrying with a shorter phrase if nothing matches
-  // ("du lait bio" -> "du lait" -> "du"), then falls back to a few popular
-  // products so the user is never left with a dead end.
-  const runSearch = useCallback(async (query: string) => {
+  // ("du lait bio" -> "du lait"). Returns the candidates, best first, so a "non"
+  // to the first price can offer the next one.
+  const runSearch = useCallback(async (query: string): Promise<{ q: string; items: SearchHit[] }> => {
     let q = query;
-    let found: { items: { name: string | null; barcode: string; nutriscore: string | null }[]; total: number } | null =
-      null;
+    let found: Awaited<ReturnType<typeof api.searchProducts>> | null = null;
     try {
       found = await api.searchProducts(q);
     } catch {
@@ -159,53 +242,7 @@ export function VoiceAssistant() {
         found = null;
       }
     }
-
-    if (found && found.total > 0 && found.items[0]) {
-      const top = found.items[0];
-      const name = top.name ?? q;
-      const grade = (top.nutriscore ?? "").toLowerCase();
-      const detail = `/courses/detail?barcode=${encodeURIComponent(top.barcode)}`;
-      const said = `Nous avons trouvé le meilleur prix et le magasin le plus proche pour ${name}.`;
-
-      // Poor Nutri-Score (D/E): stay on the product the user asked for, but flag
-      // that a healthier option exists. We do NOT redirect.
-      if (grade === "d" || grade === "e") {
-        for (const item of found.items.slice(0, 3)) {
-          const g = (item.nutriscore ?? "").toLowerCase();
-          if (g !== "d" && g !== "e") continue;
-          try {
-            const alts = await api.getAlternatives(item.barcode);
-            const healthier = [...alts.items.filter((a) => a.name && a.barcode)].sort(
-              (a, b) => (a.nova_group ?? 99) - (b.nova_group ?? 99),
-            )[0];
-            if (healthier?.name) {
-              return {
-                say: `${said} À noter, son Nutri-Score est faible : ${grade.toUpperCase()}. Une alternative plus saine existe, ${healthier.name}.`,
-                path: detail,
-              };
-            }
-          } catch {
-            /* try the next candidate */
-          }
-        }
-        return { say: `${said} À noter, son Nutri-Score est faible : ${grade.toUpperCase()}.`, path: detail };
-      }
-      return { say: said, path: detail };
-    }
-
-    try {
-      const popular = await api.browseProducts(3);
-      const alt = popular.items.map((p) => p.name).find((n): n is string => !!n);
-      if (alt) {
-        return {
-          say: `Je n'ai pas trouvé ${query}. Voici une alternative : ${alt}.`,
-          path: `/courses?q=${encodeURIComponent(alt)}`,
-        };
-      }
-    } catch {
-      /* ignore — fall through to the plain not-found line */
-    }
-    return { say: `Je n'ai pas trouvé ${query}.`, path: `/courses?q=${encodeURIComponent(query)}` };
+    return { q, items: (found?.items ?? []).filter((i) => i.barcode).slice(0, 6) };
   }, []);
 
   /** The first catalogue product a spoken name designates, or null. */
@@ -232,19 +269,88 @@ export function VoiceAssistant() {
       stopListening();
       setResponse("");
       setBadge(null);
+      // A question only waits for the very next sentence: anything else drops it.
+      const pending = pendingRef.current;
+      pendingRef.current = null;
 
       switch (intent.type) {
+        case "confirm":
+          // "ajoute-le" answers both questions at once: straight onto the list.
+          if (/\b(ajoute|mets)\b/.test(text.toLowerCase()) && lastProductRef.current) {
+            if (!user) return needAccount();
+            void addProduct(lastProductRef.current);
+            return;
+          }
+          if (pending) {
+            pending.yes();
+            return;
+          }
+          answer("Que voulez-vous faire ? Dites par exemple : cherche du lait.", { pose: "ecoute", ok: true });
+          return;
+
+        case "cancel":
+          if (pending?.no) {
+            pending.no();
+            return;
+          }
+          answer(intent.say, { pose: "ecoute", ok: true });
+          return;
+
         case "search": {
-          setPose("roule");
+          setPose("loupe");
           setPhase("working");
-          earcon("drop");
+          earcon("radar");
           vibrate(30);
-          void runSearch(intent.query).then(({ say, path }) => {
-            // Dismiss now: the product page may auto-read and would cut our line.
-            setOpen(false);
-            setPhase("idle");
-            router.push(path);
-            speak(say);
+          const profile = a11y.allergens;
+          void runSearch(intent.query).then(({ items }) => {
+            if (!items.length) {
+              answer(`Je n'ai pas trouvé ${intent.query}. Essayez un autre nom.`, { pose: "loupe", ok: false });
+              return;
+            }
+            // 1) "Ce prix vous convient ?" — non: the next product; oui: 2).
+            // 2) "Je l'ajoute à votre liste ?" — oui: added. All by voice.
+            const offer = (i: number) => {
+              const hit = items[i];
+              const name = hit.name ?? intent.query;
+              const product = { barcode: hit.barcode, name };
+              lastProductRef.current = product;
+              // Shown behind the assistant, which keeps talking (the page stays quiet).
+              router.push(`/courses/detail?barcode=${encodeURIComponent(hit.barcode)}&from=voice`);
+              const danger = allergensIn(hit.allergens, profile);
+              const warn = danger.length ? `Attention, contient ${danger.join(", ")}. ` : "";
+              const price =
+                hit.best_price != null
+                  ? `${spokenPrice(hit.best_price)}${hit.best_store ? ` chez ${hit.best_store}` : ""}`
+                  : "pas encore de prix connu";
+              const grade = (hit.nutriscore ?? "").toUpperCase();
+              const nutri = grade === "D" || grade === "E" ? ` Nutri-Score ${grade}, faible.` : "";
+              const intro = i === 0 ? "" : "Autre choix : ";
+              answer(`${intro}${warn}${name} : ${price}.${nutri} Ce prix vous convient ?`, {
+                pose: "plein",
+                ok: true,
+                ask: () => {
+                  if (!user) {
+                    needAccount();
+                    return;
+                  }
+                  answer("Je l'ajoute à votre liste ?", {
+                    pose: "plein",
+                    ok: true,
+                    ask: () => void addProduct(product),
+                    no: () => answer("D'accord, je ne l'ajoute pas.", { pose: "ecoute", ok: true }),
+                  });
+                },
+                no: () => {
+                  if (i + 1 < items.length) offer(i + 1);
+                  else
+                    answer(`Je n'ai pas d'autre choix pour ${intent.query}. Dites un autre produit.`, {
+                      pose: "loupe",
+                      ok: false,
+                    });
+                },
+              });
+            };
+            offer(0);
           });
           return;
         }
@@ -275,6 +381,12 @@ export function VoiceAssistant() {
 
         case "list-add": {
           if (!user) return needAccount();
+          const last = lastProductRef.current;
+          if (PRONOUN.test(intent.query.trim().toLowerCase())) {
+            if (last) void addProduct(last);
+            else answer("Quel produit ? Dites par exemple : ajoute du lait.", { pose: "ecoute", ok: false });
+            return;
+          }
           setPose("roule");
           setPhase("working");
           earcon("drop");
@@ -284,17 +396,9 @@ export function VoiceAssistant() {
               answer(`Je n'ai pas trouvé ${intent.query}. Essayez un autre nom.`, { pose: "roule", ok: false });
               return;
             }
-            try {
-              await api.addToList({ barcode: product.barcode, name: product.name ?? intent.query });
-              const list = await api.getShoppingList();
-              const left = list.items.filter((i) => !i.checked).length;
-              answer(
-                `${product.name ?? intent.query} ajouté à votre liste. Vous avez ${left} article${left > 1 ? "s" : ""}.`,
-                { pose: "plein", ok: true, badge: `${left} article${left > 1 ? "s" : ""}` },
-              );
-            } catch {
-              answer("Je n'ai pas pu l'ajouter. Réessayez.", { pose: "roule", ok: false });
-            }
+            const found = { barcode: product.barcode, name: product.name ?? intent.query };
+            lastProductRef.current = found;
+            await addProduct(found);
           })();
           return;
         }
@@ -388,7 +492,7 @@ export function VoiceAssistant() {
           return;
       }
     },
-    [router, a11y, runSearch, productFor, answer, close, needAccount, openPremium, queueTask, setOpen, stopListening, user],
+    [router, a11y, runSearch, productFor, answer, addProduct, close, needAccount, openPremium, queueTask, setOpen, stopListening, user],
   );
 
   const startListening = useCallback(() => {

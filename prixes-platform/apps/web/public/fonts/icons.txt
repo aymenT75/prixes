@@ -8,6 +8,7 @@ analytics
 android
 apps
 arrow_back
+arrow_downward
 arrow_forward
 article
 assistant

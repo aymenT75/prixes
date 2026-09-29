@@ -147,6 +147,7 @@ export default function MenuPage() {
   });
 
   // Asked by voice: compose the week, or swap one day's meal, then say it.
+  // Through mutateAsync's promise (see list page).
   const voiceTaken = useRef(false);
   useEffect(() => {
     if (voiceTaken.current) return;
@@ -161,35 +162,50 @@ export default function MenuPage() {
       openLogin(true);
       return;
     }
-    const tell = (plan: MealPlan, intro: string) => {
-      const total = plan.split?.options[0]?.total ?? plan.estimated_total;
-      const firsts = plan.meals.slice(0, 3).map((m) => `${m.day_label}, ${m.title}`).join(" ; ");
-      finish(`${intro} ${total != null ? `Environ ${spokenPrice(total)}. ` : ""}${firsts}.`, "assiette");
-    };
     if (compose) {
-      generate.mutate(prefs, {
-        onSuccess: (plan) => tell(plan, `Votre semaine est prête : ${plan.meals.length} repas.`),
-        onError: (e) => finish(messageFor(e), "assiette", false),
-      });
+      generate
+        .mutateAsync(prefs)
+        .then((result) => {
+          const total = result.split?.options[0]?.total ?? result.estimated_total;
+          const firsts = result.meals.slice(0, 3).map((x) => `${x.day_label}, ${x.title}`).join(" ; ");
+          finish(
+            `Votre semaine est prête : ${result.meals.length} repas. ${total != null ? `Environ ${spokenPrice(total)}. ` : ""}${firsts}. ` +
+              "Je mets les courses dans votre liste ?",
+            "assiette",
+            true,
+            {
+              kind: "menu-basket",
+              items: (result.basket ?? [])
+                .filter((line) => !line.optional)
+                .map((line) => ({
+                  barcode: line.barcode,
+                  free_text: line.barcode ? null : line.product_name,
+                  name: line.matched_name ?? line.product_name,
+                  quantity: line.quantity,
+                  amount: line.amount,
+                  unit: line.unit,
+                  source: "mealplan",
+                })),
+            },
+          );
+        })
+        .catch((e) => finish(messageFor(e), "assiette", false));
       return;
     }
     if (swap) {
-      const current = qc.getQueryData<MealPlan | null>(["meal-plan", week]);
+      const current = qc.getQueryData<MealPlan | null>(["meal-plan", week]) ?? plan ?? null;
       const meal = current?.meals.find((m) => m.day === swap.day);
       if (!meal) {
         finish("Vous n'avez pas encore de menu cette semaine. Dites : compose mon menu.", "assiette", false);
         return;
       }
-      regenerate.mutate(
-        { day: meal.day, slot: meal.slot },
-        {
-          onSuccess: (plan) => {
-            const fresh = plan.meals.find((m) => m.day === meal.day && m.slot === meal.slot);
-            finish(`C'est changé. ${meal.day_label} : ${fresh?.title ?? "un autre plat"}.`, "assiette");
-          },
-          onError: (e) => finish(messageFor(e), "assiette", false),
-        },
-      );
+      regenerate
+        .mutateAsync({ day: meal.day, slot: meal.slot })
+        .then((result) => {
+          const fresh = result.meals.find((x) => x.day === meal.day);
+          finish(`C'est changé. ${meal.day_label} : ${fresh?.title ?? "un autre plat"}.`, "assiette");
+        })
+        .catch((e) => finish(messageFor(e), "assiette", false));
     }
   }, [user, plan, prefs, generate, regenerate, openLogin, qc, week]);
 

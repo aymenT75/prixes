@@ -109,8 +109,11 @@ export default function FuelPage() {
       finish(`Aucune station ne vend du ${label} près de vous.`, "pompe", false);
       return;
     }
+    // A station without a brand is still findable by its street.
+    const street = [best.address, best.city].filter(Boolean).join(", ");
+    const where = best.brand ? `chez ${best.brand}${street ? `, ${street}` : ""}` : street ? `à la station ${street}` : "dans une station";
     finish(
-      `${label} le moins cher : ${spokenPrice(best.prices[fuelType])} le litre chez ${best.brand ?? "une station"}, ` +
+      `${label} le moins cher : ${spokenPrice(best.prices[fuelType])} le litre ${where}, ` +
         `à ${spokenDistance(best.distance_km)}. ${stations.length} stations trouvées.`,
       "pompe",
     );

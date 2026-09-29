@@ -158,24 +158,47 @@ export function SmartAssistant() {
     onError: (e) => setError(messageFor(e)),
   });
 
-  // Asked by voice ("une raclette pour 6"): fill the box, run it, say the basket.
+  // Asked by voice ("une raclette pour 6"): fill the box, run it, and put the
+  // groceries on the list. Through mutateAsync's promise (see list page).
   useEffect(() => {
     const task = useVoiceTask.getState().take("cart");
     if (!task) return;
     const { finish } = useVoiceTask.getState();
     setPrompt(task.prompt);
-    generate.mutate(task.prompt, {
-      onSuccess: (result) => {
+    generate
+      .mutateAsync(task.prompt)
+      .then(async (result) => {
         const n = result.lines.length;
         const total = result.estimated_total != null ? `, environ ${spokenPrice(result.estimated_total)}` : "";
-        finish(
-          `${result.title} pour ${result.servings} : ${n} article${n > 1 ? "s" : ""}${total}. ` +
-            "Touchez « Ajouter à ma liste » pour les garder.",
-          "plein",
-        );
-      },
-      onError: (e) => finish(messageFor(e), "roule", false),
-    });
+        const head = `${result.title} pour ${result.servings} : ${n} article${n > 1 ? "s" : ""}${total}.`;
+        if (!user) {
+          finish(`${head} Connectez-vous pour que je les mette dans votre liste.`, "plein");
+          return;
+        }
+        // Asked by voice, the user wants the groceries, not a draft to review:
+        // they go straight on the list, no button to find and touch.
+        const lines = result.lines
+          .filter((l) => !l.optional)
+          .map((l) => ({
+            barcode: l.barcode,
+            free_text: l.barcode ? null : l.product_name,
+            name: l.matched_name ?? l.product_name,
+            quantity: l.quantity,
+            amount: l.amount,
+            unit: l.unit,
+          }));
+        try {
+          const res = await api.commitSmartCart(result.draft_id, lines);
+          qc.invalidateQueries({ queryKey: ["shopping"] });
+          setDraft(null);
+          setAdded(`${res.added} article${res.added > 1 ? "s" : ""} ajouté${res.added > 1 ? "s" : ""}`);
+          const count = res.added + res.merged;
+          finish(`${head} C'est fait : ${count} article${count > 1 ? "s" : ""} dans votre liste.`, "plein");
+        } catch {
+          finish(`${head} Je n'ai pas pu les mettre dans votre liste. Touchez « Ajouter à ma liste ».`, "plein", false);
+        }
+      })
+      .catch((e) => finish(messageFor(e), "roule", false));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
   }, []);
 

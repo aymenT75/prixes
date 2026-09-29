@@ -21,7 +21,6 @@ export function PageHeader({
   const router = useRouter();
   const pathname = usePathname();
   const { user, openLogin } = useApp();
-  const setVoiceOpen = useA11y((s) => s.setVoiceOpen);
   const setA11yOpen = useA11y((s) => s.setA11yOpen);
 
   // Persistent back navigation everywhere except the app root (home).
@@ -55,23 +54,14 @@ export function PageHeader({
           // "Carburant") without truncating on a typical phone width.
           <h1 className="truncate text-headline-lg tracking-tight text-primary">{title}</h1>
         )}
-        {/* Voice + accessibility, next to the title so they never cover content. Sized
-            44x44: measured on-device they were 36x36, under both WCAG 2.5.5 and
-            Android's 48dp guidance — and the voice button is exactly the control a
-            user with motor difficulties reaches for first. */}
-        <button
-          onClick={() => setVoiceOpen(true)}
-          aria-label="Assistant vocal"
-          data-tour="voice-btn"
-          className="ml-1 grid h-11 w-11 flex-shrink-0 place-items-center rounded-full bg-primary/10 text-primary transition-transform active:scale-90"
-        >
-          <Icon name="mic" fill className="text-[20px]" />
-        </button>
+        {/* Accessibility, next to the title so it never covers content. Sized 44x44
+            (WCAG 2.5.5, Android 48dp). The microphone is not here: there is one, in
+            the centre of the tab bar, so a screen reader announces it once. */}
         <button
           onClick={() => setA11yOpen(true)}
           aria-label="Options d'accessibilité"
           data-tour="a11y-btn"
-          className="grid h-11 w-11 flex-shrink-0 place-items-center rounded-full text-on-surface-variant transition-transform hover:bg-surface-container-high active:scale-90"
+          className="ml-1 grid h-11 w-11 flex-shrink-0 place-items-center rounded-full text-on-surface-variant transition-transform hover:bg-surface-container-high active:scale-90"
         >
           <Icon name="accessibility_new" className="text-[20px]" />
         </button>

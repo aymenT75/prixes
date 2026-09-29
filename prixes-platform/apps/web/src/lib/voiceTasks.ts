@@ -9,6 +9,8 @@
  */
 import { create } from "zustand";
 
+import type { api } from "@/lib/api";
+
 export type FuelId = "gazole" | "sp95" | "sp98" | "e85" | "gplc";
 
 export type VoiceTask =
@@ -23,10 +25,20 @@ export type VoiceTask =
 /** The mascot's poses (public/mascotte/caddie-<pose>.webp). */
 export type Pose = "ecoute" | "roule" | "plein" | "pompe" | "loupe" | "assiette";
 
+/** One grocery line, as the list's bulk endpoint takes it. */
+export type BasketLine = Parameters<typeof api.addBasketToList>[0][number];
+
+/**
+ * A next step the assistant proposes after a result, done on a spoken "oui".
+ * It carries what it needs: a week that was not saved can still reach the list.
+ */
+export type VoiceOffer = { kind: "menu-basket"; items: BasketLine[] };
+
 export interface VoiceResult {
   say: string;
   pose: Pose;
   ok: boolean;
+  offer?: VoiceOffer;
 }
 
 interface VoiceTaskState {
@@ -35,7 +47,7 @@ interface VoiceTaskState {
   result: VoiceResult | null;
   queue: (task: VoiceTask) => void;
   take: <K extends VoiceTask["kind"]>(kind: K) => Extract<VoiceTask, { kind: K }> | null;
-  finish: (say: string, pose: Pose, ok?: boolean) => void;
+  finish: (say: string, pose: Pose, ok?: boolean, offer?: VoiceOffer) => void;
   clearResult: () => void;
 }
 
@@ -49,7 +61,7 @@ export const useVoiceTask = create<VoiceTaskState>((set, get) => ({
     set({ task: null });
     return task as never;
   },
-  finish: (say, pose, ok = true) => set({ result: { say, pose, ok } }),
+  finish: (say, pose, ok = true, offer) => set({ result: { say, pose, ok, offer } }),
   clearResult: () => set({ result: null }),
 }));
 
@@ -76,9 +88,15 @@ export function spokenDistance(km: number | null | undefined): string {
   return `${String(rounded).replace(".", ",")} kilomètre${rounded >= 2 ? "s" : ""}`;
 }
 
-/** A price the way it is said: "1,72 €" reads well in French text-to-speech. */
-export function spokenPrice(value: number): string {
-  return `${value.toFixed(2).replace(".", ",")} €`;
+/**
+ * A price the way it is said: "1,72 €" reads well in French text-to-speech.
+ * The API sends money as decimal strings ("12.40"): taking only numbers threw
+ * inside the pages' effects and left the assistant silent.
+ */
+export function spokenPrice(value: number | string): string {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return "un prix inconnu";
+  return `${n.toFixed(2).replace(".", ",")} €`;
 }
 
 /**

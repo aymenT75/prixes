@@ -61,7 +61,7 @@ export const TOUR_STEPS: TourStep[] = [
     id: "voice",
     target: '[data-tour="voice-btn"]',
     title: "Assistant vocal",
-    body: "Appuyez et dites « cherche du lait » — l'app s'occupe du reste.",
+    body: "Touchez le micro au centre, en bas, et parlez : « une raclette pour 6 », « essence la moins chère »… Je m'occupe du reste.",
   },
   {
     id: "a11y",

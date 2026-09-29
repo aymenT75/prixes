@@ -125,4 +125,20 @@ describe("parseIntent", () => {
     expect(parseIntent("haricots noirs")).toMatchObject({ type: "search" });
     expect(parseIntent("fromage blanc")).toMatchObject({ type: "search" });
   });
+
+  it("answers a question with oui / non", () => {
+    for (const t of ["oui", "oui merci", "d'accord", "vas-y", "ajoute-le"]) {
+      expect(parseIntent(t)).toMatchObject({ type: "confirm" });
+    }
+    for (const t of ["non", "non merci", "laisse tomber", "pas maintenant"]) {
+      expect(parseIntent(t)).toMatchObject({ type: "cancel" });
+    }
+    // "oui" only at the start: a product name is still a search.
+    expect(parseIntent("noix de cajou")).toMatchObject({ type: "search" });
+  });
+
+  it("keeps the pronoun, so the assistant can use the product just talked about", () => {
+    expect(parseIntent("ajoute-le à ma liste")).toMatchObject({ type: "list-add", query: "le" });
+    expect(parseIntent("ajoute ça à ma liste")).toMatchObject({ type: "list-add", query: "ca" });
+  });
 });

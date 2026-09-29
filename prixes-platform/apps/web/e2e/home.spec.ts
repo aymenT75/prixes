@@ -1,11 +1,15 @@
 import { expect, test } from "./fixtures";
 
 test.describe("Home page (golden path)", () => {
-  test("loads with hero, search, and tool shortcuts", async ({ page }) => {
+  test("loads with the voice hero, search, and tool shortcuts", async ({ page }) => {
     await page.goto("/");
 
     await expect(page.getByRole("heading", { name: "Prixes", exact: true })).toBeVisible();
-    await expect(page.getByText("Ne payez jamais le prix fort")).toBeVisible();
+    // The voice-first hero: the Caddie, the question, and examples to tap.
+    await expect(page.getByRole("heading", { name: "Que voulez-vous faire ?" })).toBeVisible();
+    for (const example of ["Une raclette pour 6", "Essence la moins chère", "Compose mon menu"]) {
+      await expect(page.getByRole("button", { name: `« ${example} »` }).first()).toBeVisible();
+    }
 
     // Greeting + search are always present, even signed out.
     await expect(page.getByRole("heading", { name: /Bonjour/ })).toBeVisible();
@@ -15,6 +19,16 @@ test.describe("Home page (golden path)", () => {
     for (const label of ["Ma liste", "Alertes", "Magasins", "Mon avis"]) {
       await expect(page.getByRole("link", { name: new RegExp(label) })).toBeVisible();
     }
+  });
+
+  test("there is exactly one microphone, and it opens the assistant", async ({ page }) => {
+    // Several mics that all did the same thing were announced four times by a
+    // screen reader. One, in the centre of the tab bar, on every page.
+    await page.goto("/");
+    const mic = page.getByRole("button", { name: /Parler à Prixes/ });
+    await expect(mic).toHaveCount(1);
+    await mic.click();
+    await expect(page.getByRole("dialog", { name: "Assistant vocal Prixes" })).toBeVisible();
   });
 
   test("searching from home navigates to Courses with the query", async ({ page }) => {

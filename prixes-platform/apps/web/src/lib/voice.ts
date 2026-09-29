@@ -19,6 +19,9 @@ export type Intent =
   | { type: "list-read"; say: string }
   | { type: "alert-add"; query: string; say: string }
   | { type: "premium"; say: string }
+  // Answers to the assistant's own question ("Je l'ajoute à votre liste ?").
+  | { type: "confirm"; say: string }
+  | { type: "cancel"; say: string }
   | { type: "unknown"; say: string };
 
 export function speechSupported(): boolean {
@@ -476,10 +479,24 @@ export function parseIntent(raw: string): Intent {
     return { type: "help", say: HELP_TEXT };
   }
 
+  // A yes / no to the assistant's last question — and "ajoute-le", which means
+  // "the product you just told me about". Before list-add, which would read
+  // "ajoute-le" as a product called "le".
+  if (/^(oui|ouais|d'accord|ok|okay|vas-y|vas y|allez|volontiers|je veux bien|bien sur|c'est ca|parfait|oui merci)\b/.test(t) ||
+      /\b(ajoute-le|ajoute le|ajoute-la|ajoute la|ajoute-les|ajoute les|mets-le|mets le|mets-les|garde-le|garde les)\s*$/.test(t)) {
+    return { type: "confirm", say: "" };
+  }
+  if (/^(non|non merci|annule|laisse|laisse tomber|pas maintenant|stop|arrete)\b/.test(t)) {
+    return { type: "cancel", say: "D'accord." };
+  }
+
   // Shopping list — before "read", which would otherwise take "lis ma liste".
   if (/\b(lis|lire|dis-moi|dis moi|qu'y a-t-il|que contient|qu'est-ce qu'il y a|rappelle)\b.*\bliste\b/.test(t)) {
     return { type: "list-read", say: "" };
   }
+  // "ajoute-le à ma liste": the product just talked about — the assistant knows it.
+  const pron = t.match(/\b(?:ajoute|rajoute|mets|met)[-\s]+(le|la|les|ca|cela)(?:\s+(?:a|dans|sur)\s+(?:ma|la|mes)\s+(?:liste|courses))?\s*$/);
+  if (pron) return { type: "list-add", query: pron[1], say: "" };
   const add =
     t.match(/\b(?:ajoute|ajouter|rajoute|mets|met|note|noter)\s+(.+?)\s+(?:a|dans|sur)\s+(?:ma|la|mes)\s+(?:liste|courses)\b/) ??
     t.match(/\b(?:ajoute|ajouter|rajoute|note)\s+(.+)$/);
@@ -605,8 +622,18 @@ export function readPageAloud(): string {
   if (!main) return "";
   const parts: string[] = [];
   main.querySelectorAll("h1,h2,h3,article,p,[data-speak]").forEach((el) => {
-    const txt = (el as HTMLElement).innerText?.replace(/\s+/g, " ").trim();
+    // Icons are ligatures: their text is "arrow_downward", "trending_up"… which a
+    // blind user heard read aloud. Read a copy without the icons and hidden bits.
+    const copy = el.cloneNode(true) as HTMLElement;
+    copy.querySelectorAll(".material-symbols-outlined,[aria-hidden='true']").forEach((n) => n.remove());
+    const txt = copy.textContent?.replace(/\s+/g, " ").trim();
     if (txt && txt.length > 1 && !parts.includes(txt)) parts.push(txt);
   });
-  return parts.slice(0, 30).join(". ");
+  // No emoji read out ("main qui salue"), no ".." where a line already ends a sentence.
+  return parts
+    .slice(0, 30)
+    .map((p) => p.replace(/\p{Extended_Pictographic}/gu, "").trim().replace(/[.…]$/, ""))
+    .filter(Boolean)
+    .join(". ")
+    .replace(/([?!])\./g, "$1");
 }
