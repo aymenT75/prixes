@@ -274,7 +274,13 @@ export function VoiceAssistant() {
       const name = strip(i.name ?? "");
       return words.every((w) => new RegExp(`(^|[^a-z])${w}s?($|[^a-z])`).test(name));
     });
-    return { q, items: (named.length ? named : items).slice(0, 6) };
+    // "lait" means milk: "lait de coco", "lait d'amande" are other products and
+    // come after it, even when cheaper (the search ranks by price).
+    const qualified = (name: string | null) =>
+      words.some((w) => new RegExp(`(^|[^a-z])${w}s? (de|d'|a la|au|aux) `).test(strip(name ?? "")));
+    const pool = named.length ? named : items;
+    const ranked = [...pool.filter((i) => !qualified(i.name)), ...pool.filter((i) => qualified(i.name))];
+    return { q, items: ranked.slice(0, 6) };
   }, []);
 
   /** The first catalogue product a spoken name designates, or null. */
