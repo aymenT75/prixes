@@ -4,6 +4,7 @@ import { create } from "zustand";
 
 import { api } from "./api";
 import { auth } from "./firebase";
+import { clearOffline, isNetworkError, readCopy } from "./offline";
 import { isNativeApp } from "./platform";
 import { logWarn } from "./logger";
 import { tokenStore } from "./tokens";
@@ -35,7 +36,13 @@ export const useApp = create<AppState>((set) => ({
     try {
       const user = await api.me();
       set({ user, loading: false });
-    } catch {
+    } catch (e) {
+      // No network is not a logout: opening the app in a shop with no signal
+      // used to clear the session. Keep it, with the account last seen.
+      if (isNetworkError(e)) {
+        set({ user: readCopy<User>("me"), loading: false });
+        return;
+      }
       tokenStore.clear();
       set({ user: null, loading: false });
     }
@@ -43,6 +50,7 @@ export const useApp = create<AppState>((set) => ({
   setUser: (user) => set({ user }),
   logout: () => {
     tokenStore.clear();
+    clearOffline();
     set({ user: null });
     // Also end the Firebase session (best-effort — ignore if not signed in).
     void signOut(auth).catch((e) => logWarn("logout", `Firebase signOut failed: ${e instanceof Error ? e.message : String(e)}`));

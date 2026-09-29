@@ -221,7 +221,15 @@ function ListRow({
       style={nutriBarStyle(item.nutriscore)}
       className={`card flex items-center gap-3 p-3 ${item.checked ? "opacity-50" : ""}`}
     >
-      <button onClick={onToggle} aria-label="Cocher" className="flex-shrink-0">
+      {/* A checkbox that names its item: "Cocher" alone, forty times over, told a
+          screen-reader user nothing about which line or whether it was done. */}
+      <button
+        onClick={onToggle}
+        role="checkbox"
+        aria-checked={item.checked}
+        aria-label={label}
+        className="grid min-h-11 min-w-11 flex-shrink-0 place-items-center"
+      >
         <Icon
           name={item.checked ? "check_circle" : "radio_button_unchecked"}
           fill={item.checked}

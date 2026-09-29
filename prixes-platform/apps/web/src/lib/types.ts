@@ -165,6 +165,8 @@ export interface SmartCartResult {
 export interface ShoppingList {
   items: ShoppingItem[];
   total: number;
+  /** Set by the app, not the API: the phone's copy, read without a network. */
+  offline?: boolean;
 }
 
 export interface StoreBasket {

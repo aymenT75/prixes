@@ -27,6 +27,7 @@ check_circle
 chevron_right
 close
 cloud_off
+cloud_upload
 colors
 contrast
 cookie
@@ -95,6 +96,7 @@ notifications_active
 notifications_off
 nutrition
 open_in_new
+outbox
 oven_gen
 pageview
 password

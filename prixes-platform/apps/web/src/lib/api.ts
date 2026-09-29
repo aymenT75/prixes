@@ -1,4 +1,14 @@
 // Typed fetch client with automatic access-token refresh on 401.
+import {
+  isNetworkError,
+  isTempId,
+  readCopy,
+  readOutbox,
+  saveCopy,
+  tempId,
+  writeOutbox,
+  type OfflineLine,
+} from "./offline";
 import { tokenStore } from "./tokens";
 import type {
   FuelNearbyResult,
@@ -92,6 +102,76 @@ async function request<T>(
   return (await res.json()) as T;
 }
 
+// ── Offline ────────────────────────────────────────────────────────────────
+// The list, the menu and the account are copied on the phone each time the API
+// returns them, and read back when the network is gone. List changes made
+// offline go to an outbox (lib/offline) and are applied to the copy at once, so
+// the screen and the voice already show them; flushOutbox sends them later.
+
+function offlineItem(id: string, line: OfflineLine): ShoppingItem {
+  return {
+    id,
+    barcode: line.barcode,
+    quantity: line.quantity,
+    checked: false,
+    name: line.name,
+    free_text: line.free_text,
+    amount: null,
+    unit: null,
+    source: "manual",
+    image_url: null,
+    best_price: null,
+    nutriscore: null,
+    pack: null,
+  };
+}
+
+function patchListCopy(change: (items: ShoppingItem[]) => ShoppingItem[]): void {
+  const copy = readCopy<ShoppingList>("shopping") ?? { items: [], total: 0 };
+  saveCopy("shopping", { ...copy, items: change(copy.items) });
+}
+
+/** Adds a line while offline: to the outbox, and to the phone's copy of the list. */
+function addOffline(line: OfflineLine): ShoppingItem {
+  const id = tempId();
+  writeOutbox([...readOutbox(), { op: "add", tempId: id, item: line }]);
+  const item = offlineItem(id, line);
+  patchListCopy((items) => [item, ...items]);
+  return item;
+}
+
+/**
+ * Sends the changes made offline, in order. Stops at the first network failure
+ * (the rest waits for the next try); a change the server refuses is dropped
+ * rather than retried forever. Returns how many were sent.
+ */
+export async function flushOutbox(): Promise<number> {
+  const ops = readOutbox();
+  let sent = 0;
+  while (ops.length) {
+    const op = ops[0];
+    try {
+      if (op.op === "add") {
+        await request("/shopping/bulk", {
+          method: "POST",
+          body: JSON.stringify({ items: [{ ...op.item, source: "manual" }] }),
+        });
+      } else if (op.op === "update") {
+        await request(`/shopping/${op.id}`, { method: "PATCH", body: JSON.stringify(op.body) });
+      } else {
+        await request(`/shopping/${op.id}`, { method: "DELETE" });
+      }
+      sent += 1;
+    } catch (e) {
+      if (isNetworkError(e)) break;
+      /* refused (e.g. the line was deleted elsewhere): drop it */
+    }
+    ops.shift();
+    writeOutbox(ops);
+  }
+  return sent;
+}
+
 export const api = {
   // ── Auth ──
   register: (body: { email: string; username: string; password: string }) =>
@@ -102,7 +182,11 @@ export const api = {
     request<TokenPair>("/auth/google", { method: "POST", body: JSON.stringify({ id_token }) }),
   loginFirebase: (id_token: string) =>
     request<TokenPair>("/auth/firebase", { method: "POST", body: JSON.stringify({ id_token }) }),
-  me: () => request<User>("/users/me"),
+  me: () =>
+    request<User>("/users/me").then((user) => {
+      saveCopy("me", user);
+      return user;
+    }),
   updateMe: (body: { username: string }) =>
     request<User>("/users/me", { method: "PATCH", body: JSON.stringify(body) }),
   exportMyData: () => request<Record<string, unknown>>("/users/me/export"),
@@ -183,12 +267,70 @@ export const api = {
     request<GeocodeResult>(`/stores/geocode?q=${encodeURIComponent(q)}`),
 
   // ── Shopping list ──
-  getShoppingList: () => request<ShoppingList>("/shopping"),
-  addToList: (body: { barcode: string; quantity?: number; name?: string }) =>
-    request<ShoppingItem>("/shopping", { method: "POST", body: JSON.stringify(body) }),
-  updateListItem: (id: string, body: { quantity?: number; checked?: boolean }) =>
-    request<ShoppingItem>(`/shopping/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
-  removeListItem: (id: string) => request<void>(`/shopping/${id}`, { method: "DELETE" }),
+  // Offline, the phone's copy — with `offline: true`, so the voice can say so.
+  getShoppingList: async (): Promise<ShoppingList> => {
+    try {
+      const list = await request<ShoppingList>("/shopping");
+      saveCopy("shopping", list);
+      return list;
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      return { ...(readCopy<ShoppingList>("shopping") ?? { items: [], total: 0 }), offline: true };
+    }
+  },
+  addToList: async (body: { barcode: string; quantity?: number; name?: string }): Promise<ShoppingItem> => {
+    try {
+      return await request<ShoppingItem>("/shopping", { method: "POST", body: JSON.stringify(body) });
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      return addOffline({ barcode: body.barcode, free_text: null, name: body.name ?? null, quantity: body.quantity ?? 1 });
+    }
+  },
+  /** A line by name only ("du lait" said with no network to look it up). */
+  addFreeTextToList: async (text: string): Promise<ShoppingItem> => {
+    const line = { barcode: null, free_text: text, name: text, quantity: 1 };
+    try {
+      await request("/shopping/bulk", { method: "POST", body: JSON.stringify({ items: [{ ...line, source: "manual" }] }) });
+      return offlineItem(text, line);
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      return addOffline(line);
+    }
+  },
+  updateListItem: async (id: string, body: { quantity?: number; checked?: boolean }): Promise<ShoppingItem> => {
+    try {
+      return await request<ShoppingItem>(`/shopping/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      if (!isTempId(id)) writeOutbox([...readOutbox(), { op: "update", id, body }]);
+      else if (body.quantity != null) {
+        // Not on the server yet: change the queued line itself.
+        writeOutbox(
+          readOutbox().map((op) =>
+            op.op === "add" && op.tempId === id ? { ...op, item: { ...op.item, quantity: body.quantity! } } : op,
+          ),
+        );
+      }
+      let updated: ShoppingItem | undefined;
+      patchListCopy((items) =>
+        items.map((i) => (i.id === id ? (updated = { ...i, ...body }) : i)),
+      );
+      return updated ?? offlineItem(id, { barcode: null, free_text: null, name: null, quantity: 1 });
+    }
+  },
+  removeListItem: async (id: string): Promise<void> => {
+    try {
+      await request<void>(`/shopping/${id}`, { method: "DELETE" });
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      writeOutbox(
+        isTempId(id)
+          ? readOutbox().filter((op) => !(op.op === "add" && op.tempId === id))
+          : [...readOutbox(), { op: "remove", id }],
+      );
+      patchListCopy((items) => items.filter((i) => i.id !== id));
+    }
+  },
   clearChecked: () => request<{ removed: number }>("/shopping/clear-checked", { method: "POST" }),
   optimizeBasket: () => request<OptimizeResult>("/shopping/optimize"),
   // One trolley per store: what to buy where, and what a second stop saves.
@@ -232,8 +374,17 @@ export const api = {
     }),
 
   // ── Menu de la semaine ──
-  getMealPlan: (weekStart?: string) =>
-    request<MealPlan | null>("/meal-plan" + (weekStart ? `?week_start=${weekStart}` : "")),
+  getMealPlan: async (weekStart?: string): Promise<MealPlan | null> => {
+    const key = `menu:${weekStart ?? "current"}`;
+    try {
+      const plan = await request<MealPlan | null>("/meal-plan" + (weekStart ? `?week_start=${weekStart}` : ""));
+      if (plan) saveCopy(key, plan);
+      return plan;
+    } catch (e) {
+      if (!isNetworkError(e)) throw e;
+      return readCopy<MealPlan>(key);
+    }
+  },
   generateMealPlan: (
     body: {
       servings: number;

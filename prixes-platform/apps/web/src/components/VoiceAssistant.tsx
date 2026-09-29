@@ -22,6 +22,7 @@ import { ApiError, api } from "@/lib/api";
 import type { SearchHit } from "@/lib/types";
 import { earcon, type Earcon } from "@/lib/earcons";
 import { useApp } from "@/lib/store";
+import { isNetworkError, isOffline } from "@/lib/offline";
 import { useA11y } from "@/lib/useA11y";
 import { useDialog } from "@/lib/useDialog";
 import {
@@ -82,7 +83,29 @@ function allergensIn(productAllergens: string | null | undefined, profile: strin
 function strip(t: string): string {
   return t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
+/**
+ * The words of `query` as they were said: parseIntent works on a lowercase,
+ * accent-free copy, and "beurre salé" must reach the list with its accent.
+ */
+function asSpoken(text: string, query: string): string {
+  const said = text.split(/\s+/);
+  const want = query.split(/\s+/);
+  const bare = (w: string) => strip(w).replace(/[^a-z0-9'-]/g, "");
+  for (let i = 0; i + want.length <= said.length; i++) {
+    if (want.every((w, j) => bare(said[i + j]) === w)) {
+      return said.slice(i, i + want.length).join(" ").replace(/[.,!?]+$/, "").toLowerCase();
+    }
+  }
+  return query;
+}
 const STOP = new Set(["des", "les", "une", "pour", "avec", "sans", "aux"]);
+
+/** Said instead of silence when a request needs the network and there is none. */
+const OFFLINE_SAY =
+  "Pas de réseau pour le moment. Je peux quand même lire votre liste, ou y ajouter des articles.";
+
+/** Kinds of request that cannot be done on the phone alone. */
+const NEEDS_NETWORK = new Set(["search", "task", "alert-add", "premium"]);
 
 /** Once per launch: the shortcut or "listen on open" must not reopen it on every page. */
 let launchHandled = false;
@@ -195,7 +218,8 @@ export function VoiceAssistant() {
         qc.invalidateQueries({ queryKey: ["shopping"] });
         const list = await api.getShoppingList();
         const left = list.items.filter((i) => !i.checked).length;
-        answer(`${product.name} ajouté à votre liste. Vous avez ${left} article${left > 1 ? "s" : ""}.`, {
+        const later = list.offline ? " Pas de réseau : je l'enverrai dès qu'il revient." : "";
+        answer(`${product.name} ajouté à votre liste. Vous avez ${left} article${left > 1 ? "s" : ""}.${later}`, {
           pose: "plein",
           ok: true,
           badge: `${left} article${left > 1 ? "s" : ""}`,
@@ -250,12 +274,13 @@ export function VoiceAssistant() {
   // Runs a product search, retrying with a shorter phrase if nothing matches
   // ("du lait bio" -> "du lait"). Returns the candidates, best first, so a "non"
   // to the first price can offer the next one.
-  const runSearch = useCallback(async (query: string): Promise<{ q: string; items: SearchHit[] }> => {
+  const runSearch = useCallback(async (query: string): Promise<{ q: string; items: SearchHit[]; unreachable?: boolean }> => {
     let q = query;
     let found: Awaited<ReturnType<typeof api.searchProducts>> | null = null;
     try {
       found = await api.searchProducts(q);
-    } catch {
+    } catch (e) {
+      if (isNetworkError(e)) return { q, items: [], unreachable: true };
       found = null;
     }
     while (found && found.total === 0 && q.trim().includes(" ")) {
@@ -331,6 +356,11 @@ export function VoiceAssistant() {
       const pending = pendingRef.current;
       pendingRef.current = null;
 
+      if (isOffline() && NEEDS_NETWORK.has(intent.type)) {
+        answer(OFFLINE_SAY, { pose: "ecoute", ok: false });
+        return;
+      }
+
       switch (intent.type) {
         case "confirm":
           // "ajoute-le" answers both questions at once: straight onto the list.
@@ -364,7 +394,11 @@ export function VoiceAssistant() {
           earcon("radar");
           vibrate(30);
           const profile = a11y.allergens;
-          void runSearch(intent.query).then(({ items }) => {
+          void runSearch(intent.query).then(({ items, unreachable }) => {
+            if (unreachable) {
+              answer(OFFLINE_SAY, { pose: "ecoute", ok: false });
+              return;
+            }
             if (!items.length) {
               answer(`Je n'ai pas trouvé ${intent.query}. Essayez un autre nom.`, { pose: "loupe", ok: false });
               return;
@@ -449,6 +483,29 @@ export function VoiceAssistant() {
             else answer("Quel produit ? Dites par exemple : ajoute du lait.", { pose: "ecoute", ok: false });
             return;
           }
+          if (isOffline()) {
+            // No catalogue to look it up in: keep the words, matched once online.
+            setPose("roule");
+            setPhase("working");
+            earcon("drop");
+            void (async () => {
+              const words = asSpoken(text, intent.query);
+              try {
+                await api.addFreeTextToList(words);
+                qc.invalidateQueries({ queryKey: ["shopping"] });
+                const list = await api.getShoppingList();
+                const left = list.items.filter((i) => !i.checked).length;
+                answer(
+                  `${words} noté. Vous avez ${left} article${left > 1 ? "s" : ""}. ` +
+                    "Pas de réseau : je l'enverrai dès qu'il revient.",
+                  { pose: "plein", ok: true, badge: `${left} article${left > 1 ? "s" : ""}` },
+                );
+              } catch {
+                answer("Je n'ai pas pu le noter.", { pose: "roule", ok: false });
+              }
+            })();
+            return;
+          }
           setPose("roule");
           setPhase("working");
           earcon("drop");
@@ -479,8 +536,9 @@ export function VoiceAssistant() {
               }
               const names = left.slice(0, 12).map((i) => i.name ?? i.free_text ?? "article");
               const more = left.length > 12 ? `, et ${left.length - 12} autres` : "";
+              const saved = list.offline ? "Sans réseau, voici votre liste enregistrée. " : "";
               answer(
-                `Votre liste contient ${left.length} article${left.length > 1 ? "s" : ""} : ${names.join(", ")}${more}.`,
+                `${saved}Votre liste contient ${left.length} article${left.length > 1 ? "s" : ""} : ${names.join(", ")}${more}.`,
                 { pose: "plein", ok: true, badge: `${left.length} article${left.length > 1 ? "s" : ""}` },
               );
             } catch {
@@ -554,7 +612,7 @@ export function VoiceAssistant() {
           return;
       }
     },
-    [router, a11y, runSearch, productFor, answer, addProduct, close, goodbye, needAccount, openPremium, queueTask, setOpen, stopListening, user],
+    [router, a11y, qc, runSearch, productFor, answer, addProduct, close, goodbye, needAccount, openPremium, queueTask, setOpen, stopListening],
   );
 
   const startListening = useCallback(() => {

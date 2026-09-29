@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { A11yLayer } from "@/components/A11yLayer";
 import { BootScreen } from "@/components/BootScreen";
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthModal } from "@/components/AuthModal";
 import { PremiumModal } from "@/components/PremiumModal";
@@ -133,6 +134,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <BottomNav />
+          <OfflineBanner />
           <AuthModal />
           <PremiumModal />
           <A11yLayer />
