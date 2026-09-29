@@ -23,6 +23,7 @@ export type Intent =
   | { type: "confirm"; say: string }
   | { type: "cancel"; say: string }
   | { type: "bye"; say: string }
+  | { type: "news"; say: string }
   | { type: "unknown"; say: string };
 
 export function speechSupported(): boolean {
@@ -486,6 +487,10 @@ export function parseIntent(raw: string): Intent {
   // A yes / no to the assistant's last question — and "ajoute-le", which means
   // "the product you just told me about". Before list-add, which would read
   // "ajoute-le" as a product called "le".
+  // What changed: the list's price drops, a Sunday menu waiting.
+  if (/\b(quoi de neuf|des nouvelles|qu'?est[- ]ce qui a (baisse|change)|ce qui a baisse|les baisses|qu'?est[- ]ce qui est moins cher)\b/.test(t)) {
+    return { type: "news", say: "" };
+  }
   // Ends a conversation: the mic stops reopening.
   if (/^(merci|merci beaucoup|merci bien|c'est tout|ce sera tout|ca ira|au revoir|a bientot|bonne journee|bonne soiree|c'est bon merci|fini|termine|j'ai fini)\b/.test(t)) {
     return { type: "bye", say: "Avec plaisir. À bientôt." };

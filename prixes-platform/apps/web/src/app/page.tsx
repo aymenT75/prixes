@@ -10,6 +10,7 @@ import { Icon } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductCard } from "@/components/ProductCard";
 import { ScoreLegend } from "@/components/ScoreLegend";
+import { NewsCard } from "@/components/NewsCard";
 import { VoiceHero } from "@/components/VoiceHero";
 import { WhatsNew } from "@/components/WhatsNew";
 import { api } from "@/lib/api";
@@ -61,6 +62,7 @@ export default function HomePage() {
       {/* The microphone first: the Caddie listens, one tap and you speak. The
           old hero told people what Prixes does; this one lets them do it. */}
       <VoiceHero />
+      <NewsCard />
 
       {/* Searching is the first thing people come here to do, so it sits directly
           under the hero rather than below the feed — and the microphone sits in

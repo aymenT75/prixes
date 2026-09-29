@@ -33,6 +33,7 @@ import type {
   MealEquipment,
   MealGoal,
   MealPlan,
+  NewsDrop,
   MealPreferences,
   MealStyle,
   StoresNearbyResult,
@@ -332,6 +333,9 @@ export const api = {
     }
   },
   clearChecked: () => request<{ removed: number }>("/shopping/clear-checked", { method: "POST" }),
+  /** What happened while the app was closed: list price drops, a Sunday menu. */
+  getNews: () => request<{ drops: NewsDrop[]; menu_ready: string | null }>("/shopping/news"),
+  menuSeen: () => request<void>("/shopping/news/menu-seen", { method: "POST" }),
   optimizeBasket: () => request<OptimizeResult>("/shopping/optimize"),
   // One trolley per store: what to buy where, and what a second stop saves.
   splitBasket: (maxStores = 2) =>

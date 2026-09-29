@@ -22,6 +22,7 @@ import { ApiError, api } from "@/lib/api";
 import type { SearchHit } from "@/lib/types";
 import { earcon, type Earcon } from "@/lib/earcons";
 import { useApp } from "@/lib/store";
+import { dropsSentence, loadNews, markMenuOffered, markNewsTold, useNews } from "@/lib/news";
 import { isNetworkError, isOffline } from "@/lib/offline";
 import { useA11y } from "@/lib/useA11y";
 import { useDialog } from "@/lib/useDialog";
@@ -105,14 +106,16 @@ const OFFLINE_SAY =
   "Pas de réseau pour le moment. Je peux quand même lire votre liste, ou y ajouter des articles.";
 
 /** Kinds of request that cannot be done on the phone alone. */
-const NEEDS_NETWORK = new Set(["search", "task", "alert-add", "premium"]);
+const NEEDS_NETWORK = new Set(["search", "task", "alert-add", "premium", "news"]);
+
+const MENU_READY_ASK = "Votre menu de la semaine est prêt. Je mets les courses dans votre liste ?";
 
 /** Once per launch: the shortcut or "listen on open" must not reopen it on every page. */
 let launchHandled = false;
 
 /** Opens the assistant as if the user had asked: greets with the question, then listens. */
 export function openWithGreeting() {
-  useVoiceGreeting.getState().set("Bonjour. Que voulez-vous faire ?");
+  useVoiceGreeting.getState().set("Bonjour.");
   useA11y.getState().setVoiceOpen(true);
 }
 
@@ -231,6 +234,34 @@ export function VoiceAssistant() {
     [answer, qc],
   );
 
+  /** A stored week's groceries onto the list — the "oui" to the Sunday menu. */
+  const addWeekBasket = useCallback(
+    async (week: string) => {
+      markMenuOffered();
+      setPose("roule");
+      setPhase("working");
+      try {
+        const plan = await api.getMealPlan(week);
+        const items: BasketLine[] = (plan?.basket ?? [])
+          .filter((line) => !line.optional)
+          .map((line) => ({
+            barcode: line.barcode,
+            free_text: line.barcode ? null : line.product_name,
+            name: line.matched_name ?? line.product_name,
+            quantity: line.quantity,
+            amount: line.amount,
+            unit: line.unit,
+            source: "mealplan",
+          }));
+        await addMenuBasketRef.current(items);
+      } catch {
+        answer("Je n'ai pas retrouvé ce menu. Ouvrez l'onglet Menu.", { pose: "assiette", ok: false });
+      }
+    },
+    [answer],
+  );
+  const addMenuBasketRef = useRef<(items: BasketLine[]) => Promise<void>>(async () => {});
+
   /** The week's menu groceries onto the list — the "oui" after "compose mon menu". */
   const addMenuBasket = useCallback(
     async (items: BasketLine[]) => {
@@ -256,6 +287,10 @@ export function VoiceAssistant() {
     },
     [answer, qc],
   );
+
+  useEffect(() => {
+    addMenuBasketRef.current = addMenuBasket;
+  }, [addMenuBasket]);
 
   // A page finished the task it was given: show and say its answer.
   useEffect(() => {
@@ -387,6 +422,33 @@ export function VoiceAssistant() {
         case "bye":
           goodbye(intent.say);
           return;
+
+        case "news": {
+          if (!userRef.current) return needAccount();
+          setPose("loupe");
+          setPhase("working");
+          void api
+            .getNews()
+            .then(({ drops, menu_ready }) => {
+              markNewsTold();
+              const said = dropsSentence(drops) ?? "Rien n'a baissé ces deux dernières semaines sur votre liste.";
+              if (menu_ready) {
+                answer(`${said} ${MENU_READY_ASK}`, {
+                  pose: "plein",
+                  ok: true,
+                  ask: () => void addWeekBasket(menu_ready),
+                  no: () => {
+                    markMenuOffered();
+                    answer("D'accord. Votre menu vous attend dans l'onglet Menu.", { pose: "assiette", ok: true });
+                  },
+                });
+                return;
+              }
+              answer(said, { pose: drops.length ? "plein" : "loupe", ok: true });
+            })
+            .catch(() => answer("Je n'ai pas pu regarder. Réessayez.", { pose: "loupe", ok: false }));
+          return;
+        }
 
         case "search": {
           setPose("loupe");
@@ -612,7 +674,7 @@ export function VoiceAssistant() {
           return;
       }
     },
-    [router, a11y, qc, runSearch, productFor, answer, addProduct, close, goodbye, needAccount, openPremium, queueTask, setOpen, stopListening],
+    [router, a11y, qc, runSearch, productFor, answer, addProduct, addWeekBasket, close, goodbye, needAccount, openPremium, queueTask, setOpen, stopListening],
   );
 
   const startListening = useCallback(() => {
@@ -682,6 +744,27 @@ export function VoiceAssistant() {
       }
       const { greeting, set: clearGreeting } = useVoiceGreeting.getState();
       clearGreeting(null);
+      // What happened since the last visit comes first, said once.
+      const { drops, menuWeek } = useNews.getState();
+      const news = dropsSentence(drops);
+      if (news) markNewsTold();
+      if (menuWeek) {
+        markMenuOffered();
+        pendingRef.current = {
+          yes: () => void addWeekBasket(menuWeek),
+          no: () => answer("D'accord. Votre menu vous attend dans l'onglet Menu.", { pose: "assiette", ok: true }),
+        };
+      }
+      const question = menuWeek
+        ? MENU_READY_ASK
+        : greeting || news
+          ? "Que voulez-vous faire ?"
+          : "Je vous écoute.";
+      const text = [greeting, news, question].filter(Boolean).join(" ");
+      if (news || menuWeek) {
+        setResponse(text);
+        setPose(menuWeek ? "assiette" : "plein");
+      }
       // Listen once the greeting has been said — starting the mic earlier cut it off.
       let started = false;
       const listen = () => {
@@ -689,12 +772,12 @@ export function VoiceAssistant() {
         started = true;
         startListening();
       };
-      speak(greeting ?? "Je vous écoute.", listen);
-      setTimeout(listen, greeting ? 4000 : 1500);
+      speak(text, listen);
+      setTimeout(listen, text.length > 30 ? 3000 + text.length * 60 : 1500);
     } else if (!open) {
       greetedRef.current = false;
     }
-  }, [open, startListening, act]);
+  }, [open, startListening, act, addWeekBasket, answer]);
 
   // Opened without a tap: the "Parler à Prixes" shortcut (?voice=1 — web; the
   // native app gets it through NativeSetup), or "Écouter à l'ouverture".
@@ -710,7 +793,11 @@ export function VoiceAssistant() {
       const rest = params.toString();
       window.history.replaceState(null, "", window.location.pathname + (rest ? `?${rest}` : ""));
     }
-    if (fromShortcut || listenOnOpen) openWithGreeting();
+    void loadNews();
+    if (fromShortcut || listenOnOpen) {
+      // Give the news a moment, so the greeting can include it — never long.
+      void Promise.race([loadNews(), new Promise((r) => setTimeout(r, 2500))]).finally(openWithGreeting);
+    }
   }, [a11yReady, listenOnOpen]);
 
   const dialogRef = useDialog(open, close);

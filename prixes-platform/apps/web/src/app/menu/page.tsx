@@ -129,8 +129,17 @@ export default function MenuPage() {
 
   // Saving the answers comes first, then the week: a menu composed from answers
   // that were not kept would be redone from the old ones on the next visit.
+  // The Sunday menu is composed on the server: it gets a copy of the allergies
+  // with every save, since it cannot read the phone's profile.
+  const withSafety = (p: MealPreferences): MealPreferences => ({ ...p, avoid_allergens: allergens, diets });
+  const autoWeek = useMutation({
+    mutationFn: (on: boolean) => api.saveMealPreferences(withSafety({ ...prefs, auto_week: on })),
+    onSuccess: (saved) => qc.setQueryData(["meal-prefs"], saved),
+    onError: (e) => setError(messageFor(e)),
+  });
+
   const savePrefs = useMutation({
-    mutationFn: (p: MealPreferences) => api.saveMealPreferences(p),
+    mutationFn: (p: MealPreferences) => api.saveMealPreferences(withSafety({ ...p, auto_week: prefs.auto_week })),
     onSuccess: (_, p) => {
       qc.setQueryData(["meal-prefs"], p);
       setEditing(false);
@@ -304,6 +313,31 @@ export default function MenuPage() {
                 Des menus inventés sur mesure avec Premium
               </button>
             </p>
+          )}
+
+          {savedPrefs && (
+            <button
+              onClick={() => autoWeek.mutate(!prefs.auto_week)}
+              disabled={autoWeek.isPending}
+              role="switch"
+              aria-checked={!!prefs.auto_week}
+              className="mt-4 flex w-full items-center gap-3 rounded-xl border border-outline-variant/30 p-3 text-left"
+            >
+              <Icon name="event_repeat" className="flex-shrink-0 text-primary" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-label-lg text-on-surface">Menu du dimanche</span>
+                <span className="block text-body-sm text-on-surface-variant">
+                  Chaque dimanche soir, je prépare la semaine suivante et je vous préviens.
+                </span>
+              </span>
+              <span
+                className={`relative h-7 w-12 flex-shrink-0 rounded-full transition-colors ${prefs.auto_week ? "bg-primary" : "bg-surface-variant"}`}
+              >
+                <span
+                  className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${prefs.auto_week ? "left-6" : "left-1"}`}
+                />
+              </span>
+            </button>
           )}
 
           <button

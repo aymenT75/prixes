@@ -10,6 +10,7 @@ let listenersReady = false;
 
 export async function initPushNotifications(
   onOpenBarcode?: (barcode: string) => void,
+  onOpenOther?: (type: string) => void,
 ): Promise<void> {
   if (!isNativeApp()) return;
   try {
@@ -32,8 +33,11 @@ export async function initPushNotifications(
           });
       });
       await PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-        const barcode = action.notification?.data?.barcode;
-        if (barcode && onOpenBarcode) onOpenBarcode(String(barcode));
+        const data = action.notification?.data ?? {};
+        const barcode = data.barcode;
+        // A list drop or a Sunday menu opens the assistant, which says it.
+        if (data.type && data.type !== "price_alert" && onOpenOther) onOpenOther(String(data.type));
+        else if (barcode && onOpenBarcode) onOpenBarcode(String(barcode));
       });
     }
 

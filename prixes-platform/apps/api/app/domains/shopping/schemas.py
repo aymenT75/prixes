@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -147,3 +148,19 @@ class SplitResult(BaseModel):
     options: list[SplitOption]
     # Lines we have no price for anywhere, including free-text ones.
     unpriced: list[str]
+
+
+class DropOut(BaseModel):
+    """A product of the list that got cheaper (shopping/watch.py)."""
+
+    barcode: str
+    name: str
+    old: Decimal
+    new: Decimal
+    at: datetime
+
+
+class NewsOut(BaseModel):
+    drops: list[DropOut]
+    # Monday of the week a Sunday menu was composed for, while not yet offered.
+    menu_ready: str | None = None

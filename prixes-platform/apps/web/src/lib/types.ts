@@ -278,6 +278,20 @@ export interface MealPreferences {
   goal: MealGoal | null;
   equipment: MealEquipment[];
   styles: MealStyle[];
+  /** The Sunday menu: next week composed on Sunday evening, then a notification. */
+  auto_week?: boolean;
+  /** Copy of the phone's allergy profile — what the Sunday menu is composed with. */
+  avoid_allergens?: string[];
+  diets?: string[];
+}
+
+/** A product of the list that got cheaper (GET /shopping/news). */
+export interface NewsDrop {
+  barcode: string;
+  name: string;
+  old: string;
+  new: string;
+  at: string;
 }
 
 export interface MealPlanMeal {

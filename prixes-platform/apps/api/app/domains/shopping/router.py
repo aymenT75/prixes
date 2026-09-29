@@ -8,12 +8,16 @@ from fastapi import APIRouter, Query, status
 from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DbSession
+from app.core.redis import redis_client
+from app.domains.mealplan.auto import ready_key
 from app.domains.products.models import PricePoint, Product
 from app.domains.shopping import service
 from app.domains.shopping.models import ShoppingItem
 from app.domains.shopping.schemas import (
     BulkAddIn,
     BulkAddOut,
+    DropOut,
+    NewsOut,
     OptimizeBasketIn,
     OptimizeResult,
     ShoppingItemIn,
@@ -22,6 +26,7 @@ from app.domains.shopping.schemas import (
     ShoppingListOut,
     SplitResult,
 )
+from app.domains.shopping.watch import recent_drops
 
 router = APIRouter(prefix="/shopping", tags=["shopping"])
 
@@ -54,6 +59,23 @@ async def get_list(db: DbSession, user: CurrentUser) -> ShoppingListOut:
     items = await service.list_items(db, user.id)
     enriched = await _enrich(db, items)
     return ShoppingListOut(items=enriched, total=len(enriched))
+
+
+@router.get("/news", response_model=NewsOut)
+async def news(user: CurrentUser) -> NewsOut:
+    """What happened while the app was closed: the list's recent price drops and
+    a Sunday menu waiting to be looked at. The app says it when it opens."""
+    ready = await redis_client.get(ready_key(user.id))
+    return NewsOut(
+        drops=[DropOut(**d) for d in await recent_drops(user.id)],
+        menu_ready=(ready.decode() if isinstance(ready, bytes) else ready) or None,
+    )
+
+
+@router.post("/news/menu-seen", status_code=204)
+async def menu_seen(user: CurrentUser) -> None:
+    """The Sunday menu was offered: don't offer it again at every opening."""
+    await redis_client.delete(ready_key(user.id))
 
 
 @router.post("", response_model=ShoppingItemOut, status_code=201)

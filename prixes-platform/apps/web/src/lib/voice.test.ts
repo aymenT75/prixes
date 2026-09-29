@@ -149,4 +149,10 @@ describe("parseIntent", () => {
     expect(parseIntent("oui merci")).toMatchObject({ type: "confirm" });
     expect(parseIntent("non merci")).toMatchObject({ type: "cancel" });
   });
+
+  it("« quoi de neuf » asks for the news", () => {
+    for (const t of ["quoi de neuf", "qu'est-ce qui a baissé", "des nouvelles ?"]) {
+      expect(parseIntent(t)).toMatchObject({ type: "news" });
+    }
+  });
 });

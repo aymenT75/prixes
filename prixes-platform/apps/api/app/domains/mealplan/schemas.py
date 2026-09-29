@@ -89,8 +89,9 @@ class MealPlanOut(BaseModel):
 class MealPreferences(BaseModel):
     """The questionnaire, kept on the account so it follows the user to any device.
 
-    Allergens and diets are not here: they live in the accessibility profile and
-    apply to the whole app, not only to menus.
+    Allergens and diets live in the accessibility profile, on the phone, and
+    apply to the whole app. The copy below is what the Sunday menu (`auto_week`)
+    composes with: the server has no other way to know them.
     """
 
     servings: int = Field(default=2, ge=1, le=12)
@@ -99,6 +100,10 @@ class MealPreferences(BaseModel):
     goal: Goal | None = None
     equipment: list[Equipment] = Field(default_factory=list, max_length=6)
     styles: list[Style] = Field(default_factory=list, max_length=4)
+    # The Sunday menu: next week composed on Sunday evening, then one notification.
+    auto_week: bool = False
+    avoid_allergens: list[str] = Field(default_factory=list, max_length=20)
+    diets: list[str] = Field(default_factory=list, max_length=10)
 
 
 class RegenerateIn(BaseModel):

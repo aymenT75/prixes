@@ -47,6 +47,7 @@ edit_note
 email
 error
 euro
+event_repeat
 expand_less
 expand_more
 explore
@@ -91,6 +92,7 @@ microwave
 mode_fan
 my_location
 near_me
+news
 notifications
 notifications_active
 notifications_off

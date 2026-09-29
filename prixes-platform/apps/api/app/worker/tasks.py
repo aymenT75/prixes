@@ -17,12 +17,15 @@ from app.core import models as _models  # noqa: F401
 from app.core.config import settings
 from app.core.db import SessionLocal
 from app.core.http import get_http_client
+from app.core.mongo import get_db, mongo_enabled
 from app.domains.alerts import service as alert_service
 from app.domains.analytics.models import AnalyticsEvent
 from app.domains.fuel.models import FuelStation
+from app.domains.mealplan.auto import compose_sunday_menus
 from app.domains.notifications import service as notify_service
 from app.domains.products.fresh import refresh_fresh_prices as _refresh_fresh_prices
 from app.domains.products.ingest import refresh_prices as _refresh_prices
+from app.domains.shopping.watch import watch_lists
 
 # GDPR data minimisation: anonymous usage events have no purpose past this
 # horizon (see docs/PRIVACY — analytics retention).
@@ -105,6 +108,23 @@ async def evaluate_price_alerts(_: dict[Any, Any]) -> dict[str, int]:
         pushed = await notify_service.notify_price_drops(db, triggered) if triggered else 0
         await db.commit()
     return {"triggered": len(triggered), "pushed": pushed}
+
+
+async def watch_list_prices(_: dict[Any, Any]) -> dict[str, int]:
+    """Every product on every list is watched: a real drop is recorded for the
+    in-app summary and notified (grouped, daytime only). See shopping/watch.py."""
+    async with SessionLocal() as db:
+        result = await watch_lists(db)
+        await db.commit()
+    return result
+
+
+async def sunday_menus(_: dict[Any, Any]) -> dict[str, int]:
+    """Next week's menu for those who turned the Sunday menu on (mealplan/auto.py)."""
+    async with SessionLocal() as db:
+        result = await compose_sunday_menus(db, get_db() if mongo_enabled() else None)
+        await db.commit()
+    return result
 
 
 async def refresh_prices(_: dict[Any, Any]) -> dict[str, int]:

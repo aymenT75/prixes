@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { openWithGreeting } from "@/components/VoiceAssistant";
+import { loadNews } from "@/lib/news";
 import { isNativeApp, nativePlatform } from "@/lib/platform";
 import { initPushNotifications } from "@/lib/push";
 import { useApp } from "@/lib/store";
@@ -22,8 +23,13 @@ export function NativeSetup() {
   // the product.
   useEffect(() => {
     if (!isNativeApp() || !user) return;
-    void initPushNotifications((barcode) =>
-      router.push(`/courses/detail?barcode=${barcode}`),
+    void initPushNotifications(
+      (barcode) => router.push(`/courses/detail?barcode=${barcode}`),
+      (type) => {
+        if (type === "menu_ready") router.push("/menu");
+        // The news is fetched fresh, then said by the assistant's greeting.
+        void Promise.race([loadNews(true), new Promise((r) => setTimeout(r, 2500))]).finally(openWithGreeting);
+      },
     );
   }, [user, router]);
 
