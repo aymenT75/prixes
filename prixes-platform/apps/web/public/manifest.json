@@ -17,7 +17,6 @@
   "shortcuts": [
     { "name": "Parler à Prixes", "short_name": "Parler", "url": "/?voice=1" },
     { "name": "Courses", "url": "/courses" },
-    { "name": "Carburants", "url": "/fuel" },
-    { "name": "Deals", "url": "/deals" }
+    { "name": "Carburants", "url": "/fuel" }
   ]
 }

@@ -50,27 +50,6 @@ async def login(db: AsyncSession, email: str, password: str) -> TokenPair:
     return _tokens(user)
 
 
-async def login_google(db: AsyncSession, sub: str, email: str, name: str) -> TokenPair:
-    """Find-or-create a user from a verified Google identity (token verified in router)."""
-    user = await db.scalar(select(User).where(User.oauth_sub == sub))
-    if user is None:
-        user = await db.scalar(select(User).where(User.email == email.lower()))
-        if user is None:
-            user = User(
-                email=email.lower(),
-                username=name or email.split("@")[0],
-                initials=_initials(name or email),
-                oauth_provider="google",
-                oauth_sub=sub,
-                is_verified=True,
-            )
-            db.add(user)
-            await db.flush()
-        else:
-            user.oauth_provider, user.oauth_sub = "google", sub
-    return _tokens(user)
-
-
 async def login_firebase(
     db: AsyncSession,
     uid: str,

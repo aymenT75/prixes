@@ -37,7 +37,6 @@ export function AccessibilityFab() {
     setConversation,
     listenOnOpen,
     setListenOnOpen,
-    setVoiceOpen,
     a11yOpen: open,
     setA11yOpen: setOpen,
   } = useA11y();
@@ -92,25 +91,6 @@ export function AccessibilityFab() {
                 <Icon name="close" />
               </button>
             </div>
-
-            {/* Voice assistant launcher */}
-            <button
-              onClick={() => {
-                setOpen(false);
-                setVoiceOpen(true);
-              }}
-              className="mb-5 flex w-full items-center gap-3 rounded-2xl bg-gradient-to-r from-primary-fixed-dim to-secondary-fixed-dim p-4 text-left text-on-primary-fixed shadow-card active:scale-[0.99]"
-            >
-              <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20">
-                <Icon name="mic" fill className="text-[26px]" />
-              </span>
-              <span>
-                <span className="block text-label-lg font-bold">Assistant vocal</span>
-                <span className="block text-micro opacity-90">
-                  Parlez pour chercher, comparer, naviguer
-                </span>
-              </span>
-            </button>
 
             {/* Replay the guided tour */}
             <button

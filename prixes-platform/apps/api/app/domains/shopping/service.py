@@ -286,21 +286,6 @@ async def optimize_lines(
     )
 
 
-async def optimize(db: AsyncSession, user_id: uuid.UUID) -> OptimizeResult:
-    items = await list_items(db, user_id)
-    # Only unchecked items with a real product are part of "what I still need to
-    # buy" — a free-text line has no price to compare, so it can't rank a store.
-    lines = [
-        (i.barcode, i.quantity, i.label) for i in items if not i.checked and i.barcode
-    ]
-    result = await optimize_lines(db, lines)
-    # Free-text lines are still things the user has to buy: count them as unpriced
-    # rather than pretending the basket is smaller than it is.
-    free_text_count = sum(1 for i in items if not i.checked and not i.barcode)
-    result.unpriced_items += free_text_count
-    return result
-
-
 # Combinations grow with the number of stores, so only the widest-stocked ones
 # are considered. A chain that carries two items out of twenty is never going to
 # win a slot, and 12 stores keeps every pair at 66 combinations.

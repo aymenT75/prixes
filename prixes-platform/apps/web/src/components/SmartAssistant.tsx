@@ -24,7 +24,6 @@ import { ApiError, api } from "@/lib/api";
 import { eur } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
-import { createVoiceRecognizer, speechSupported } from "@/lib/voice";
 import type { SmartCartLine, SmartCartResult } from "@/lib/types";
 import { spokenPrice, useVoiceTask } from "@/lib/voiceTasks";
 
@@ -109,16 +108,9 @@ export function SmartAssistant() {
   const [draft, setDraft] = useState<Draft | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [phase, setPhase] = useState(0);
-  const [listening, setListening] = useState(false);
   const [added, setAdded] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Whether this browser can dictate is only knowable in the browser. Asking
-  // during render made the prerendered HTML (no mic button) disagree with the
-  // first client render (mic button), and React threw away the whole tree to
-  // recover — a hydration error on the app's flagship page. Decide after mount.
-  const [canDictate, setCanDictate] = useState(false);
-  useEffect(() => setCanDictate(speechSupported()), []);
 
   // Hide the whole block when no model key is configured, rather than offering a
   // button that can only fail.
@@ -239,29 +231,6 @@ export function SmartAssistant() {
     return () => timers.forEach(clearTimeout);
   }, [generate.isPending]);
 
-  const dictate = () => {
-    const recognizer = createVoiceRecognizer();
-    if (!recognizer) return;
-    setListening(true);
-    recognizer.onPartial = (text) => setPrompt(text);
-    recognizer.onFinal = (text) => {
-      setPrompt(text);
-      setListening(false);
-      recognizer.stop();
-      if (text.trim().length >= 3) generate.mutate(text.trim());
-    };
-    recognizer.onError = (kind) => {
-      setListening(false);
-      setError(
-        kind === "not-allowed"
-          ? "Micro refusé. Autorisez le micro pour dicter votre demande."
-          : "La dictée n'a pas fonctionné. Tapez votre demande.",
-      );
-    };
-    recognizer.onEnd = () => setListening(false);
-    recognizer.start();
-  };
-
   const submit = () => {
     const text = prompt.trim();
     if (text.length < 3) {
@@ -311,18 +280,6 @@ export function SmartAssistant() {
           aria-label="Décrivez ce que vous voulez préparer"
           className="min-h-[52px] flex-1 resize-none rounded-xl border border-outline-variant bg-surface-container-lowest p-3 text-body-md text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none disabled:opacity-60"
         />
-        {canDictate && (
-          <button
-            onClick={listening ? () => setListening(false) : dictate}
-            disabled={generate.isPending}
-            aria-label={listening ? "Arrêter la dictée" : "Dicter votre demande"}
-            className={`grid h-[52px] w-[52px] flex-shrink-0 place-items-center rounded-xl ${
-              listening ? "bg-error text-on-error" : "bg-surface-container text-on-surface"
-            } active:scale-95 disabled:opacity-60`}
-          >
-            <Icon name={listening ? "stop" : "mic"} className="text-[22px]" />
-          </button>
-        )}
       </div>
 
       {!draft && !generate.isPending && (

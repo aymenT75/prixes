@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { Icon } from "@/components/Icon";
 import { MascotScene, type SceneState } from "@/components/MascotScene";
+import { trackVoice } from "@/lib/analytics";
 import { ApiError, api } from "@/lib/api";
 import type { SearchHit } from "@/lib/types";
 import { earcon, type Earcon } from "@/lib/earcons";
@@ -384,6 +385,7 @@ export function VoiceAssistant() {
   const act = useCallback(
     (text: string) => {
       const intent = parseIntent(text);
+      trackVoice(intent.type === "task" ? `task:${intent.task.kind}` : intent.type);
       stopListening();
       setResponse("");
       setBadge(null);

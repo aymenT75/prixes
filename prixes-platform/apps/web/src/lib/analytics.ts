@@ -13,6 +13,21 @@ function doNotTrack(): boolean {
   return dnt === "1" || dnt === "yes";
 }
 
+/**
+ * An automated browser (Playwright in our tests and CI sets navigator.webdriver):
+ * its visits were most of the "traffic" — 162 sweep sessions over the summer.
+ */
+function automated(): boolean {
+  return typeof navigator !== "undefined" && navigator.webdriver === true;
+}
+
+/** "/list/" (static export) and "/list" are the same page. */
+function samePage(path?: string): string | undefined {
+  if (!path) return path;
+  const bare = path.split("?")[0].replace(/\/+$/, "");
+  return bare || "/";
+}
+
 function sessionId(): string {
   try {
     let id = localStorage.getItem("prixes.sid");
@@ -29,9 +44,18 @@ function sessionId(): string {
   }
 }
 
+/**
+ * What the microphone was asked to do — the kind of request only ("search",
+ * "task:fuel"), never the words said. The voice is the heart of the app and
+ * was not measured at all.
+ */
+export function trackVoice(kind: string): void {
+  track(`voice:${kind}`.slice(0, 40));
+}
+
 export function track(event: string, path?: string): void {
-  if (typeof window === "undefined" || doNotTrack()) return;
-  const body = JSON.stringify({ session_id: sessionId(), event, path });
+  if (typeof window === "undefined" || doNotTrack() || automated()) return;
+  const body = JSON.stringify({ session_id: sessionId(), event, path: samePage(path) });
   try {
     // sendBeacon survives page unloads and never blocks; fall back to fetch.
     if (navigator.sendBeacon) {

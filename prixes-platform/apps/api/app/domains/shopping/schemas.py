@@ -90,18 +90,6 @@ class OptimizeResult(BaseModel):
     unpriced_items: int
 
 
-class BasketLine(BaseModel):
-    """One line of a basket that isn't (yet) a saved shopping list."""
-
-    barcode: str = Field(min_length=4, max_length=32)
-    quantity: int = Field(default=1, ge=1, le=99)
-    label: str | None = None
-
-
-class OptimizeBasketIn(BaseModel):
-    lines: list[BasketLine] = Field(min_length=1, max_length=80)
-
-
 # ── Répartition entre magasins ──
 class BasketItem(BaseModel):
     """One line, assigned to the store where you should actually buy it."""

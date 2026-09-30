@@ -6,6 +6,7 @@ import { api } from "./api";
 import { auth } from "./firebase";
 import { clearOffline, isNetworkError, readCopy } from "./offline";
 import { isNativeApp } from "./platform";
+import { unregisterPush } from "./push";
 import { logWarn } from "./logger";
 import { tokenStore } from "./tokens";
 import type { User } from "./types";
@@ -18,7 +19,7 @@ interface AppState {
   premiumOpen: boolean;
   loadMe: () => Promise<void>;
   setUser: (u: User | null) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   openLogin: (open: boolean) => void;
   openPremium: (open: boolean) => void;
 }
@@ -48,7 +49,9 @@ export const useApp = create<AppState>((set) => ({
     }
   },
   setUser: (user) => set({ user }),
-  logout: () => {
+  logout: async () => {
+    // Before the session goes: unregistering needs it.
+    await unregisterPush();
     tokenStore.clear();
     clearOffline();
     set({ user: null });

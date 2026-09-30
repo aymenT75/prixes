@@ -47,3 +47,22 @@ def test_saved_questionnaires_without_the_new_fields_still_load() -> None:
     prefs = MealPreferences.model_validate({"servings": 4, "meals_per_day": 1})
     assert prefs.auto_week is False
     assert prefs.avoid_allergens == [] and prefs.diets == []
+
+
+def test_robots_are_not_counted_in_the_statistics() -> None:
+    from app.domains.analytics.router import _ROBOT
+
+    for ua in [
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 HeadlessChrome/131.0 Safari/537.36",
+        "Googlebot/2.1 (+http://www.google.com/bot.html)",
+        "curl/8.4.0",
+    ]:
+        assert _ROBOT.search(ua), ua
+    # A phone: the Android WebView of the app, and Chrome on a Samsung.
+    for ua in [
+        "Mozilla/5.0 (Linux; Android 14; SM-M236B Build/UP1A; wv) AppleWebKit/537.36 "
+        "Chrome/131.0 Mobile Safari/537.36",
+        "Mozilla/5.0 (Linux; Android 14; SM-M236B) AppleWebKit/537.36 "
+        "Chrome/131.0 Mobile Safari/537.36",
+    ]:
+        assert not _ROBOT.search(ua), ua

@@ -8,6 +8,24 @@ import { isNativeApp, nativePlatform } from "./platform";
 // the current user (backend upserts by token).
 let listenersReady = false;
 
+const PUSH_TOKEN_KEY = "prixes.push.token";
+
+/**
+ * Stop this phone receiving the account's notifications. Called on logout, while
+ * the session still exists: without it, the next person to use the phone kept
+ * getting the previous account's price drops and menus.
+ */
+export async function unregisterPush(): Promise<void> {
+  let token: string | null = null;
+  try {
+    token = localStorage.getItem(PUSH_TOKEN_KEY);
+    localStorage.removeItem(PUSH_TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+  if (token) await api.unregisterDevice(token).catch(() => {});
+}
+
 export async function initPushNotifications(
   onOpenBarcode?: (barcode: string) => void,
   onOpenOther?: (type: string) => void,
@@ -25,6 +43,12 @@ export async function initPushNotifications(
     if (!listenersReady) {
       listenersReady = true;
       await PushNotifications.addListener("registration", (token) => {
+        // Kept so logging out can unregister this phone (see store.logout).
+        try {
+          localStorage.setItem(PUSH_TOKEN_KEY, token.value);
+        } catch {
+          /* ignore */
+        }
         const platform = nativePlatform();
         void api
           .registerDevice({ token: token.value, platform: platform === "web" ? "web" : platform })

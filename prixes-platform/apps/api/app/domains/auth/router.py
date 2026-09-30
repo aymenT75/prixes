@@ -10,7 +10,6 @@ from app.core.security import create_token, decode_token
 from app.domains.auth import service
 from app.domains.auth.schemas import (
     FirebaseIn,
-    GoogleIn,
     LoginIn,
     RefreshIn,
     RegisterIn,
@@ -43,18 +42,6 @@ async def refresh(data: RefreshIn) -> TokenPair:
     return TokenPair(
         access_token=create_token(user_id, "access"),
         refresh_token=create_token(user_id, "refresh"),
-    )
-
-
-@router.post("/google", response_model=TokenPair)
-async def google(data: GoogleIn, db: DbSession) -> TokenPair:
-    # NOTE: verify the Google ID token against Google's JWKS before trusting claims.
-    # Implemented in worker/auth utils; placeholder extraction shown here.
-    from app.domains.auth.google import verify_google_id_token
-
-    claims = await verify_google_id_token(data.id_token)
-    return await service.login_google(
-        db, sub=claims["sub"], email=claims["email"], name=claims.get("name", "")
     )
 
 

@@ -1,16 +1,20 @@
 """Analytics HTTP API — record anonymous events + read aggregates (admin)."""
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 
 from app.core.deps import CurrentUser, DbSession
 from app.core.rate_limit import RateLimit
 from app.domains.analytics.models import AnalyticsEvent
+
+# Headless test browsers, crawlers, link previews, monitoring: not people.
+_ROBOT = re.compile(r"HeadlessChrome|Playwright|bot|crawler|spider|curl|python-|Lighthouse", re.I)
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -44,8 +48,14 @@ class AnalyticsSummary(BaseModel):
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(RateLimit("analytics", times=300, window=60))],
 )
-async def record_event(data: EventIn, db: DbSession) -> Response:
-    """Record one anonymous event. Open (no auth) — it carries no personal data."""
+async def record_event(data: EventIn, db: DbSession, request: Request) -> Response:
+    """Record one anonymous event. Open (no auth) — it carries no personal data.
+
+    Robots are not counted: our own test browsers and crawlers made most of the
+    recorded "sessions" and hid how little the app is really used.
+    """
+    if _ROBOT.search(request.headers.get("user-agent", "")):
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     db.add(
         AnalyticsEvent(session_id=data.session_id, event=data.event, path=data.path)
     )

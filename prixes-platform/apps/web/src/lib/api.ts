@@ -179,8 +179,6 @@ export const api = {
     request<TokenPair>("/auth/register", { method: "POST", body: JSON.stringify(body) }),
   login: (body: { email: string; password: string }) =>
     request<TokenPair>("/auth/login", { method: "POST", body: JSON.stringify(body) }),
-  loginGoogle: (id_token: string) =>
-    request<TokenPair>("/auth/google", { method: "POST", body: JSON.stringify({ id_token }) }),
   loginFirebase: (id_token: string) =>
     request<TokenPair>("/auth/firebase", { method: "POST", body: JSON.stringify({ id_token }) }),
   me: () =>
@@ -336,16 +334,10 @@ export const api = {
   /** What happened while the app was closed: list price drops, a Sunday menu. */
   getNews: () => request<{ drops: NewsDrop[]; menu_ready: string | null }>("/shopping/news"),
   menuSeen: () => request<void>("/shopping/news/menu-seen", { method: "POST" }),
-  optimizeBasket: () => request<OptimizeResult>("/shopping/optimize"),
   // One trolley per store: what to buy where, and what a second stop saves.
   splitBasket: (maxStores = 2) =>
     request<SplitResult>(`/shopping/split?max_stores=${maxStores}`),
   // Cost a basket that isn't saved yet — a generated menu, an imported recipe.
-  optimizeLines: (lines: { barcode: string; quantity?: number; label?: string }[]) =>
-    request<OptimizeResult>("/shopping/optimize-basket", {
-      method: "POST",
-      body: JSON.stringify({ lines }),
-    }),
 
   // ── Smart Assistant ──
   smartCartStatus: () =>

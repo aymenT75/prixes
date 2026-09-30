@@ -18,8 +18,6 @@ from app.domains.shopping.schemas import (
     BulkAddOut,
     DropOut,
     NewsOut,
-    OptimizeBasketIn,
-    OptimizeResult,
     ShoppingItemIn,
     ShoppingItemOut,
     ShoppingItemUpdate,
@@ -110,11 +108,6 @@ async def clear_checked(db: DbSession, user: CurrentUser) -> dict[str, int]:
     return {"removed": removed}
 
 
-@router.get("/optimize", response_model=OptimizeResult)
-async def optimize(db: DbSession, user: CurrentUser) -> OptimizeResult:
-    return await service.optimize(db, user.id)
-
-
 @router.get("/split", response_model=SplitResult)
 async def split(
     db: DbSession,
@@ -125,22 +118,3 @@ async def split(
     return await service.split(db, user.id, max_stores)
 
 
-@router.post("/split-basket", response_model=SplitResult)
-async def split_basket(
-    data: OptimizeBasketIn,
-    db: DbSession,
-    user: CurrentUser,
-    max_stores: Annotated[int, Query(ge=1, le=3)] = 2,
-) -> SplitResult:
-    """Same, for a basket that isn't saved — a generated menu, an imported recipe."""
-    lines = [(line.barcode, line.quantity, line.label or line.barcode) for line in data.lines]
-    return await service.split_lines(db, lines, max_stores)
-
-
-@router.post("/optimize-basket", response_model=OptimizeResult)
-async def optimize_basket(
-    data: OptimizeBasketIn, db: DbSession, user: CurrentUser
-) -> OptimizeResult:
-    """Cost a basket that isn't saved — a generated menu, an imported recipe."""
-    lines = [(line.barcode, line.quantity, line.label or line.barcode) for line in data.lines]
-    return await service.optimize_lines(db, lines)

@@ -15,10 +15,6 @@ class LoginIn(BaseModel):
     password: str
 
 
-class GoogleIn(BaseModel):
-    id_token: str
-
-
 class FirebaseIn(BaseModel):
     id_token: str
 
