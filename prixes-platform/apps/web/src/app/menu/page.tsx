@@ -28,6 +28,7 @@ import { eur } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
 import type { MealPlan, MealPreferences } from "@/lib/types";
+import { useIsIos } from "@/lib/useIsIos";
 import { spokenPrice, useVoiceTask } from "@/lib/voiceTasks";
 
 const GENERATE_DEADLINE_MS = 60_000;
@@ -53,6 +54,7 @@ function messageFor(error: unknown): string {
 
 export default function MenuPage() {
   const { user, openLogin, openPremium } = useApp();
+  const ios = useIsIos();
   const { allergens, diets } = useA11y();
   const qc = useQueryClient();
   const week = mondayOf();
@@ -305,7 +307,7 @@ export default function MenuPage() {
             </p>
           )}
 
-          {billing && !billing.premium && (
+          {billing && !billing.premium && !ios && (
             <p className="mt-3 text-micro text-on-surface-variant">
               <Icon name="menu_book" className="mr-1 align-[-3px] text-[14px] text-primary" />
               Menus composés avec nos recettes.{" "}

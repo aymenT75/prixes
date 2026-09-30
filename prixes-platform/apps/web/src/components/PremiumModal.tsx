@@ -127,8 +127,10 @@ export function PremiumModal() {
 
         {!status?.premium &&
           (native ? (
+            // No price, no link: the stores forbid pointing to a payment elsewhere.
             <p className="mt-5 text-center text-body-md text-on-surface-variant">
-              L&apos;abonnement arrive bientôt dans l&apos;application.
+              Ces fonctions sont réservées aux abonnés Premium. Déjà abonné ? Connectez-vous avec votre
+              compte Prixes.
             </p>
           ) : (
             <>

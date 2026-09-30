@@ -25,6 +25,7 @@ import { earcon, type Earcon } from "@/lib/earcons";
 import { useApp } from "@/lib/store";
 import { dropsSentence, loadNews, markMenuOffered, markNewsTold, useNews } from "@/lib/news";
 import { isNetworkError, isOffline } from "@/lib/offline";
+import { nativePlatform } from "@/lib/platform";
 import { useA11y } from "@/lib/useA11y";
 import { useDialog } from "@/lib/useDialog";
 import {
@@ -644,7 +645,8 @@ export function VoiceAssistant() {
         case "premium":
           close();
           openPremium(true);
-          speak(intent.say);
+          // iPhone: nothing to buy in the app (Apple's rules), so no "offer".
+          speak(nativePlatform() === "ios" ? "Ces fonctions sont réservées aux abonnés Premium." : intent.say);
           return;
 
         case "navigate":

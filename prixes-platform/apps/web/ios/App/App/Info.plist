@@ -65,14 +65,14 @@
 		<string>remote-notification</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Prixes utilise l'appareil photo pour scanner les codes-barres des produits et photographier les bons plans.</string>
+	<string>Prixes utilise l'appareil photo pour scanner le code-barres d'un produit, ou le reconnaître en photo, et vous donner son prix.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Prixes utilise le micro pour l'assistant vocal (recherche et navigation à la voix).</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Prixes utilise la reconnaissance vocale pour comprendre vos commandes en français.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Prixes utilise votre position pour trouver les stations-service les moins chères près de vous.</string>
+	<string>Prixes utilise votre position pour trouver les stations-service et les magasins les moins chers près de vous.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Prixes accède à vos photos pour illustrer les bons plans que vous partagez.</string>
+	<string>Prixes accède à une photo que vous choisissez pour reconnaître le produit qu'elle montre.</string>
 </dict>
 </plist>

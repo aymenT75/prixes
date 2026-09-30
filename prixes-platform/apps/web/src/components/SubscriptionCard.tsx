@@ -15,11 +15,13 @@ import { useEffect, useState } from "react";
 import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
 import { useApp } from "@/lib/store";
+import { useIsIos } from "@/lib/useIsIos";
 
 export function SubscriptionCard() {
   const { openPremium } = useApp();
   const [returned, setReturned] = useState<"ok" | "annule" | null>(null);
   const [busy, setBusy] = useState(false);
+  const ios = useIsIos();
 
   // Read after mount: the page is statically exported, so no search params at build.
   useEffect(() => {
@@ -92,7 +94,8 @@ export function SubscriptionCard() {
         </p>
       )}
 
-      {status.premium || status.can_manage ? (
+      {/* On iPhone: no way to a web payment, nor to manage one (Apple's rules). */}
+      {!ios && (status.premium || status.can_manage) ? (
         <button
           onClick={manage}
           disabled={busy || !status.can_manage}
@@ -102,7 +105,7 @@ export function SubscriptionCard() {
           {busy ? "Ouverture…" : "Gérer mon abonnement"}
         </button>
       ) : null}
-      {!status.premium && (
+      {!status.premium && !ios && (
         <button onClick={() => openPremium(true)} className="btn-primary mt-3 w-full py-2">
           <Icon name="lock_open" className="text-[18px]" />
           Découvrir Premium
