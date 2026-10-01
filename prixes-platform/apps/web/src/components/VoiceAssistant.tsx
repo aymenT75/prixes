@@ -689,7 +689,10 @@ export function VoiceAssistant() {
     stopSpeaking();
     handledRef.current = false;
     setTranscript("");
-    setResponse("");
+    // The last answer stays on screen while the mic listens again: after a
+    // question ("Ce prix vous convient ?") it used to vanish at once, and someone
+    // who cannot hear was left with neither the price nor the question.
+    // act() clears it when the next sentence arrives.
     setBadge(null);
     setPose("ecoute");
     const rec = createVoiceRecognizer();
