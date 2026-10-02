@@ -60,7 +60,8 @@ export function ProductCard({
   const linkLabel =
     `${product.name ?? "Produit"}${product.brand ? `, ${product.brand}` : ""}` +
     where +
-    (nutri ? ` — Nutri-Score ${nutri.toUpperCase()}, ${hint}` : "") +
+    // No hint means no real grade ("U", unknown): saying "Nutri-Score U," told nothing.
+    (nutri && hint ? ` — Nutri-Score ${nutri.toUpperCase()}, ${hint}` : "") +
     " — voir la fiche produit";
 
   // "Stretched link" pattern: the whole card is clickable, but there's exactly one
