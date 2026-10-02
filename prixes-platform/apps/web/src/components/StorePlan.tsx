@@ -123,7 +123,7 @@ export function StorePlan({
                 key={item.barcode}
                 className="flex items-baseline justify-between gap-3 border-b border-outline-variant py-2 last:border-0"
               >
-                <span className="min-w-0 truncate text-body-md text-on-surface">
+                <span className="min-w-0 break-words text-body-md text-on-surface">
                   {item.quantity > 1 && (
                     <span className="mr-1 text-primary">×{item.quantity}</span>
                   )}
@@ -145,7 +145,7 @@ export function StorePlan({
           <p className="mb-1 font-bold">À trouver ailleurs</p>
           <ul className="space-y-0.5">
             {option.missing.map((name) => (
-              <li key={name} className="truncate">
+              <li key={name} className="break-words">
                 {name}
               </li>
             ))}
@@ -160,7 +160,7 @@ export function StorePlan({
           </p>
           <ul className="space-y-0.5">
             {result.unpriced.map((name) => (
-              <li key={name} className="truncate">
+              <li key={name} className="break-words">
                 {name}
               </li>
             ))}

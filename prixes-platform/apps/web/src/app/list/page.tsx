@@ -12,6 +12,7 @@ import { StorePlan } from "@/components/StorePlan";
 import { api } from "@/lib/api";
 import { eur, nutriBarStyle, nutriHint } from "@/lib/format";
 import { useApp } from "@/lib/store";
+import { useA11y } from "@/lib/useA11y";
 import type { ShoppingItem, SplitResult } from "@/lib/types";
 import { spokenPrice, useVoiceTask } from "@/lib/voiceTasks";
 
@@ -211,15 +212,22 @@ function ListRow({
   onRemove: () => void;
 }) {
   const label = item.name ?? item.free_text ?? item.barcode ?? "Article";
+  // At the largest text size a name squeezed between the tick, the picture and
+  // the cross got one word per line ("Échalot-es"); there it takes the card's
+  // whole width, under the tick, picture and cross.
+  const big = useA11y((s) => s.fontScale === "xl");
   const recipeAmount =
     item.amount != null && item.unit
       ? `${String(item.amount).replace(/\.0+$/, "").replace(".", ",")} ${item.unit}`
       : null;
 
   return (
+    // A ticked line used to fade as a whole (opacity 50 %), which took its text
+    // below the contrast a low-vision reader needs. Only the picture fades now;
+    // the strike-through and the ticked box say "done".
     <div
       style={nutriBarStyle(item.nutriscore)}
-      className={`card flex items-center gap-3 p-3 ${item.checked ? "opacity-50" : ""}`}
+      className={`card flex items-center gap-3 p-3 ${big ? "flex-wrap" : ""}`}
     >
       {/* A checkbox that names its item: "Cocher" alone, forty times over, told a
           screen-reader user nothing about which line or whether it was done. */}
@@ -239,8 +247,15 @@ function ListRow({
 
       <Thumb item={item} />
 
-      <div className="min-w-0 flex-1">
-        <p className={`truncate text-label-lg text-on-surface ${item.checked ? "line-through" : ""}`}>
+      {/* The name wraps instead of being cut: at the largest text size "Crème
+          fraîche épaisse" became "Crè…". The quantity buttons sit under it, which
+          gives the name the row's width and the buttons room for a full 44 px. */}
+      <div className={`min-w-0 flex-1 ${big ? "order-last basis-full" : ""}`}>
+        <p
+          className={`break-words text-label-lg ${
+            item.checked ? "text-on-surface-variant line-through" : "text-on-surface"
+          }`}
+        >
           {item.barcode ? (
             <Link
               href={`/courses/detail?barcode=${item.barcode}`}
@@ -260,40 +275,52 @@ function ListRow({
         {/* One line, two facts. A third ("· assistant") pushed this to four wrapped
             lines on a 375 px screen; the notepad thumbnail already marks a line the
             catalog has no product for. */}
-        <p className="truncate text-micro text-on-surface-variant">
+        <p className="break-words text-micro text-on-surface-variant">
           {recipeAmount && <span>{recipeAmount} · </span>}
           {item.best_price != null
             ? `${eur(item.best_price)} / ${item.pack || "u."}`
             : "prix inconnu"}
         </p>
+
+        {/* 44 px touch areas (Apple's minimum) around the same 36 px discs: a
+            shaky hand kept hitting the name link above instead. */}
+        <div className="-ml-1.5 mt-0.5 flex items-center">
+          <button
+            onClick={() => onQty(Math.max(1, item.quantity - 1))}
+            // A list read line by line gives "Moins" a dozen times otherwise, with
+            // nothing to say which product it belongs to.
+            aria-label={`Retirer un ${label}`}
+            className="grid h-11 w-11 place-items-center active:scale-90"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-container text-on-surface">
+              <Icon name="remove" className="text-[16px]" />
+            </span>
+          </button>
+          {/* aria-label on a bare <span> is ignored by most screen readers, so the
+              word is real (visually hidden) text instead. */}
+          <span className="min-w-6 text-center text-label-lg text-on-surface">
+            <span className="sr-only">Quantité : </span>
+            {item.quantity}
+          </span>
+          <button
+            onClick={() => onQty(Math.min(99, item.quantity + 1))}
+            aria-label={`Ajouter un ${label}`}
+            className="grid h-11 w-11 place-items-center active:scale-90"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-container text-on-surface">
+              <Icon name="add" className="text-[16px]" />
+            </span>
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-shrink-0 items-center gap-1">
-        <button
-          onClick={() => onQty(Math.max(1, item.quantity - 1))}
-          // A list read line by line gives "Moins" a dozen times otherwise, with
-          // nothing to say which product it belongs to.
-          aria-label={`Retirer un ${label}`}
-          className="grid h-9 w-9 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90"
-        >
-          <Icon name="remove" className="text-[16px]" />
-        </button>
-        {/* aria-label on a bare <span> is ignored by most screen readers, so the
-            word is real (visually hidden) text instead. */}
-        <span className="w-6 text-center text-label-lg text-on-surface">
-          <span className="sr-only">Quantité : </span>
-          {item.quantity}
-        </span>
-        <button
-          onClick={() => onQty(Math.min(99, item.quantity + 1))}
-          aria-label={`Ajouter un ${label}`}
-          className="grid h-9 w-9 place-items-center rounded-full bg-surface-container text-on-surface active:scale-90"
-        >
-          <Icon name="add" className="text-[16px]" />
-        </button>
-      </div>
-
-      <button onClick={onRemove} aria-label="Supprimer" className="flex-shrink-0 text-outline-variant hover:text-error">
+      <button
+        onClick={onRemove}
+        aria-label={`Supprimer ${label} de la liste`}
+        className={`grid h-11 w-11 flex-shrink-0 place-items-center rounded-full text-outline-variant hover:text-error ${
+          big ? "ml-auto" : "self-start"
+        }`}
+      >
         <Icon name="close" className="text-[20px]" />
       </button>
     </div>
@@ -310,10 +337,20 @@ function Thumb({ item }: { item: ShoppingItem }) {
       className="p-1"
     />
   );
-  const box = "relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white";
+  const box = `relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-white ${
+    item.checked ? "opacity-50" : ""
+  }`;
   // No barcode means no product page to open — render a plain box, not a dead link.
+  // The picture opens the same page as the name, so it is a second way in for the
+  // finger only: hidden from screen readers and the Tab key, which otherwise met
+  // an unnamed "lien" before every product.
   return item.barcode ? (
-    <Link href={`/courses/detail?barcode=${item.barcode}`} className={box}>
+    <Link
+      href={`/courses/detail?barcode=${item.barcode}`}
+      aria-hidden
+      tabIndex={-1}
+      className={box}
+    >
       {inner}
     </Link>
   ) : (

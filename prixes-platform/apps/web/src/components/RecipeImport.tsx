@@ -139,7 +139,7 @@ export function RecipeImport() {
                 key={`${line.product_name}-${i}`}
                 className="flex items-baseline justify-between gap-3 border-b border-outline-variant py-1.5 last:border-0"
               >
-                <span className="min-w-0 truncate text-body-md text-on-surface">
+                <span className="min-w-0 break-words text-body-md text-on-surface">
                   {line.matched_name ?? line.product_name}
                   {line.allergen_warning && (
                     <span className="ml-2 text-micro text-error">

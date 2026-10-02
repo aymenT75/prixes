@@ -34,12 +34,20 @@ function Tab({ t, active }: { t: (typeof TABS)[number]; active: boolean }) {
 export function BottomNav() {
   const pathname = usePathname();
   const openVoice = useA11y((s) => s.setVoiceOpen);
+  const fontScale = useA11y((s) => s.fontScale);
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
   return (
     // Four fixed-padding tabs stop fitting once the text setting grows: on a
     // 360 px screen the last label ("Scanner") was pushed off the edge. Let the
     // tabs share the width and the labels shrink instead of overflowing.
-    <nav aria-label="Navigation principale" className="glass fixed inset-x-0 bottom-0 z-50 flex h-[80px] items-stretch justify-around border-t border-outline-variant/50 pb-[env(safe-area-inset-bottom)] shadow-nav">
+    //
+    // At the largest size four words no longer fit even shrunk ("Carbur…",
+    // "Assista…"), so the bar stops growing one step earlier than the page: its
+    // labels stay whole, and they are still bigger than at the normal size.
+    <nav
+      aria-label="Navigation principale"
+      style={fontScale === "xl" ? ({ zoom: 1.18 / 1.38 } as React.CSSProperties) : undefined}
+      className="glass fixed inset-x-0 bottom-0 z-50 flex h-[80px] items-stretch justify-around border-t border-outline-variant/50 pb-[env(safe-area-inset-bottom)] shadow-nav">
       <Tab t={TABS[0]} active={isActive(TABS[0].href)} />
       <Tab t={TABS[1]} active={isActive(TABS[1].href)} />
       {/* The microphone is the brain of the app, and the only one: every page, dead

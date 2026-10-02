@@ -76,7 +76,7 @@ function CoursesInner() {
       >
         <Icon name="search" className="text-on-surface-variant" />
         <input
-          className="flex-1 bg-transparent text-body-md outline-none"
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-body-md outline-none"
           aria-label="Rechercher un produit"
           placeholder="Rechercher un produit…"
           value={input}

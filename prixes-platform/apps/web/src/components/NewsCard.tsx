@@ -44,7 +44,7 @@ export function NewsCard() {
               href={`/courses/detail?barcode=${encodeURIComponent(d.barcode)}`}
               className="flex items-center justify-between gap-3 rounded-xl bg-surface-container px-3 py-2"
             >
-              <span className="min-w-0 truncate text-body-md text-on-surface">{d.name}</span>
+              <span className="min-w-0 break-words text-body-md text-on-surface">{d.name}</span>
               <span className="flex-shrink-0 text-label-md font-semibold text-primary">
                 {Number(d.new).toFixed(2).replace(".", ",")} €{" "}
                 <span className="font-normal text-on-surface-variant">

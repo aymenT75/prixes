@@ -129,7 +129,7 @@ function AlertRow({
       </Link>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-label-lg text-on-surface">
+        <p className="break-words text-label-lg text-on-surface">
           <Link
             href={`/courses/detail?barcode=${alert.barcode}`}
             aria-label={`${alert.name ?? alert.barcode}${

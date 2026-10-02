@@ -60,11 +60,15 @@ export const viewport: Viewport = {
 // Runs before the first paint: replays the persisted accessibility settings onto
 // <html> so the page is already at the right zoom / theme when it is painted,
 // instead of jumping when useA11y.init() runs after hydration. Must stay in sync
-// with `apply()` and the SCALE_ZOOM table in src/lib/useA11y.ts.
+// with `apply()`, the SCALE_ZOOM table and systemFontScale() in src/lib/useA11y.ts.
 const preHydrationA11y = `(function(){try{
 var s=JSON.parse(localStorage.getItem("prixes.a11y")||"{}");
-var z=({normal:"1",large:"1.18",xl:"1.38"})[s.fontScale]||"1";
+var Z={normal:"1",large:"1.18",xl:"1.38"};
+var z=Z[s.fontScale]||"1";
 var r=document.documentElement;
+var p=document.createElement("span");p.style.font="-apple-system-body";
+if(p.style.font){r.appendChild(p);var q=parseFloat(getComputedStyle(p).fontSize)/17;p.remove();
+var y=q>=1.3?"1.38":q>=1.1?"1.18":"1";if(+y>+z)z=y;}
 r.style.zoom=z;
 r.style.setProperty("--zoom-scale",z);
 if(s.highContrast)r.classList.add("contrast");
@@ -126,6 +130,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </span>
           <p className="prixes-boot-label">Chargement…</p>
         </div>
+        {/* First thing in the page, so the first Tab (or VoiceOver swipe) offers it.
+            It used to come after the whole app, where a keyboard user met it last. */}
+        <a
+          href="#contenu"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100]
+                     focus:rounded-lg focus:bg-gradient-to-r focus:from-primary-fixed-dim focus:to-secondary-fixed-dim focus:px-4 focus:py-2 focus:text-on-primary-fixed"
+        >
+          Aller au contenu
+        </a>
         <Providers>
           <main
             id="contenu"

@@ -40,6 +40,28 @@ const SCALE_ZOOM: Record<FontScale, string> = {
 };
 const ORDER: FontScale[] = ["normal", "large", "xl"];
 
+/**
+ * The text size chosen in the iPhone's own settings (Réglages › Luminosité et
+ * affichage › Taille du texte, and the larger accessibility sizes). WebKit exposes
+ * it only through the `-apple-system-body` font: 17 px at the default size. Other
+ * browsers ignore that font, keep their 16 px default and land on "normal".
+ */
+function systemFontScale(): FontScale {
+  try {
+    const probe = document.createElement("span");
+    probe.style.font = "-apple-system-body";
+    if (!probe.style.font) return "normal"; // not WebKit: the font is unknown
+    document.documentElement.appendChild(probe);
+    const px = parseFloat(getComputedStyle(probe).fontSize);
+    probe.remove();
+    if (!px) return "normal";
+    const ratio = px / 17;
+    return ratio >= 1.3 ? "xl" : ratio >= 1.1 ? "large" : "normal";
+  } catch {
+    return "normal";
+  }
+}
+
 interface A11yState {
   fontScale: FontScale;
   highContrast: boolean;
@@ -138,8 +160,13 @@ export const useA11y = create<A11yState>((set, get) => ({
     // Always open in light mode by default — only switch to dark once the user
     // explicitly turns it on (no auto-detecting the OS/browser preference).
     const dark = typeof saved.dark === "boolean" ? saved.dark : false;
+    // Someone who set a large text size on the phone gets it here without
+    // looking for our own setting. The larger of the two wins, so neither one
+    // can make the text smaller than the other asked for.
+    const chosen = (saved.fontScale as FontScale) || "normal";
+    const system = systemFontScale();
     const next = {
-      fontScale: (saved.fontScale as FontScale) || "normal",
+      fontScale: ORDER.indexOf(system) > ORDER.indexOf(chosen) ? system : chosen,
       highContrast: !!saved.highContrast,
       dark,
     };

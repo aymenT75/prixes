@@ -116,9 +116,15 @@ export default function StoreMap({ user, store }: { user: LatLon; store: MapStor
               )}
             </Popup>
           </Marker>
-          <Marker position={[user.lat, user.lon]} icon={userIcon} alt="Votre position" title="Votre position">
-            <Popup>Vous êtes ici</Popup>
-          </Marker>
+          {/* Not a button: its only popup said "Vous êtes ici", and as a target it
+              was a 20 px dot a finger kept hitting instead of the shop's pin. */}
+          <Marker
+            position={[user.lat, user.lon]}
+            icon={userIcon}
+            alt="Votre position"
+            interactive={false}
+            keyboard={false}
+          />
           <Polyline
             positions={line}
             pathOptions={{ color: "#2563eb", weight: 5, opacity: 0.75 }}
@@ -130,7 +136,7 @@ export default function StoreMap({ user, store }: { user: LatLon; store: MapStor
       {/* Store summary + directions */}
       <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-surface-container-low p-4">
         <div className="min-w-0">
-          <p className="truncate text-label-lg text-on-surface">{store.name}</p>
+          <p className="break-words text-label-lg text-on-surface">{store.name}</p>
           <p className="mt-0.5 flex items-center gap-1 text-body-md text-on-surface-variant">
             <Icon name="near_me" className="text-[16px]" />
             {info ? `${info.km.toFixed(1)} km · ~${info.min} min en voiture` : `${store.distance_km} km`}

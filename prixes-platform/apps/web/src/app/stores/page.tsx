@@ -195,7 +195,7 @@ export default function StoresPage() {
                     className="flex w-full items-start gap-2 rounded-lg p-2.5 text-left text-body-md text-on-surface hover:bg-surface-container"
                   >
                     <Icon name="location_on" className="mt-0.5 flex-shrink-0 text-[18px] text-on-surface-variant" />
-                    <span className="truncate">{s.label}</span>
+                    <span className="break-words">{s.label}</span>
                   </button>
                 </li>
               ))}
@@ -238,7 +238,7 @@ export default function StoresPage() {
                   {s.address && (
                     <p className="mt-1 flex items-center gap-1 text-body-md text-on-surface-variant">
                       <Icon name="location_on" className="text-[16px]" />
-                      <span className="truncate">{s.address}</span>
+                      <span className="break-words">{s.address}</span>
                     </p>
                   )}
                 </div>

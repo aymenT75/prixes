@@ -59,7 +59,7 @@ export function MealCard({
         <ul className="mt-2 space-y-1 border-t border-outline-variant pt-2">
           {meal.ingredients.map((line, i) => (
             <li key={`${line.product_name}-${i}`} className="flex justify-between text-body-md">
-              <span className="min-w-0 truncate text-on-surface">
+              <span className="min-w-0 break-words text-on-surface">
                 {line.matched_name ?? line.product_name}
               </span>
               <span className="ml-3 flex-shrink-0 text-micro text-on-surface-variant">

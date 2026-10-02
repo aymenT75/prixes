@@ -433,10 +433,10 @@ function DraftRow({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-label-lg text-on-surface">
+        <p className="break-words text-label-lg text-on-surface">
           {line.matched_name ?? line.product_name}
         </p>
-        <p className="truncate text-micro text-on-surface-variant">
+        <p className="break-words text-micro text-on-surface-variant">
           {amount} {line.unit}
           {/* Just the price. The metadata line is set in the mono face and shares
               its row with the quantity stepper, so any suffix ("l'unité", "/ u.")

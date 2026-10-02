@@ -235,7 +235,7 @@ export default function AccountPage() {
         </button>
       </section>
 
-      <p className="mt-6 text-center text-micro uppercase tracking-[0.2em] text-outline">
+      <p className="mt-6 text-center text-micro uppercase tracking-[0.2em] text-on-surface-variant">
         Prixes · v2.0
       </p>
     </div>

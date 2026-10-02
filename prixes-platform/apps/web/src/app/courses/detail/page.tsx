@@ -545,7 +545,7 @@ function ProductDetail() {
           </span>
           <div className="min-w-0 flex-1">
             <p className="text-micro uppercase tracking-wider text-primary">Moins cher</p>
-            <p className="truncate text-label-lg text-on-surface">{cheaperAlt.name}</p>
+            <p className="break-words text-label-lg text-on-surface">{cheaperAlt.name}</p>
           </div>
           <div className="ml-auto text-right">
             <p className="text-headline-md text-primary">{eur(cheaperAlt.best_price)}</p>
@@ -597,10 +597,10 @@ function ProductDetail() {
                   <Icon name="storefront" className="text-[24px]" />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-label-lg font-semibold text-on-surface">
+                  <p className="break-words text-label-lg font-semibold text-on-surface">
                     {nearestBranch.name}
                   </p>
-                  <p className="truncate text-micro text-on-surface-variant">
+                  <p className="break-words text-micro text-on-surface-variant">
                     {nearestBranch.distance_km != null ? `${nearestBranch.distance_km.toFixed(1)} km` : ""}
                     {nearestBranch.address ? ` · ${nearestBranch.address}` : ""}
                   </p>

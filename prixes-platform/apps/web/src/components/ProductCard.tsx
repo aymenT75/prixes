@@ -82,7 +82,7 @@ export function ProductCard({
         />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-label-lg text-on-surface">
+        <p className="break-words text-label-lg text-on-surface">
           <Link
             href={`/courses/detail?barcode=${product.barcode}`}
             aria-label={linkLabel}
@@ -91,7 +91,7 @@ export function ProductCard({
             {product.name ?? "Produit"}
           </Link>
         </p>
-        {product.brand && <p className="truncate text-micro uppercase text-on-surface-variant">{product.brand}</p>}
+        {product.brand && <p className="break-words text-micro uppercase text-on-surface-variant">{product.brand}</p>}
         {priced?.best_price != null && (
           <p className="mt-0.5 flex flex-wrap items-baseline gap-x-1.5 text-label-lg text-primary">
             {eur(priced.best_price)}

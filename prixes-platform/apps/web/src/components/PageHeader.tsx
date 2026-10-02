@@ -22,6 +22,9 @@ export function PageHeader({
   const pathname = usePathname();
   const { user, openLogin } = useApp();
   const setA11yOpen = useA11y((s) => s.setA11yOpen);
+  // At the largest text size the title no longer fits between the buttons: it
+  // gets a row of its own under them, instead of breaking "Assistant" in two.
+  const ownRow = useA11y((s) => s.fontScale === "xl");
 
   // Persistent back navigation everywhere except the app root (home).
   const showBack = back ?? pathname !== "/";
@@ -33,9 +36,21 @@ export function PageHeader({
     else router.push("/");
   }
 
+  // headline-lg, not the bigger headline-xl-mobile used on the logo lockup:
+  // this title shares its row with 2 icon buttons plus a right-side action
+  // and login button/avatar, so it needs to fit real page titles ("Produit",
+  // "Carburant") without truncating on a typical phone width.
+  // Wraps rather than truncates: at the largest text size "Ma semaine" was
+  // cut to "Ma sem…" — the title is the one thing that says where you are.
+  const heading = (
+    <h1 className="min-w-0 break-words py-1 text-headline-lg leading-tight tracking-tight text-primary">
+      {title}
+    </h1>
+  );
+
   return (
-    <header className="glass sticky top-0 z-40 -mx-margin-mobile -mt-6 mb-6 flex h-16 items-center justify-between border-b border-outline-variant/30 px-margin-mobile shadow-card">
-      <div className="flex min-w-0 items-center gap-1.5">
+    <header className="glass sticky top-0 z-40 -mx-margin-mobile -mt-6 mb-6 flex min-h-16 flex-wrap items-center justify-between gap-x-2 border-b border-outline-variant/30 px-margin-mobile shadow-card">
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">
         {showBack && (
           <button
             onClick={goBack}
@@ -45,15 +60,7 @@ export function PageHeader({
             <Icon name="arrow_back" />
           </button>
         )}
-        {pathname === "/" ? (
-          <LogoLockup heading />
-        ) : (
-          // headline-lg, not the bigger headline-xl-mobile used on the logo lockup:
-          // this title shares its row with 2 icon buttons plus a right-side action
-          // and login button/avatar, so it needs to fit real page titles ("Produit",
-          // "Carburant") without truncating on a typical phone width.
-          <h1 className="truncate text-headline-lg tracking-tight text-primary">{title}</h1>
-        )}
+        {pathname === "/" ? <LogoLockup heading /> : !ownRow && heading}
         {/* Accessibility, next to the title so it never covers content. Sized 44x44
             (WCAG 2.5.5, Android 48dp). The microphone is not here: there is one, in
             the centre of the tab bar, so a screen reader announces it once. */}
@@ -85,6 +92,7 @@ export function PageHeader({
           </button>
         )}
       </div>
+      {ownRow && pathname !== "/" && <div className="basis-full pb-2">{heading}</div>}
     </header>
   );
 }

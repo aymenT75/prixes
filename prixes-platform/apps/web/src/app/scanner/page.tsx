@@ -381,7 +381,7 @@ export default function ScannerPage() {
       >
         <Icon name="barcode_scanner" className="text-on-surface-variant" />
         <input
-          className="min-w-0 flex-1 bg-transparent text-body-md outline-none"
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-body-md outline-none"
           aria-label="Saisir un code-barres"
           inputMode="numeric"
           placeholder="Saisir un code-barres"

@@ -34,9 +34,9 @@ export function BargainCard({ bargain }: { bargain: Bargain }) {
         )}
       </div>
       <div className="min-w-0">
-        <p className="truncate text-label-md text-on-surface">{bargain.name ?? "Produit"}</p>
+        <p className="break-words text-label-md text-on-surface">{bargain.name ?? "Produit"}</p>
         {bargain.store && (
-          <p className="truncate text-micro uppercase text-on-surface-variant">{bargain.store}</p>
+          <p className="break-words text-micro uppercase text-on-surface-variant">{bargain.store}</p>
         )}
         <div className="mt-0.5 flex items-baseline gap-1.5">
           <span className="text-label-lg font-bold text-primary">{eur(bargain.price)}</span>

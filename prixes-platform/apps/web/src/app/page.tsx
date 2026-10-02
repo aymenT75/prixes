@@ -76,7 +76,7 @@ export default function HomePage() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="min-w-0 flex-1 bg-transparent text-body-md outline-none"
+          className="min-h-11 min-w-0 flex-1 bg-transparent text-body-md outline-none"
           placeholder="Rechercher un produit, une marque…"
           aria-label="Rechercher un produit"
           enterKeyHint="search"
@@ -137,7 +137,7 @@ export default function HomePage() {
           </h2>
           <div className="flex items-center gap-2">
             <ScoreLegend compact />
-            <Link href="/courses" className="text-label-lg font-bold text-primary underline underline-offset-4 hover:text-secondary transition-colors">
+            <Link href="/courses" className="inline-flex min-h-11 items-center text-label-lg font-bold text-primary underline underline-offset-4 hover:text-secondary transition-colors">
               Tout voir
             </Link>
           </div>
