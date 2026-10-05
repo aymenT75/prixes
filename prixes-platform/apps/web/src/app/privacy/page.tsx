@@ -2,30 +2,9 @@
 
 import Link from "next/link";
 
-import { Icon } from "@/components/Icon";
+import { LegalSection as Section } from "@/components/LegalSection";
 import { PageHeader } from "@/components/PageHeader";
-
-function Section({
-  icon,
-  title,
-  id,
-  children,
-}: {
-  icon: string;
-  title: string;
-  /** Anchor for sections linked from outside, e.g. the Google Play listing. */
-  id?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section id={id} className="card mb-4 scroll-mt-4 p-5">
-      <h2 className="mb-2 flex items-center gap-2 text-headline-md text-on-surface">
-        <Icon name={icon} className="text-primary" /> {title}
-      </h2>
-      <div className="space-y-2 text-body-md text-on-surface-variant">{children}</div>
-    </section>
-  );
-}
+import { LEGAL, PENDING } from "@/lib/legal";
 
 export default function PrivacyPage() {
   return (
@@ -39,7 +18,16 @@ export default function PrivacyPage() {
 
       <Section icon="badge" title="Qui gère vos données">
         <p>
-          Prixes, joignable à{" "}
+          Le responsable du traitement est{" "}
+          <strong className="text-on-surface">{LEGAL.company ?? `${LEGAL.brand}, société ${PENDING}`}</strong>
+          {LEGAL.address && <>, {LEGAL.address}</>} (voir les{" "}
+          <Link href="/mentions-legales" className="text-primary underline underline-offset-2">
+            mentions légales
+          </Link>
+          ). Les données sont hébergées chez {LEGAL.host.name}, sur des {LEGAL.host.where}.
+        </p>
+        <p>
+          Joignable à{" "}
           <a href="mailto:contact@prixes.app" className="text-primary underline underline-offset-2">
             contact@prixes.app
           </a>{" "}
@@ -102,6 +90,7 @@ export default function PrivacyPage() {
           <li>OpenFoodFacts, Open Prices, OpenStreetMap — données produits, prix et magasins</li>
           <li>Un service d&apos;IA (reconnaissance photo, voix naturelle en option)</li>
           <li>Sentry — pour détecter les bugs techniques (pas de données personnelles dans les rapports)</li>
+          <li>Stripe — pour le paiement de l&apos;abonnement Premium (Prixes ne voit jamais votre numéro de carte)</li>
         </ul>
         <p>
           Chacun a sa propre politique de confidentialité pour les données qui lui sont
@@ -218,7 +207,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section icon="update" title="Mise à jour">
-        <p>Cette page reflète le fonctionnement actuel de l&apos;app. Dernière mise à jour : septembre 2026.</p>
+        <p>Cette page reflète le fonctionnement actuel de l&apos;app. Dernière mise à jour : {LEGAL.updated}.</p>
       </Section>
     </div>
   );

@@ -13,6 +13,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { Icon } from "@/components/Icon";
@@ -173,7 +174,10 @@ export function PremiumModal() {
                 </button>
               )}
               <p className="mt-2 text-center text-micro text-on-surface-variant">
-                Paiement sécurisé par Stripe · Sans engagement, résiliable à tout moment
+                Paiement sécurisé par Stripe · Sans engagement, résiliable à tout moment ·{" "}
+                <Link href="/conditions" className="underline underline-offset-2">
+                  Conditions
+                </Link>
               </p>
             </>
           ))}

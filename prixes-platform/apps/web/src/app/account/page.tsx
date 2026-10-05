@@ -49,6 +49,18 @@ export default function AccountPage() {
               <Icon name="chevron_right" className="text-outline-variant" />
             </Row>
           </Link>
+          <Hr />
+          <Link href="/conditions" className="block w-full">
+            <Row icon="list_alt" title="Conditions" subtitle="Utilisation et abonnement Premium">
+              <Icon name="chevron_right" className="text-outline-variant" />
+            </Row>
+          </Link>
+          <Hr />
+          <Link href="/mentions-legales" className="block w-full">
+            <Row icon="badge" title="Mentions légales" subtitle="Qui édite Prixes">
+              <Icon name="chevron_right" className="text-outline-variant" />
+            </Row>
+          </Link>
         </section>
       </div>
     );
@@ -218,6 +230,18 @@ export default function AccountPage() {
         <Hr />
         <Link href="/privacy" className="block w-full">
           <Row icon="privacy_tip" title="Confidentialité" subtitle="Vos données, vos droits">
+            <Icon name="chevron_right" className="text-outline-variant" />
+          </Row>
+        </Link>
+        <Hr />
+        <Link href="/conditions" className="block w-full">
+          <Row icon="list_alt" title="Conditions" subtitle="Utilisation et abonnement Premium">
+            <Icon name="chevron_right" className="text-outline-variant" />
+          </Row>
+        </Link>
+        <Hr />
+        <Link href="/mentions-legales" className="block w-full">
+          <Row icon="badge" title="Mentions légales" subtitle="Qui édite Prixes">
             <Icon name="chevron_right" className="text-outline-variant" />
           </Row>
         </Link>
