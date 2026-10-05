@@ -19,11 +19,18 @@ import type { SplitResult } from "@/lib/types";
 export function StorePlan({
   result,
   emptyMessage = "Aucun prix connu pour vos produits. Ajoutez des prix depuis les fiches produit.",
+  chosen: chosenProp,
+  onChoose,
 }: {
   result: SplitResult;
   emptyMessage?: string;
+  /** Controlled choice of plan, for a parent that acts on it (the "Y aller" step). */
+  chosen?: number;
+  onChoose?: (index: number) => void;
 }) {
-  const [chosen, setChosen] = useState(0);
+  const [own, setOwn] = useState(0);
+  const chosen = chosenProp ?? own;
+  const setChosen = onChoose ?? setOwn;
 
   if (result.options.length === 0) {
     return (

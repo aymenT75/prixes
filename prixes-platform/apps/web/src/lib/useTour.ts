@@ -27,10 +27,10 @@ export const TOUR_STEPS: TourStep[] = [
   {
     id: "assistant",
     target: '[data-tour="nav-assistant"]',
-    title: "Dictez vos courses",
+    title: "Vos courses en 3 étapes",
     body:
-      "Dites ce que vous voulez préparer : l'assistant monte la liste, la chiffre, " +
-      "et vous dit dans quel magasin l'acheter.",
+      "Préparez la liste, comparez les magasins, puis laissez-vous guider jusqu'au " +
+      "moins cher.",
   },
   {
     id: "colors",

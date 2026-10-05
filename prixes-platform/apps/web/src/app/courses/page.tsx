@@ -65,7 +65,7 @@ function CoursesInner() {
 
   return (
     <div>
-      <PageHeader title="Courses" />
+      <PageHeader title="Recherche" />
 
       <form
         onSubmit={(e) => {

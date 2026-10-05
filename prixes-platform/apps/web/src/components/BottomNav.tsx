@@ -8,9 +8,9 @@ import { useA11y } from "@/lib/useA11y";
 
 const TABS = [
   { href: "/", label: "Accueil", icon: "home", tour: undefined },
-  // The assistant is what makes Prixes different, so it gets the tab. It sits
-  // at the top of the list — the page it fills — rather than on its own screen.
-  { href: "/list", label: "Assistant", icon: "auto_awesome", tour: "nav-assistant" },
+  // The whole shopping trip in three steps: prepare the list, compare the shops,
+  // go there. The voice assistant stays in the centre button.
+  { href: "/list", label: "Courses", icon: "shopping_cart", tour: "nav-assistant" },
   { href: "/fuel", label: "Carburant", icon: "local_gas_station", tour: "nav-fuel" },
   { href: "/scanner", label: "Scanner", icon: "qr_code_scanner", tour: "nav-scanner" },
 ];

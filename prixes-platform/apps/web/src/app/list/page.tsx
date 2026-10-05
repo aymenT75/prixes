@@ -20,6 +20,11 @@ export default function ListPage() {
   const { user, openLogin } = useApp();
   const qc = useQueryClient();
   const [plan, setPlan] = useState<SplitResult | null>(null);
+  const [chosen, setChosen] = useState(0);
+  // Mes courses is one journey in three steps, each on its own screen so an
+  // older reader sees one thing to do at a time: prepare the list, compare the
+  // shops, then go there.
+  const [step, setStep] = useState<Step>(1);
 
   const { data: meta } = useQuery({
     queryKey: ["meta"],
@@ -37,6 +42,7 @@ export default function ListPage() {
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["shopping"] });
     setPlan(null);
+    setChosen(0);
   };
 
   const update = useMutation({
@@ -54,8 +60,18 @@ export default function ListPage() {
   });
   const organise = useMutation({
     mutationFn: () => api.splitBasket(2),
-    onSuccess: setPlan,
+    onSuccess: (result) => {
+      setPlan(result);
+      setChosen(0);
+    },
   });
+
+  /** Steps 2 and 3 need a comparison: run it on the way in when there is none. */
+  function goTo(next: Step) {
+    setStep(next);
+    if (next > 1 && !plan && !organise.isPending) organise.mutate();
+    window.scrollTo({ top: 0 });
+  }
 
   // Asked by voice ("où faire mes courses ?"): run the comparison and say it.
   // Through mutateAsync's promise: it settles even when the page re-mounts while
@@ -72,6 +88,7 @@ export default function ListPage() {
     organise
       .mutateAsync()
       .then((result) => {
+        setStep(2);
         const best = result.options[0];
         if (!best) {
           finish("Je ne connais aucun prix pour votre liste. Ajoutez des produits, puis redemandez.", "plein", false);
@@ -97,7 +114,7 @@ export default function ListPage() {
   if (!user) {
     return (
       <div>
-        <PageHeader title="Assistant" />
+        <PageHeader title="Mes courses" />
         <SmartAssistant />
         <div className="card flex flex-col items-center gap-3 p-8 text-center">
           <Icon name="list_alt" className="text-[40px] text-outline-variant" />
@@ -119,84 +136,241 @@ export default function ListPage() {
     .reduce((sum, i) => sum + (i.best_price ?? 0) * i.quantity, 0);
   const anyChecked = items.some((i) => i.checked);
 
+  const option = plan?.options[Math.min(chosen, Math.max(plan.options.length - 1, 0))] ?? null;
+
   return (
     <div>
-      <PageHeader title="Assistant" />
+      <PageHeader title="Mes courses" />
 
-      <SmartAssistant />
+      <Stepper step={step} onStep={goTo} canCompare={items.length > 0} />
 
-      {/* Not a bottom-nav tab: the nav has four established destinations, and
-          the list is where planning a week starts. Hidden when the planner has no
-          model or no document store behind it — a link to a page that can only
-          say "indisponible" is worse than no link. */}
-      {meta?.meal_plan_enabled && (
-        <Link
-          href="/menu"
-          className="card mb-4 flex items-center gap-2 p-3 text-label-md text-on-surface"
-        >
-          <Icon name="calendar_month" className="text-[20px] text-primary" />
-          Menu de la semaine
-          <Icon name="chevron_right" className="ml-auto text-[20px] text-outline-variant" />
-        </Link>
-      )}
-
-      {isLoading && <p className="py-10 text-center text-on-surface-variant">Chargement…</p>}
-
-      {!isLoading && items.length === 0 && (
-        <div className="card flex flex-col items-center gap-2 p-10 text-center text-on-surface-variant">
-          <Icon name="shopping_cart" className="text-[36px] text-outline-variant" />
-          <p className="text-body-md">Votre liste est vide.</p>
-          <Link href="/courses" className="btn-primary mt-2">
-            <Icon name="add" className="text-[18px]" /> Ajouter des produits
-          </Link>
-        </div>
-      )}
-
-      {items.length > 0 && (
+      {step === 1 && (
         <>
-          <h2 className="mb-2 text-headline-md text-on-surface">Ma liste</h2>
-          <div className="space-y-2">
-            {items.map((it) => (
-              <ListRow
-                key={it.id}
-                item={it}
-                onToggle={() => update.mutate({ id: it.id, body: { checked: !it.checked } })}
-                onQty={(q) => update.mutate({ id: it.id, body: { quantity: q } })}
-                onRemove={() => remove.mutate(it.id)}
-              />
-            ))}
-          </div>
+          {/* An empty list starts from the assistant; a list in progress shows
+              itself first, the thing people come back for. */}
+          {!isLoading && items.length === 0 && <SmartAssistant />}
 
-          <div className="card mt-4 flex items-center justify-between p-4">
-            <div>
-              <p className="text-micro uppercase tracking-wider text-on-surface-variant">
-                Estimation (meilleur prix)
-              </p>
-              <p className="text-headline-md text-on-surface">{eur(estimate)}</p>
+          {isLoading && <p className="py-10 text-center text-on-surface-variant">Chargement…</p>}
+
+          {!isLoading && items.length === 0 && (
+            <div className="card flex flex-col items-center gap-2 p-8 text-center text-on-surface-variant">
+              <Icon name="shopping_cart" className="text-[36px] text-outline-variant" />
+              <p className="text-body-md">Votre liste est vide.</p>
+              <Link href="/courses" className="btn-primary mt-2">
+                <Icon name="add" className="text-[18px]" /> Ajouter des produits
+              </Link>
             </div>
-            {anyChecked && (
-              <button
-                onClick={() => clearChecked.mutate()}
-                className="btn-outline text-label-md"
-              >
-                <Icon name="delete_sweep" className="text-[18px]" /> Vider les cochés
-              </button>
-            )}
-          </div>
+          )}
 
-          <button
-            onClick={() => organise.mutate()}
-            disabled={organise.isPending}
-            className="btn-primary mt-4 w-full py-3"
-          >
-            <Icon name="savings" className="text-[20px]" />
-            {organise.isPending ? "Calcul…" : "Où faire mes courses ?"}
-          </button>
+          {items.length > 0 && (
+            <>
+              <h2 className="mb-2 text-headline-md text-on-surface">Ma liste</h2>
+              <div className="space-y-2">
+                {items.map((it) => (
+                  <ListRow
+                    key={it.id}
+                    item={it}
+                    onToggle={() => update.mutate({ id: it.id, body: { checked: !it.checked } })}
+                    onQty={(q) => update.mutate({ id: it.id, body: { quantity: q } })}
+                    onRemove={() => remove.mutate(it.id)}
+                  />
+                ))}
+              </div>
 
-          {plan && <StorePlan result={plan} />}
+              <div className="card mt-4 flex flex-wrap items-center justify-between gap-3 p-4">
+                <div>
+                  <p className="text-micro uppercase tracking-wider text-on-surface-variant">
+                    Estimation (meilleur prix)
+                  </p>
+                  <p className="text-headline-md text-on-surface">{eur(estimate)}</p>
+                </div>
+                {anyChecked && (
+                  <button onClick={() => clearChecked.mutate()} className="btn-outline text-label-md">
+                    <Icon name="delete_sweep" className="text-[18px]" /> Vider les cochés
+                  </button>
+                )}
+              </div>
+
+              <NextStep onClick={() => goTo(2)} label="Comparer les magasins" />
+
+              <h2 className="mb-2 mt-8 text-headline-md text-on-surface">Ajouter à la liste</h2>
+              <SmartAssistant />
+            </>
+          )}
+
+          {/* Not a bottom-nav tab: the nav has four established destinations, and
+              the list is where planning a week starts. Hidden when the planner has no
+              model or no document store behind it — a link to a page that can only
+              say "indisponible" is worse than no link. */}
+          {meta?.meal_plan_enabled && (
+            <Link
+              href="/menu"
+              className="card mt-4 flex items-center gap-2 p-3 text-label-md text-on-surface"
+            >
+              <Icon name="calendar_month" className="text-[20px] text-primary" />
+              Menu de la semaine
+              <Icon name="chevron_right" className="ml-auto text-[20px] text-outline-variant" />
+            </Link>
+          )}
         </>
       )}
+
+      {step === 2 && (
+        <section aria-labelledby="t-compare">
+          <h2 id="t-compare" className="text-headline-md text-on-surface">
+            Où acheter votre liste au meilleur prix
+          </h2>
+          {organise.isPending && <Working />}
+          {organise.isError && (
+            <p className="py-6 text-body-md text-error" role="alert">
+              Je n&apos;ai pas pu comparer les magasins.{" "}
+              <button onClick={() => organise.mutate()} className="underline underline-offset-2">
+                Réessayer
+              </button>
+            </p>
+          )}
+          {plan && !organise.isPending && (
+            <>
+              <StorePlan result={plan} chosen={chosen} onChoose={setChosen} />
+              {option && <NextStep onClick={() => goTo(3)} label="J'y vais" />}
+            </>
+          )}
+          <BackStep onClick={() => goTo(1)} label="Modifier ma liste" />
+        </section>
+      )}
+
+      {step === 3 && (
+        <section aria-labelledby="t-go">
+          <h2 id="t-go" className="text-headline-md text-on-surface">
+            {option && option.stores.length > 1 ? "Votre tournée" : "Votre magasin"}
+          </h2>
+          {organise.isPending && <Working />}
+          {option && !organise.isPending && (
+            <ol className="mt-3 space-y-3">
+              {option.baskets.map((basket, i) => (
+                <li key={basket.store} className="card p-4">
+                  <p className="text-micro uppercase tracking-wider text-on-surface-variant">
+                    {option.baskets.length > 1
+                      ? `Arrêt ${i + 1} sur ${option.baskets.length}`
+                      : option.missing.length === 0
+                        ? "Tout ici"
+                        : "Le gros des courses ici"}
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-3">
+                    <span className="text-headline-md text-on-surface">{basket.store}</span>
+                    <span className="text-headline-md text-primary">{eur(basket.subtotal)}</span>
+                  </div>
+                  <p className="text-body-md text-on-surface-variant">
+                    {basket.items.length} article{basket.items.length > 1 ? "s" : ""} à prendre ici
+                  </p>
+                  <Link
+                    href={`/stores/map?store=${encodeURIComponent(basket.store)}`}
+                    className="btn-primary mt-3 w-full py-3"
+                  >
+                    <Icon name="directions" className="text-[20px]" /> Itinéraire vers {basket.store}
+                  </Link>
+                </li>
+              ))}
+            </ol>
+          )}
+          {option && option.missing.length > 0 && (
+            <p className="mt-3 text-body-md text-on-surface-variant">
+              {option.missing.length} article{option.missing.length > 1 ? "s" : ""} à trouver
+              ailleurs : la liste est à l&apos;étape « Comparer ».
+            </p>
+          )}
+          {plan && plan.options.length === 0 && (
+            <p className="py-6 text-body-md text-on-surface-variant">
+              Aucun prix connu pour votre liste : impossible de choisir un magasin.
+            </p>
+          )}
+          <button onClick={() => goTo(1)} className="btn-outline mt-4 w-full py-3">
+            <Icon name="check_circle" className="text-[20px]" /> Au magasin : cocher ma liste
+          </button>
+          <BackStep onClick={() => goTo(2)} label="Revoir la comparaison" />
+        </section>
+      )}
     </div>
+  );
+}
+
+type Step = 1 | 2 | 3;
+
+const STEPS: { n: Step; label: string; icon: string }[] = [
+  { n: 1, label: "Préparer", icon: "list_alt" },
+  { n: 2, label: "Comparer", icon: "savings" },
+  { n: 3, label: "Y aller", icon: "directions" },
+];
+
+/** The three steps, always visible: where you are and what comes next. */
+function Stepper({
+  step,
+  onStep,
+  canCompare,
+}: {
+  step: Step;
+  onStep: (s: Step) => void;
+  canCompare: boolean;
+}) {
+  return (
+    <nav aria-label="Étapes des courses" className="mb-5">
+      <ol className="grid grid-cols-3 gap-2">
+        {STEPS.map((s) => {
+          const current = s.n === step;
+          const done = s.n < step;
+          return (
+            <li key={s.n} className="min-w-0">
+              <button
+                onClick={() => onStep(s.n)}
+                disabled={s.n > 1 && !canCompare}
+                aria-current={current ? "step" : undefined}
+                className={`flex min-h-[64px] w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center transition-colors disabled:opacity-40 ${
+                  current
+                    ? "bg-primary text-on-primary shadow-float"
+                    : done
+                      ? "bg-primary-container text-on-primary-container"
+                      : "bg-surface-container text-on-surface-variant"
+                }`}
+              >
+                <span className="flex items-center gap-1 text-label-md">
+                  <Icon name={done ? "check_circle" : s.icon} fill={done} className="text-[20px]" />
+                  <span className="sr-only">Étape</span> {s.n}
+                </span>
+                <span className="max-w-full break-words text-label-lg">{s.label}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
+function Working() {
+  return (
+    <p className="flex items-center gap-2 py-10 text-on-surface-variant" role="status">
+      <Icon name="progress_activity" className="animate-spin text-primary" /> Je compare les magasins…
+    </p>
+  );
+}
+
+function NextStep({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button onClick={onClick} className="btn-primary mt-4 w-full py-3 text-label-lg">
+      {label}
+      <Icon name="arrow_forward" className="text-[20px]" />
+    </button>
+  );
+}
+
+function BackStep({ onClick, label }: { onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className="mt-3 flex min-h-11 w-full items-center justify-center gap-1 text-label-md text-primary"
+    >
+      <Icon name="arrow_back" className="text-[18px]" /> {label}
+    </button>
   );
 }
 
