@@ -18,8 +18,9 @@ import { useA11y } from "@/lib/useA11y";
 const BOOT_ID = "prixes-boot";
 // Keep in sync with the fade duration in the overlay's inline CSS (layout.tsx).
 const FADE_MS = 280;
-// A loader that flashes for 80ms reads as a glitch — hold it briefly.
-const MIN_VISIBLE_MS = 300;
+// Long enough for the receipt to finish printing (1.2 s in layout.tsx): a
+// receipt cut off halfway reads as a glitch. A slower load simply runs longer.
+const MIN_VISIBLE_MS = 1200;
 // Never trap the user behind the loader because one signal never settles.
 const FAILSAFE_MS = 6000;
 // Web fonts are bundled, so they resolve in a few ms — but document.fonts.ready
