@@ -29,18 +29,23 @@ export function NearbyStoreChoice({
   plan,
   onPick,
   onUnavailable,
+  more,
 }: {
   plan: SplitResult;
   onPick: (pick: NearbyPick) => void;
   /** No position or no shop near enough: the parent shows the plain comparison. */
   onUnavailable: () => void;
+  /** Shown under the list once there is one (the two-chain split, for instance). */
+  more?: React.ReactNode;
 }) {
   const [status, setStatus] = useState<Status>("locating");
   const [picks, setPicks] = useState<NearbyPick[]>([]);
   const [showAll, setShowAll] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let alive = true;
+    setStatus("locating");
     getCurrentPosition()
       .then((pos) => api.storesNearby(pos.lat, pos.lon, 10, 50))
       .then((res) => {
@@ -55,16 +60,16 @@ export function NearbyStoreChoice({
         setStatus(found.length ? "ready" : "none");
         if (!found.length) onUnavailable();
       })
+      // Location is required here: the whole point of this step is the shops
+      // around you, so there is no answer without it — ask again instead.
       .catch(() => {
-        if (!alive) return;
-        setStatus("denied");
-        onUnavailable();
+        if (alive) setStatus("denied");
       });
     return () => {
       alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per comparison
-  }, [plan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per comparison or retry
+  }, [plan, attempt]);
 
   if (status === "locating") {
     return (
@@ -76,20 +81,24 @@ export function NearbyStoreChoice({
   }
   if (status === "denied") {
     return (
-      <p className="mt-3 rounded-xl bg-surface-container p-3 text-body-md text-on-surface-variant" role="status">
-        <Icon name="location_on" className="mr-1 align-[-4px] text-[20px] text-primary" />
-        Autorisez la localisation pour voir les magasins près de chez vous. En attendant, voici la
-        comparaison par enseigne.
-      </p>
+      <div className="card mt-3 flex flex-col items-center gap-3 p-6 text-center" role="alert">
+        <Icon name="location_on" className="text-[40px] text-primary" />
+        <p className="text-headline-md text-on-surface">La localisation est nécessaire</p>
+        <p className="text-body-md text-on-surface-variant">
+          Prixes en a besoin pour trouver les magasins autour de vous et choisir le moins cher. Votre
+          position n&apos;est jamais enregistrée.
+        </p>
+        <p className="text-body-md text-on-surface-variant">
+          Si vous l&apos;avez refusée : Réglages de l&apos;iPhone › Prixes › Position › « Lorsque
+          l&apos;app est active ».
+        </p>
+        <button onClick={() => setAttempt((n) => n + 1)} className="btn-primary w-full py-3">
+          <Icon name="my_location" className="text-[20px]" /> Activer la localisation
+        </button>
+      </div>
     );
   }
-  if (status === "none") {
-    return (
-      <p className="mt-3 rounded-xl bg-surface-container p-3 text-body-md text-on-surface-variant" role="status">
-        Aucun magasin qui vend votre liste à moins de 10 km. Voici la comparaison par enseigne.
-      </p>
-    );
-  }
+  if (status === "none") return null; // the parent shows the comparison by chain
 
   const itemsTotal = plan.options[0]?.items_total ?? Math.max(...picks.map((p) => p.basket.items.length));
   const most = Math.max(...picks.map((p) => p.basket.items.length));
@@ -169,6 +178,7 @@ export function NearbyStoreChoice({
           {others > 1 ? "ent" : ""} moins de produits de la liste
         </button>
       )}
+      {more}
     </div>
   );
 }

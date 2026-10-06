@@ -26,9 +26,9 @@ export default function ListPage() {
   // older reader sees one thing to do at a time: prepare the list, compare the
   // shops, then go there.
   const [step, setStep] = useState<Step>(1);
-  // The shop chosen among those nearby (step 2), and whether there are any:
-  // without a position or a nearby shop, step 2 falls back to the comparison
-  // by chain.
+  // The shop chosen among those nearby (step 2), and whether there are any.
+  // Location is required; with it but no shop within 10 km, step 2 falls back
+  // to the comparison by chain.
   const [picked, setPicked] = useState<NearbyPick | null>(null);
   const [noNearby, setNoNearby] = useState(false);
 
@@ -243,7 +243,7 @@ export default function ListPage() {
             <>
               {/* The shops around you first, closest and cheapest marked: the
                   choice of where to go is the user's. */}
-              {(plan.by_store?.length ?? 0) > 0 && (
+              {(plan.by_store?.length ?? 0) > 0 && !noNearby ? (
                 <NearbyStoreChoice
                   plan={plan}
                   onPick={(p) => {
@@ -251,29 +251,34 @@ export default function ListPage() {
                     goTo(3);
                   }}
                   onUnavailable={() => setNoNearby(true)}
+                  more={
+                    <details className="mt-5">
+                      <summary className="flex min-h-11 cursor-pointer items-center gap-1 text-label-lg text-primary">
+                        <Icon name="savings" className="text-[20px]" /> Répartir entre deux enseignes
+                      </summary>
+                      <StorePlan result={plan} chosen={chosen} onChoose={setChosen} />
+                      {option && (
+                        <NextStep
+                          onClick={() => {
+                            setPicked(null);
+                            goTo(3);
+                          }}
+                          label="J'y vais avec ce plan"
+                        />
+                      )}
+                    </details>
+                  }
                 />
-              )}
-              {noNearby || !(plan.by_store?.length ?? 0) ? (
+              ) : (
                 <>
+                  {noNearby && (
+                    <p className="mt-3 rounded-xl bg-surface-container p-3 text-body-md text-on-surface-variant" role="status">
+                      Aucun magasin qui vend votre liste à moins de 10 km. Voici la comparaison par enseigne.
+                    </p>
+                  )}
                   <StorePlan result={plan} chosen={chosen} onChoose={setChosen} />
                   {option && <NextStep onClick={() => goTo(3)} label="J'y vais" />}
                 </>
-              ) : (
-                <details className="mt-5">
-                  <summary className="flex min-h-11 cursor-pointer items-center gap-1 text-label-lg text-primary">
-                    <Icon name="savings" className="text-[20px]" /> Répartir entre deux enseignes
-                  </summary>
-                  <StorePlan result={plan} chosen={chosen} onChoose={setChosen} />
-                  {option && (
-                    <NextStep
-                      onClick={() => {
-                        setPicked(null);
-                        goTo(3);
-                      }}
-                      label="J'y vais avec ce plan"
-                    />
-                  )}
-                </details>
               )}
             </>
           )}
