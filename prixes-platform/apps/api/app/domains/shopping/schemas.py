@@ -136,6 +136,10 @@ class SplitResult(BaseModel):
     options: list[SplitOption]
     # Lines we have no price for anywhere, including free-text ones.
     unpriced: list[str]
+    # Every store on its own: what it sells of the list and at what total, most
+    # complete first. The app pairs these with the shops near the user, so they
+    # can pick between the closest and the cheapest.
+    by_store: list[StoreBasketDetail] = []
 
 
 class DropOut(BaseModel):

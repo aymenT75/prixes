@@ -391,6 +391,18 @@ def _price_against_priciest(lines: list[PricedLine], option: SplitOption) -> Non
         option.saving_vs_priciest = saving
 
 
+def _by_store(lines: list[PricedLine]) -> list[StoreBasketDetail]:
+    """Each store's own trolley: the lines it sells, at its prices.
+
+    Most complete first, then cheapest — a store that sells half the list is
+    not cheaper than one that sells all of it.
+    """
+    stores = sorted({store for line in lines for store in line.per_store})
+    baskets = [_allocate(lines, (store,)).baskets[0] for store in stores]
+    baskets.sort(key=lambda b: (-len(b.items), b.subtotal, b.store))
+    return baskets
+
+
 async def split_lines(
     db: AsyncSession, lines: list[tuple[str, int, str]], max_stores: int = 2
 ) -> SplitResult:
@@ -446,7 +458,7 @@ async def split_lines(
     for option in options:
         _price_against_priciest(sellable, option)
 
-    return SplitResult(options=options, unpriced=unpriced)
+    return SplitResult(options=options, unpriced=unpriced, by_store=_by_store(sellable))
 
 
 async def split(

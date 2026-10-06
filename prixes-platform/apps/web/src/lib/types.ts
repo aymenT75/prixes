@@ -366,6 +366,8 @@ export interface SplitOption {
 export interface SplitResult {
   options: SplitOption[];
   unpriced: string[];
+  /** Each store on its own, most complete first (paired with the shops nearby). */
+  by_store?: StoreBasketDetail[];
 }
 
 // ── Premium ──

@@ -6,11 +6,12 @@ import { useEffect, useState } from "react";
 
 import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
+import { NearbyStoreChoice, type NearbyPick } from "@/components/NearbyStoreChoice";
 import { PageHeader } from "@/components/PageHeader";
 import { SmartAssistant } from "@/components/SmartAssistant";
 import { StorePlan } from "@/components/StorePlan";
 import { api } from "@/lib/api";
-import { eur, nutriBarStyle, nutriHint } from "@/lib/format";
+import { distance, eur, nutriBarStyle, nutriHint } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
 import type { ShoppingItem, SplitResult } from "@/lib/types";
@@ -25,6 +26,11 @@ export default function ListPage() {
   // older reader sees one thing to do at a time: prepare the list, compare the
   // shops, then go there.
   const [step, setStep] = useState<Step>(1);
+  // The shop chosen among those nearby (step 2), and whether there are any:
+  // without a position or a nearby shop, step 2 falls back to the comparison
+  // by chain.
+  const [picked, setPicked] = useState<NearbyPick | null>(null);
+  const [noNearby, setNoNearby] = useState(false);
 
   const { data: meta } = useQuery({
     queryKey: ["meta"],
@@ -43,6 +49,8 @@ export default function ListPage() {
     qc.invalidateQueries({ queryKey: ["shopping"] });
     setPlan(null);
     setChosen(0);
+    setPicked(null);
+    setNoNearby(false);
   };
 
   const update = useMutation({
@@ -63,6 +71,8 @@ export default function ListPage() {
     onSuccess: (result) => {
       setPlan(result);
       setChosen(0);
+      setPicked(null);
+      setNoNearby(false);
     },
   });
 
@@ -231,8 +241,40 @@ export default function ListPage() {
           )}
           {plan && !organise.isPending && (
             <>
-              <StorePlan result={plan} chosen={chosen} onChoose={setChosen} />
-              {option && <NextStep onClick={() => goTo(3)} label="J'y vais" />}
+              {/* The shops around you first, closest and cheapest marked: the
+                  choice of where to go is the user's. */}
+              {(plan.by_store?.length ?? 0) > 0 && (
+                <NearbyStoreChoice
+                  plan={plan}
+                  onPick={(p) => {
+                    setPicked(p);
+                    goTo(3);
+                  }}
+                  onUnavailable={() => setNoNearby(true)}
+                />
+              )}
+              {noNearby || !(plan.by_store?.length ?? 0) ? (
+                <>
+                  <StorePlan result={plan} chosen={chosen} onChoose={setChosen} />
+                  {option && <NextStep onClick={() => goTo(3)} label="J'y vais" />}
+                </>
+              ) : (
+                <details className="mt-5">
+                  <summary className="flex min-h-11 cursor-pointer items-center gap-1 text-label-lg text-primary">
+                    <Icon name="savings" className="text-[20px]" /> Répartir entre deux enseignes
+                  </summary>
+                  <StorePlan result={plan} chosen={chosen} onChoose={setChosen} />
+                  {option && (
+                    <NextStep
+                      onClick={() => {
+                        setPicked(null);
+                        goTo(3);
+                      }}
+                      label="J'y vais avec ce plan"
+                    />
+                  )}
+                </details>
+              )}
             </>
           )}
           <BackStep onClick={() => goTo(1)} label="Modifier ma liste" />
@@ -242,10 +284,33 @@ export default function ListPage() {
       {step === 3 && (
         <section aria-labelledby="t-go">
           <h2 id="t-go" className="text-headline-md text-on-surface">
-            {option && option.stores.length > 1 ? "Votre tournée" : "Votre magasin"}
+            {!picked && option && option.stores.length > 1 ? "Votre tournée" : "Votre magasin"}
           </h2>
           {organise.isPending && <Working />}
-          {option && !organise.isPending && (
+          {picked && !organise.isPending && (
+            <div className="card mt-3 p-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                <span className="text-headline-md text-on-surface">{picked.basket.store}</span>
+                <span className="text-headline-md text-primary">{eur(picked.basket.subtotal)}</span>
+              </div>
+              <p className="mt-1 flex items-center gap-1 text-body-md text-on-surface-variant">
+                <Icon name="near_me" className="text-[18px] text-primary" />
+                {distance(picked.branch.distance_km)}
+                {picked.branch.address ? ` · ${picked.branch.address}` : ""}
+              </p>
+              <p className="text-body-md text-on-surface-variant">
+                {picked.basket.items.length} article{picked.basket.items.length > 1 ? "s" : ""} à prendre
+                ici
+              </p>
+              <Link
+                href={`/stores/map?store=${encodeURIComponent(picked.basket.store)}`}
+                className="btn-primary mt-3 w-full py-3"
+              >
+                <Icon name="directions" className="text-[20px]" /> Itinéraire vers {picked.basket.store}
+              </Link>
+            </div>
+          )}
+          {!picked && option && !organise.isPending && (
             <ol className="mt-3 space-y-3">
               {option.baskets.map((basket, i) => (
                 <li key={basket.store} className="card p-4">
@@ -273,7 +338,7 @@ export default function ListPage() {
               ))}
             </ol>
           )}
-          {option && option.missing.length > 0 && (
+          {!picked && option && option.missing.length > 0 && (
             <p className="mt-3 text-body-md text-on-surface-variant">
               {option.missing.length} article{option.missing.length > 1 ? "s" : ""} à trouver
               ailleurs : la liste est à l&apos;étape « Comparer ».

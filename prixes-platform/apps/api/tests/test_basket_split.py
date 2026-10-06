@@ -14,6 +14,7 @@ import pytest
 from app.domains.shopping.service import (
     PricedLine,
     _allocate,
+    _by_store,
     _evaluate,
     _merge_by_barcode,
     _rank,
@@ -274,3 +275,18 @@ def test_items_the_plan_does_not_buy_are_left_out_of_the_comparison() -> None:
     assert option.missing == ["wasabi"]
     assert option.priciest_store == "Carrefour"
     assert option.saving_vs_priciest == Decimal("0.25")
+
+
+# ── Each store on its own (for "closest or cheapest") ───────────────────────
+def test_every_store_gets_its_own_basket_most_complete_first() -> None:
+    lines = [
+        line("pâtes", Leclerc=1.20, Lidl=0.95, Monoprix=1.60),
+        line("café", Leclerc=3.50, Monoprix=4.20),
+        line("lait", Leclerc=1.10, Monoprix=1.30),
+    ]
+    baskets = _by_store(lines)
+    assert [b.store for b in baskets] == ["Leclerc", "Monoprix", "Lidl"]
+    assert baskets[0].subtotal == Decimal("5.80")
+    assert baskets[1].subtotal == Decimal("7.10")
+    # Lidl sells one line out of three: listed last whatever its price.
+    assert [i.label for i in baskets[2].items] == ["pâtes"]
