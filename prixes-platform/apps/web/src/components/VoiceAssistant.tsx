@@ -70,6 +70,7 @@ const TASK_SOUND: Record<VoiceTask["kind"], Earcon> = {
   "menu-compose": "plate",
   "menu-swap": "plate",
   scan: "scan",
+  guide: "success",
 };
 
 /** "ajoute-le", "ajoute ça à ma liste": the product just talked about. */
@@ -545,8 +546,9 @@ export function VoiceAssistant() {
           earcon(TASK_SOUND[task.kind]);
           speak(intent.say);
           router.push(intent.path);
-          if (task.kind === "scan") {
-            // The camera needs the whole screen.
+          if (task.kind === "scan" || task.kind === "guide") {
+            // The in-store guide takes the whole screen and listens on its own:
+            // two microphones at once would answer each other.
             setOpen(false);
             setPhase("idle");
             return;

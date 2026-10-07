@@ -80,3 +80,7 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        # Without this the build stays in the internal group only, and the
+        # testers' iPhones never see it (builds 9 to 12, 07/10).
+        beta_groups:
+          - Testeurs Prixes

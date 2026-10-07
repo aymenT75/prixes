@@ -30,6 +30,7 @@ import type {
   SplitResult,
   ImportedRecipe,
   BillingStatus,
+  BudgetSummary,
   MealEquipment,
   MealGoal,
   MealPlan,
@@ -337,6 +338,12 @@ export const api = {
   clearChecked: () => request<{ removed: number }>("/shopping/clear-checked", { method: "POST" }),
 
   // ── Liste partagée ──
+  // ── Budget du mois ──
+  getBudget: () => request<BudgetSummary>("/shopping/budget"),
+  setBudget: (monthly: number | null) =>
+    request<BudgetSummary>("/shopping/budget", { method: "PUT", body: JSON.stringify({ monthly }) }),
+  addTrip: (trip: { store: string; total: number; saving: number | null; items: number }) =>
+    request<BudgetSummary>("/shopping/budget/trips", { method: "POST", body: JSON.stringify(trip) }),
   getShare: () => request<ShareState>("/shopping/share"),
   createShareCode: () => request<ShareState>("/shopping/share/code", { method: "POST" }),
   previewShare: (code: string) =>

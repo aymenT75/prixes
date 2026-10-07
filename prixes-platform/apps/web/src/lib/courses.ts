@@ -39,25 +39,23 @@ export const useStoreAdvice = create<StoreAdvice>(() => ({
 }));
 
 // ── Remembered settings (this phone only) ──
-const BUDGET_KEY = "prixes.courses.budget";
+const STORE_KEY = "prixes.courses.store";
 const PRIORITY_KEY = "prixes.courses.priority";
 
-/** The shopping budget in euros, or null when none was given. */
-export function readBudget(): number | null {
+/** The shop chosen last time, so "guide-moi" knows where you are. */
+export function rememberedStore(): string | null {
   try {
-    const v = Number(localStorage.getItem(BUDGET_KEY));
-    return Number.isFinite(v) && v > 0 ? v : null;
+    return localStorage.getItem(STORE_KEY);
   } catch {
     return null;
   }
 }
 
-export function saveBudget(value: number | null): void {
+export function rememberStore(store: string): void {
   try {
-    if (value && value > 0) localStorage.setItem(BUDGET_KEY, String(Math.round(value)));
-    else localStorage.removeItem(BUDGET_KEY);
+    localStorage.setItem(STORE_KEY, store);
   } catch {
-    /* storage blocked: the budget lasts until the page closes */
+    /* storage blocked */
   }
 }
 
@@ -111,7 +109,9 @@ export function rankStores<T extends Candidate>(shops: T[], priority: number, bu
   const score = (s: T) =>
     (1 - w) * scale(s.total, prices) +
     w * scale(s.km, kms) +
-    (most > 0 ? (most - s.items) / most : 0) +
+    // Coverage weighs most: a shop selling 9 of 15 items looks cheaper only
+    // because it is emptier (seen with "guide-moi" picking a corner shop).
+    (most > 0 ? (3 * (most - s.items)) / most : 0) +
     (budget != null && s.total > budget ? 10 : 0);
   return [...shops].sort((a, b) => score(a) - score(b) || a.total - b.total);
 }

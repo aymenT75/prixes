@@ -20,7 +20,9 @@ export type VoiceTask =
   | { kind: "cart"; prompt: string }
   | { kind: "menu-compose" }
   | { kind: "menu-swap"; day: number }
-  | { kind: "scan" };
+  | { kind: "scan" }
+  /** "Guide-moi": the in-store guide, hands free. */
+  | { kind: "guide" };
 
 /** The mascot's poses (public/mascotte/caddie-<pose>.webp). */
 export type Pose = "ecoute" | "roule" | "plein" | "pompe" | "loupe" | "assiette";

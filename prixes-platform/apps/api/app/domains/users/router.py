@@ -6,9 +6,11 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import select
 
 from app.core.deps import CurrentUser, DbSession
 from app.domains.shopping import share as shopping_share
+from app.domains.shopping.models import ShoppingTrip
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -60,8 +62,25 @@ async def update_me(body: UserUpdate, user: CurrentUser, db: DbSession) -> UserM
 @router.get("/me/export", response_model=dict)
 async def export_my_data(user: CurrentUser, db: DbSession) -> dict[str, Any]:
     """GDPR Art. 20 — return all personal data we hold for this user as JSON."""
+    trips = (
+        await db.execute(
+            select(ShoppingTrip)
+            .where(ShoppingTrip.user_id == user.id)
+            .order_by(ShoppingTrip.created_at)
+        )
+    ).scalars()
     return {
         "profile": UserMe.model_validate(user).model_dump(mode="json"),
+        "shopping_trips": [
+            {
+                "date": t.created_at.isoformat(),
+                "store": t.store,
+                "total": str(t.total),
+                "saving": str(t.saving) if t.saving is not None else None,
+                "items": t.items,
+            }
+            for t in trips
+        ],
     }
 
 

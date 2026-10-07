@@ -91,3 +91,31 @@ class ListInvite(Base, TimestampMixin):
 
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
     code: Mapped[str] = mapped_column(String(8), unique=True, index=True)
+
+
+class ShoppingTrip(Base, TimestampMixin):
+    """A finished shop: where, what it cost, what it saved.
+
+    Kept per list (the owner's id), so a family sharing a list shares its budget.
+    """
+
+    __tablename__ = "shopping_trips"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    # Who did this shop (the owner, or a family member on the shared list).
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    store: Mapped[str] = mapped_column(String(120))
+    total: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    # Against the dearest shop nearby for the same products; null when unknown.
+    saving: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    items: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class ShoppingBudget(Base, TimestampMixin):
+    """The monthly shopping budget of a list (shared by the family on it)."""
+
+    __tablename__ = "shopping_budgets"
+
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    monthly: Mapped[Decimal] = mapped_column(Numeric(10, 2))

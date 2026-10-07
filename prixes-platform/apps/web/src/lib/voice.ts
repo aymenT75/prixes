@@ -484,6 +484,11 @@ export function parseIntent(raw: string): Intent {
     return { type: "help", say: HELP_TEXT };
   }
 
+  // In the shop: the guide reads the list aisle by aisle, hands free.
+  if (/\b(guide[- ]?moi|guidez[- ]moi|guide moi|je suis (au|en|dans le) magasin|lance le guid|commence les courses)\b/.test(t)) {
+    return { type: "task", task: { kind: "guide" }, path: "/list", say: "Je vous guide dans le magasin." };
+  }
+
   // A yes / no to the assistant's last question — and "ajoute-le", which means
   // "the product you just told me about". Before list-add, which would read
   // "ajoute-le" as a product called "le".

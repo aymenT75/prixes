@@ -43,14 +43,18 @@ const SHOWN = 4;
 export function NearbyStoreChoice({
   plan,
   budget,
+  monthly,
   onBudget,
   onPick,
   onUnavailable,
   more,
 }: {
   plan: SplitResult;
+  /** What is left of the month's budget (null without one). */
   budget: number | null;
-  onBudget: (value: number | null) => void;
+  monthly: number | null;
+  /** Sets the month's budget. */
+  onBudget: (monthly: number | null) => void;
   onPick: (pick: NearbyPick) => void;
   /** No position or no shop near enough: the parent shows the plain comparison. */
   onUnavailable: () => void;
@@ -183,14 +187,17 @@ export function NearbyStoreChoice({
   }
   if (status === "none" || !best) return null; // the parent shows the comparison by chain
 
-  const itemsTotal = plan.options[0]?.items_total ?? Math.max(...rows.map((r) => r.items));
+  const itemsTotal = Math.max(
+    (plan.options[0]?.items_total ?? 0) + plan.unpriced.length,
+    ...rows.map((r) => r.items),
+  );
   const shown = showAll ? ranked : ranked.slice(0, SHOWN);
 
   return (
     <div className="mt-3 space-y-4">
       {here && <Radar here={here} rows={ranked} best={best} />}
 
-      <BudgetChip budget={budget} onBudget={onBudget} />
+      <BudgetChip left={budget} monthly={monthly} onBudget={onBudget} />
 
       <div>
         <label htmlFor="prio" className="flex justify-between text-label-md text-on-surface">
@@ -282,7 +289,15 @@ export function NearbyStoreChoice({
 }
 
 /** The budget, said once and kept: "Budget 80 €", tap to change it. */
-function BudgetChip({ budget, onBudget }: { budget: number | null; onBudget: (v: number | null) => void }) {
+function BudgetChip({
+  left,
+  monthly,
+  onBudget,
+}: {
+  left: number | null;
+  monthly: number | null;
+  onBudget: (v: number | null) => void;
+}) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState("");
   if (editing) {
@@ -297,7 +312,7 @@ function BudgetChip({ budget, onBudget }: { budget: number | null; onBudget: (v:
         }}
       >
         <label htmlFor="budget" className="text-label-md text-on-surface">
-          Budget
+          Budget du mois
         </label>
         <input
           id="budget"
@@ -305,7 +320,7 @@ function BudgetChip({ budget, onBudget }: { budget: number | null; onBudget: (v:
           autoFocus
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="80"
+          placeholder="300"
           className="input min-h-11 w-24"
         />
         <span className="text-label-md text-on-surface-variant">€</span>
@@ -318,13 +333,13 @@ function BudgetChip({ budget, onBudget }: { budget: number | null; onBudget: (v:
   return (
     <button
       onClick={() => {
-        setDraft(budget ? String(budget) : "");
+        setDraft(monthly ? String(monthly) : "");
         setEditing(true);
       }}
       className="inline-flex min-h-11 items-center gap-2 rounded-full bg-surface-container px-4 text-label-md text-on-surface"
     >
       <Icon name="account_balance_wallet" className="text-[20px]" />
-      {budget ? `Budget ${eur(budget)}` : "Fixer un budget"}
+      {left != null ? `Reste du mois : ${eur(left)}` : "Fixer un budget du mois"}
       <Icon name="edit" className="text-[16px] text-on-surface-variant" />
     </button>
   );

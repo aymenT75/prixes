@@ -18,7 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.devices import service as device_service
 from app.domains.notifications import push
-from app.domains.shopping.models import ListInvite, ListMember
+from app.domains.shopping.models import ListInvite, ListMember, ShoppingBudget, ShoppingTrip
 from app.domains.users.models import User
 
 log = logging.getLogger(__name__)
@@ -174,8 +174,11 @@ async def remove_member(db: AsyncSession, owner_id: uuid.UUID, member_id: uuid.U
 
 
 async def forget_user(db: AsyncSession, user_id: uuid.UUID) -> None:
-    """An erased account leaves every list it was part of."""
+    """An erased account leaves every list it was part of, and its own shops and
+    budget are erased (what someone spends is personal)."""
     await leave(db, user_id)
+    await db.execute(delete(ShoppingTrip).where(ShoppingTrip.owner_id == user_id))
+    await db.execute(delete(ShoppingBudget).where(ShoppingBudget.owner_id == user_id))
 
 
 def added_text(actor: str, labels: list[str]) -> tuple[str, str]:

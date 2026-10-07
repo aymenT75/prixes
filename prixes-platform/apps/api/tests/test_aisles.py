@@ -20,3 +20,8 @@ def test_category_when_the_name_says_nothing():
 def test_unknown_goes_last():
     assert aisle_for("5", None, "Zzz") == OTHER
     assert ORDER[OTHER] == max(ORDER.values())
+
+
+def test_a_tinned_or_jarred_product_is_not_with_the_fresh_ones():
+    assert aisle_for("6", None, "Coulis de tomates") == "Épicerie salée"
+    assert aisle_for("7", None, "Tomates pelées") == "Épicerie salée"

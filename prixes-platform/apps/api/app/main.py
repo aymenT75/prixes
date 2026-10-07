@@ -24,6 +24,7 @@ from app.domains.fuel.router import router as fuel_router
 from app.domains.mealplan.router import router as mealplan_router
 from app.domains.products.router import router as products_router
 from app.domains.recipes.router import router as recipes_router
+from app.domains.shopping.router import budget_router as shopping_budget_router
 from app.domains.shopping.router import router as shopping_router
 from app.domains.shopping.router import share_router as shopping_share_router
 from app.domains.smartcart.router import router as smartcart_router
@@ -104,6 +105,7 @@ app.include_router(products_router, prefix=API_V1)
 app.include_router(stores_router, prefix=API_V1)
 app.include_router(tts_router, prefix=API_V1)
 app.include_router(shopping_share_router, prefix=API_V1)
+app.include_router(shopping_budget_router, prefix=API_V1)
 app.include_router(shopping_router, prefix=API_V1)
 app.include_router(smartcart_router, prefix=API_V1)
 app.include_router(mealplan_router, prefix=API_V1)

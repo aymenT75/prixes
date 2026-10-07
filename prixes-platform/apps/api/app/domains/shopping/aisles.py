@@ -54,9 +54,16 @@ def _plain(text: str | None) -> str:
     return "".join(c for c in decomposed if not unicodedata.combining(c))
 
 
+# Made from a fresh product but sold in a jar or a tin: "coulis de tomates"
+# is in the dry groceries, not with the tomatoes.
+_PROCESSED = ("coulis", "sauce", "concentre", "pelee", "puree", "conserve", "soupe", "confit")
+
+
 def _match(text: str) -> str | None:
     if not text:
         return None
+    if any(w in text for w in _PROCESSED):
+        return "Épicerie salée"
     for aisle, words in AISLES:
         if any(w in text for w in words):
             return aisle

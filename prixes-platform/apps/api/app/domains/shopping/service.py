@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from itertools import combinations
 
@@ -23,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domains.products import service as product_service
 from app.domains.products.models import PricePoint, Product
 from app.domains.shopping.aisles import OTHER, aisle_for
+from app.domains.shopping.equivalents import Equivalent, find_equivalents
 from app.domains.shopping.models import ShoppingItem
 from app.domains.shopping.schemas import (
     BasketItem,
@@ -187,6 +188,11 @@ class PricedLine:
     label: str
     per_store: dict[str, Decimal]
     aisle: str = OTHER
+    # The catalogue name, which says what the product is (the label may be the
+    # words someone typed or said).
+    name: str | None = None
+    # Shops with no price for this barcode, and the equivalent they do sell.
+    alternatives: dict[str, Equivalent] = field(default_factory=dict)
 
 
 def _merge_by_barcode(lines: list[tuple[str, int, str]]) -> list[tuple[str, int, str]]:
@@ -239,6 +245,7 @@ async def price_lines(
                     product.categories if product else None,
                     (product.name if product else None) or display,
                 ),
+                name=(product.name if product else None) or display,
             )
         )
     return priced
@@ -415,15 +422,61 @@ def _price_against_priciest(lines: list[PricedLine], option: SplitOption) -> Non
 
 
 def _by_store(lines: list[PricedLine]) -> list[StoreBasketDetail]:
-    """Each store's own trolley: the lines it sells, at its prices.
+    """Each store's own trolley: the lines it sells, at its prices — and, for a
+    line it has no price for, an equivalent it does sell (marked as such).
 
-    Most complete first, then cheapest — a store that sells half the list is
-    not cheaper than one that sells all of it.
+    Most complete first, then the one with more exact products, then cheapest —
+    a store that sells half the list is not cheaper than one that sells all of it.
     """
-    stores = sorted({store for line in lines for store in line.per_store})
-    baskets = [_allocate(lines, (store,)).baskets[0] for store in stores]
-    baskets.sort(key=lambda b: (-len(b.items), b.subtotal, b.store))
+    stores = sorted(
+        {store for line in lines for store in (*line.per_store, *line.alternatives)}
+    )
+    baskets: list[StoreBasketDetail] = []
+    exact: dict[str, int] = {}
+    for store in stores:
+        items: list[BasketItem] = []
+        for line in lines:
+            if store in line.per_store:
+                price, barcode, label, of = line.per_store[store], line.barcode, line.label, None
+            elif store in line.alternatives:
+                alt = line.alternatives[store]
+                price, barcode, label, of = alt.price, alt.barcode, alt.label, line.label
+            else:
+                continue
+            items.append(
+                BasketItem(
+                    barcode=barcode,
+                    label=label,
+                    quantity=line.quantity,
+                    unit_price=price,
+                    line_total=(price * line.quantity).quantize(Decimal("0.01")),
+                    aisle=line.aisle,
+                    equivalent_of=of,
+                )
+            )
+        if not items:
+            continue
+        exact[store] = sum(1 for i in items if i.equivalent_of is None)
+        baskets.append(
+            StoreBasketDetail(
+                store=store,
+                items=items,
+                subtotal=sum((i.line_total for i in items), Decimal(0)).quantize(Decimal("0.01")),
+            )
+        )
+    baskets.sort(key=lambda b: (-len(b.items), -exact[b.store], b.subtotal, b.store))
     return baskets
+
+
+async def _add_equivalents(db: AsyncSession, lines: list[PricedLine]) -> None:
+    """Fill each line's `alternatives` for the shops that have no price for it."""
+    stores = {store for line in lines for store in line.per_store}
+    for line in lines:
+        missing = stores - set(line.per_store)
+        if missing:
+            line.alternatives = await find_equivalents(
+                db, line.barcode, line.name, list(line.per_store.values()), missing
+            )
 
 
 async def split_lines(
@@ -481,7 +534,11 @@ async def split_lines(
     for option in options:
         _price_against_priciest(sellable, option)
 
-    return SplitResult(options=options, unpriced=unpriced, by_store=_by_store(sellable))
+    # Shop by shop, the gaps are filled with equivalents (the options above stay
+    # on exact products: they compare like with like).
+    await _add_equivalents(db, priced)
+    by_store = _by_store([line for line in priced if line.per_store or line.alternatives])
+    return SplitResult(options=options, unpriced=unpriced, by_store=by_store)
 
 
 async def split(

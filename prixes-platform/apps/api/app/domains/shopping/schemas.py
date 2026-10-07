@@ -105,6 +105,9 @@ class BasketItem(BaseModel):
     line_total: Decimal
     # Where to find it in the shop ("Frais", "Épicerie salée"…), for the in-store guide.
     aisle: str = "Autres rayons"
+    # Set when the shop has no price for the listed product: this is the
+    # equivalent it sells instead, and this field names what it replaces.
+    equivalent_of: str | None = None
 
 
 class StoreBasketDetail(BaseModel):
@@ -183,3 +186,29 @@ class ShareOut(BaseModel):
 
 class JoinIn(BaseModel):
     code: str = Field(min_length=4, max_length=12)
+
+
+# ── Budget du mois ──
+class TripIn(BaseModel):
+    """A finished shop, as the in-store guide reports it."""
+
+    store: str = Field(min_length=1, max_length=120)
+    total: Decimal = Field(ge=0, le=10000)
+    saving: Decimal | None = Field(default=None, ge=0, le=10000)
+    items: int = Field(default=0, ge=0, le=500)
+
+
+class BudgetIn(BaseModel):
+    # None removes the budget.
+    monthly: Decimal | None = Field(default=None, gt=0, le=100000)
+
+
+class BudgetOut(BaseModel):
+    monthly: Decimal | None
+    spent: Decimal
+    saved: Decimal
+    trips: int
+    # What is left this month, negative once over; None without a budget.
+    left: Decimal | None
+    # Spent 80 % or more of the budget.
+    warning: bool

@@ -359,6 +359,21 @@ export interface BasketItem {
   line_total: number;
   /** Where to find it in the shop ("Frais", "Épicerie salée"…). */
   aisle?: string;
+  /** Set when the shop has no price for the listed product: this one replaces it. */
+  equivalent_of?: string | null;
+}
+
+// ── Budget du mois ──
+export interface BudgetSummary {
+  /** Decimals arrive as strings from the API. */
+  monthly: number | string | null;
+  spent: number | string;
+  saved: number | string;
+  trips: number;
+  /** Left this month, negative once over; null without a budget. */
+  left: number | string | null;
+  /** 80 % of the budget or more is spent. */
+  warning: boolean;
 }
 
 export interface StoreBasketDetail {

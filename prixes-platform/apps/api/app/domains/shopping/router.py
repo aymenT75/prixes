@@ -11,9 +11,11 @@ from app.core.deps import CurrentUser, DbSession
 from app.core.redis import redis_client
 from app.domains.mealplan.auto import ready_key
 from app.domains.products.models import PricePoint, Product
-from app.domains.shopping import service, share
+from app.domains.shopping import budget, service, share
 from app.domains.shopping.models import ShoppingItem
 from app.domains.shopping.schemas import (
+    BudgetIn,
+    BudgetOut,
     BulkAddIn,
     BulkAddOut,
     DropOut,
@@ -25,6 +27,7 @@ from app.domains.shopping.schemas import (
     ShoppingItemUpdate,
     ShoppingListOut,
     SplitResult,
+    TripIn,
 )
 from app.domains.shopping.watch import recent_drops
 
@@ -32,6 +35,8 @@ router = APIRouter(prefix="/shopping", tags=["shopping"])
 # Its own router, included before `router`: "/shopping/share" must not be taken
 # for "/shopping/{item_id}".
 share_router = APIRouter(prefix="/shopping/share", tags=["shopping"])
+# The month's spending against the budget, per list (a family shares it).
+budget_router = APIRouter(prefix="/shopping/budget", tags=["shopping"])
 
 
 async def _enrich(
@@ -181,3 +186,25 @@ async def share_leave(db: DbSession, user: CurrentUser) -> ShareOut:
 async def share_remove(member_id: uuid.UUID, db: DbSession, user: CurrentUser) -> ShareOut:
     await share.remove_member(db, user.id, member_id)
     return ShareOut.model_validate(await share.share_state(db, user.id))
+
+
+# ── Budget du mois ──────────────────────────────────────────────────────────
+@budget_router.get("", response_model=BudgetOut)
+async def get_budget(db: DbSession, user: CurrentUser) -> BudgetOut:
+    """This month: spent, saved, number of shops, and the budget if one is set."""
+    return await budget.summary(db, await share.list_owner(db, user.id))
+
+
+@budget_router.put("", response_model=BudgetOut)
+async def put_budget(body: BudgetIn, db: DbSession, user: CurrentUser) -> BudgetOut:
+    owner = await share.list_owner(db, user.id)
+    await budget.set_monthly(db, owner, body.monthly)
+    return await budget.summary(db, owner)
+
+
+@budget_router.post("/trips", response_model=BudgetOut, status_code=201)
+async def add_trip(body: TripIn, db: DbSession, user: CurrentUser) -> BudgetOut:
+    """Record a finished shop (end of the in-store guide)."""
+    owner = await share.list_owner(db, user.id)
+    await budget.record_trip(db, owner, user.id, body)
+    return await budget.summary(db, owner)

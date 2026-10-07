@@ -155,4 +155,10 @@ describe("parseIntent", () => {
       expect(parseIntent(t)).toMatchObject({ type: "news" });
     }
   });
+
+  it("« guide-moi » opens the in-store guide, even said as « je suis au magasin »", () => {
+    expect(parseIntent("guide-moi")).toMatchObject({ type: "task", path: "/list", task: { kind: "guide" } });
+    expect(parseIntent("je suis au magasin")).toMatchObject({ task: { kind: "guide" } });
+    expect(parseIntent("magasins proches")).toMatchObject({ task: { kind: "stores" } });
+  });
 });

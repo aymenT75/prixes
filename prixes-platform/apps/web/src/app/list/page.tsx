@@ -13,11 +13,12 @@ import { JoinInvite, SHARE_KEY, ShareListSheet } from "@/components/ShareListShe
 import { SmartAssistant } from "@/components/SmartAssistant";
 import { StorePlan } from "@/components/StorePlan";
 import { api } from "@/lib/api";
-import { byAisle, readBudget, saveBudget, useCoursesRequest, useStoreAdvice } from "@/lib/courses";
+import { byAisle, rememberStore, rememberedStore, useCoursesRequest, useStoreAdvice } from "@/lib/courses";
 import { distance, eur, nutriBarStyle, nutriHint, perKiloLabel } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
-import type { ShoppingItem, SplitResult, StoreBasketDetail } from "@/lib/types";
+import type { BudgetSummary, ShoppingItem, SplitResult, StoreBasketDetail } from "@/lib/types";
+import { speak } from "@/lib/voice";
 import { spokenPrice, useVoiceTask } from "@/lib/voiceTasks";
 
 export default function ListPage() {
@@ -36,14 +37,6 @@ export default function ListPage() {
   const [noNearby, setNoNearby] = useState(false);
   // The shop being walked with the in-store guide, if any.
   const [guide, setGuide] = useState<StoreBasketDetail | null>(null);
-  // The shopping budget: said once, kept on this phone; the weekly menu's
-  // budget stands in until then.
-  const [budget, setBudgetState] = useState<number | null>(null);
-  useEffect(() => setBudgetState(readBudget()), []);
-  const setBudget = (v: number | null) => {
-    setBudgetState(v);
-    saveBudget(v);
-  };
   // A newcomer did not understand what this tab was for: the first visit opens
   // on three lines that say it, once. Read after mount (static export: reading
   // storage during render breaks hydration).
@@ -103,14 +96,21 @@ export default function ListPage() {
     window.history.replaceState(null, "", window.location.pathname);
   };
 
-  const { data: mealPrefs } = useQuery({
-    queryKey: ["meal-preferences"],
-    queryFn: () => api.getMealPreferences(),
-    enabled: !!user && budget == null,
-    staleTime: 5 * 60_000,
+  // The month's budget, kept on the server for the whole list (a family shares
+  // it). A shop is weighed against what is left of it this month.
+  const { data: month } = useQuery({
+    queryKey: ["budget"],
+    queryFn: () => api.getBudget(),
+    enabled: !!user,
+    staleTime: 60_000,
     retry: false,
   });
-  const effectiveBudget = budget ?? mealPrefs?.budget_eur ?? null;
+  const saveMonthly = useMutation({
+    mutationFn: (monthly: number | null) => api.setBudget(monthly),
+    onSuccess: (m) => qc.setQueryData(["budget"], m),
+  });
+  const effectiveBudget = month?.left != null ? Number(month.left) : null;
+  const monthly = month?.monthly != null ? Number(month.monthly) : null;
 
   const { data, isLoading } = useQuery({
     queryKey: ["shopping"],
@@ -219,6 +219,50 @@ export default function ListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
   }, []);
 
+  // "Guide-moi" (by voice): the in-store guide at the shop chosen last time,
+  // or the one advised now. The assistant has already closed itself.
+  useEffect(() => {
+    if (!useVoiceTask.getState().take("guide")) return;
+    if (!user) {
+      speak("Connectez-vous pour que je vous guide dans le magasin.");
+      openLogin(true);
+      return;
+    }
+    void (async () => {
+      const result = plan ?? (await organise.mutateAsync().catch(() => null));
+      const baskets = result?.by_store ?? [];
+      if (!baskets.length) {
+        speak("Je ne connais aucun prix pour votre liste. Ajoutez des produits, puis redemandez.");
+        return;
+      }
+      const wanted = picked?.basket.store ?? rememberedStore();
+      let basket = baskets.find((b) => b.store === wanted) ?? null;
+      if (!basket) {
+        // No shop chosen yet: the one the shop choice advises.
+        useCoursesRequest.setState({ compare: true });
+        const advice = await new Promise<string | null>((resolve) => {
+          const done = (st: ReturnType<typeof useStoreAdvice.getState>) => st.store ?? (st.none ? "" : null);
+          const first = done(useStoreAdvice.getState());
+          if (first !== null) return resolve(first || null);
+          const stop = useStoreAdvice.subscribe((st) => {
+            const v = done(st);
+            if (v === null) return;
+            stop();
+            resolve(v || null);
+          });
+          window.setTimeout(() => {
+            stop();
+            resolve(null);
+          }, 20_000);
+        });
+        basket = baskets.find((b) => b.store === advice) ?? baskets[0];
+        rememberStore(basket.store);
+      }
+      speak(`Je vous guide chez ${basket.store}.`, () => setGuide(basket));
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on arrival
+  }, []);
+
   // Signed out, the assistant still runs — trying it is how people understand
   // what the app does. Only keeping the result needs an account, so the sign-in
   // prompt sits under it rather than in front of it.
@@ -265,6 +309,7 @@ export default function ListPage() {
         <InStoreGuide
           basket={guide}
           list={items}
+          missing={missingAt(guide, items)}
           saving={savingAt(plan, guide)}
           onTake={(id) => update.mutate({ id, body: { checked: true } })}
           onClose={() => setGuide(null)}
@@ -275,6 +320,7 @@ export default function ListPage() {
 
       {step === 1 && (
         <>
+          {month && <MonthBudget month={month} onSet={(v) => saveMonthly.mutate(v)} />}
           {!isLoading && items.length === 0 && (
             <p className="-mt-3 mb-4 text-center text-body-md text-on-surface-variant">
               Ajoutez d&apos;abord des produits pour comparer les magasins.
@@ -418,9 +464,11 @@ export default function ListPage() {
                 <NearbyStoreChoice
                   plan={plan}
                   budget={effectiveBudget}
-                  onBudget={setBudget}
+                  monthly={monthly}
+                  onBudget={(v) => saveMonthly.mutate(v)}
                   onPick={(p) => {
                     setPicked(p);
+                    rememberStore(p.basket.store);
                     goTo(3);
                   }}
                   onUnavailable={() => setNoNearby(true)}
@@ -468,7 +516,7 @@ export default function ListPage() {
           {picked && (
             <ChosenStore
               pick={picked}
-              itemsTotal={plan?.options[0]?.items_total ?? picked.basket.items.length}
+              itemsTotal={listTotal(plan) || picked.basket.items.length}
               budget={effectiveBudget}
               onGuide={() => setGuide(picked.basket)}
             />
@@ -540,6 +588,117 @@ function savingAt(plan: SplitResult | null, basket: StoreBasketDetail): { amount
   return amount > 0 ? { amount, versus: dearest.store } : null;
 }
 
+/** How many lines the comparison covers: priced ones plus those with no price anywhere. */
+function listTotal(plan: SplitResult | null): number {
+  return (plan?.options[0]?.items_total ?? 0) + (plan?.unpriced.length ?? 0);
+}
+
+/** Lines of the list this shop sells neither as such nor as an equivalent. */
+function missingAt(basket: StoreBasketDetail, items: ShoppingItem[]): string[] {
+  const here = new Set(basket.items.map((i) => i.barcode));
+  const replaced = new Set(basket.items.map((i) => i.equivalent_of).filter(Boolean));
+  return items
+    .filter((i) => !i.checked && !(i.barcode && here.has(i.barcode)))
+    .map((i) => i.name ?? i.free_text ?? "")
+    .filter((name) => name && !replaced.has(name));
+}
+
+/** The month at a glance: spent, saved, against the budget, with a warning near the limit. */
+function MonthBudget({ month, onSet }: { month: BudgetSummary; onSet: (v: number | null) => void }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const spent = Number(month.spent);
+  const saved = Number(month.saved);
+  const monthly = month.monthly != null ? Number(month.monthly) : null;
+  const left = month.left != null ? Number(month.left) : null;
+  const over = left != null && left < 0;
+  return (
+    <section
+      aria-labelledby="t-month"
+      className={`prixes-rise mb-5 rounded-2xl border-2 p-4 ${
+        over ? "border-error bg-error-container/40" : month.warning ? "border-primary-container bg-primary-container/25" : "border-outline-variant bg-surface-container-lowest"
+      }`}
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <h2 id="t-month" className="text-label-lg text-on-surface">
+          Budget du mois
+        </h2>
+        <button
+          onClick={() => {
+            setDraft(monthly ? String(monthly) : "");
+            setEditing((e) => !e);
+          }}
+          className="min-h-11 text-label-md text-primary underline underline-offset-2"
+        >
+          {monthly ? "Modifier" : "Fixer un budget"}
+        </button>
+      </div>
+      {editing && (
+        <form
+          className="mt-2 flex items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const v = Number(draft.replace(",", "."));
+            onSet(Number.isFinite(v) && v > 0 ? v : null);
+            setEditing(false);
+          }}
+        >
+          <label htmlFor="monthly" className="text-label-md text-on-surface">
+            Par mois
+          </label>
+          <input
+            id="monthly"
+            inputMode="decimal"
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="300"
+            className="input min-h-11 w-28"
+          />
+          <span className="text-label-md text-on-surface-variant">€</span>
+          <button type="submit" className="btn-primary min-h-11 px-4">
+            OK
+          </button>
+        </form>
+      )}
+      <p className="mt-1 text-body-md text-on-surface">
+        <b className="text-headline-md tabular-nums">{eur(spent)}</b>
+        {monthly != null && <span className="text-on-surface-variant"> sur {eur(monthly)}</span>}
+        <span className="text-on-surface-variant">
+          {" "}
+          · {month.trips} course{month.trips > 1 ? "s" : ""}
+        </span>
+      </p>
+      {monthly != null && (
+        <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface-container" aria-hidden>
+          <i
+            className={`block h-full rounded-full transition-[width] duration-700 ${over ? "bg-error" : "bg-primary-container"}`}
+            style={{ width: `${Math.min(100, (spent / monthly) * 100)}%` }}
+          />
+        </div>
+      )}
+      {saved > 0 && (
+        <p className="mt-2 text-body-md text-tertiary">
+          <Icon name="savings" className="mr-1 align-[-4px] text-[18px]" />
+          {eur(saved)} économisés ce mois-ci
+        </p>
+      )}
+      {over ? (
+        <p className="mt-2 text-body-md font-bold text-error" role="alert">
+          Budget dépassé de {eur(-left!)}.
+        </p>
+      ) : (
+        month.warning &&
+        left != null && (
+          <p className="mt-2 text-body-md font-bold text-on-surface" role="alert">
+            Attention : il ne reste que {eur(left)} pour le mois.
+          </p>
+        )
+      )}
+    </section>
+  );
+}
+
 /** Step 3 with a shop chosen: the list at its prices, aisle by aisle, and the budget. */
 function ChosenStore({
   pick,
@@ -567,11 +726,16 @@ function ChosenStore({
           {distance(pick.branch.distance_km)}
           {pick.branch.address ? ` · ${pick.branch.address}` : ""}
         </p>
+        {pick.basket.items.some((i) => i.equivalent_of) && (
+          <p className="mt-2 text-body-md text-on-surface-variant">
+            ≈ : le produit exact n&apos;a pas de prix ici, voici l&apos;équivalent le moins cher du magasin.
+          </p>
+        )}
         {itemsTotal > pick.basket.items.length && (
           <p className="mt-2 rounded-xl bg-surface-container p-3 text-body-md text-on-surface-variant">
             {pick.basket.items.length} article{pick.basket.items.length > 1 ? "s" : ""} sur {itemsTotal} ici.
-            Les {itemsTotal - pick.basket.items.length} autres ne sont pas vendus dans ce magasin, ou leur prix
-            n&apos;y est pas encore connu.
+            Pour les {itemsTotal - pick.basket.items.length} autres, ni le produit ni un équivalent n&apos;a de
+            prix connu dans ce magasin.
           </p>
         )}
         <div className="mt-3 space-y-3">
@@ -587,6 +751,11 @@ function ChosenStore({
                     <span className="min-w-0 break-words text-on-surface">
                       {it.label}
                       {it.quantity > 1 ? ` × ${it.quantity}` : ""}
+                      {it.equivalent_of && (
+                        <span className="block text-micro text-on-surface-variant">
+                          ≈ équivalent de {it.equivalent_of}
+                        </span>
+                      )}
                     </span>
                     <span className="whitespace-nowrap tabular-nums text-on-surface">{eur(it.line_total)}</span>
                   </li>
@@ -609,10 +778,10 @@ function ChosenStore({
                 style={{ width: `${Math.min(100, (total / budget) * 100)}%` }}
               />
             </div>
-            <p className={`text-body-md ${over ? "text-error" : "text-on-surface-variant"}`}>
+            <p className={`text-body-md ${over ? "font-bold text-error" : "text-on-surface-variant"}`} role={over ? "alert" : undefined}>
               {over
-                ? `${eur(total - budget)} au-dessus de votre budget de ${eur(budget)}`
-                : `${eur(budget - total)} sous votre budget de ${eur(budget)}`}
+                ? `Attention : cette course dépasse de ${eur(total - budget)} ce qui reste de votre budget du mois (${eur(budget)}).`
+                : `Il restera ${eur(budget - total)} sur votre budget du mois.`}
             </p>
           </>
         )}
