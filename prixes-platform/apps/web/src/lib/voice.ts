@@ -519,8 +519,8 @@ export function parseIntent(raw: string): Intent {
   }
 
   // Settings
-  if (/\b(mode sombre|sombre|nuit)\b/.test(t)) return { type: "setting", action: "dark", say: "Mode sombre activé." };
-  if (/\b(mode clair|clair)\b/.test(t)) return { type: "setting", action: "light", say: "Mode clair activé." };
+  if (/\b(mode sombre|sombre|nuit)\b/.test(t)) return { type: "setting", action: "dark", say: "Thème Nuit activé." };
+  if (/\b(mode clair|clair)\b/.test(t)) return { type: "setting", action: "light", say: "Thème Jour activé." };
   // \b(agrandi)\b alone would miss "agrandis" ("tu" imperative, e.g. the
   // "Agrandis le texte" example command) — \b requires a boundary right after
   // "agrandi", but the following "s" is a word char, so no boundary there.

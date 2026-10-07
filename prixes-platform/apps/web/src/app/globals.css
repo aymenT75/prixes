@@ -6,130 +6,126 @@
    Tailwind colours resolve to rgb(var(--color-x) / <alpha>). Dark mode and
    high contrast simply swap the channels below — so every component, opacity
    and border follows automatically. */
-/* ── "Vibrant Glass" palette — extracted directly from the brand logo
-   (public/logo-mark.png): lime-green primary, cyan secondary, mint tertiary,
-   an olive-tinted neutral. Values are RGB channels for rgb(var(--color-x) /
-   <alpha>). Source: the Stitch "Vibrant Glass" design system export. ────── */
+/* ── Thème « Jour » (par défaut) — ajouté le 2026-10-07 ────────────────────
+   Fond blanc cassé, texte presque noir, et le jaune réservé au fond des actions
+   principales (bouton, étape en cours, micro) avec du texte noir dessus : du
+   texte jaune sur blanc serait illisible (1,4:1). `primary` est donc l'encre,
+   `primary-container` le jaune. Signaux (bleu, vert, rouge) foncés pour rester
+   au-dessus de 7:1 sur blanc, le niveau conseillé aux malvoyants. */
 :root {
-  --color-on-surface-variant: 66 73 54;
-  --color-inverse-surface: 47 48 53;
-  --color-error-base: 220 38 38;
-  --color-tertiary-fixed: 87 254 178;
-  --color-success-light: 224 242 254;
-  --color-outline-variant: 194 202 176;
-  --color-primary-fixed-dim: 154 217 46;
-  --color-on-primary-container: 78 117 0;
-  --color-on-tertiary-container: 0 121 78;
-  --color-secondary: 0 104 118;
-  --color-primary-container: 189 255 83;
-  --color-on-error-container: 147 0 10;
-  --color-warning-soft: 255 240 235;
-  --color-outline: 115 122 100;
-  --color-on-secondary: 255 255 255;
-  --color-tertiary: 0 108 69;
-  --color-inverse-primary: 154 217 46;
-  --color-on-tertiary: 255 255 255;
-  --color-on-surface: 26 28 32;
-  --color-secondary-fixed: 161 239 255;
-  --color-surface-bright: 249 249 255;
-  --color-on-primary: 255 255 255;
-  --color-primary: 69 104 0;
-  --color-on-error: 255 255 255;
-  --color-error-container: 255 218 214;
-  /* Warm accent for high-attention UI (voice listening, scan line, main FAB). */
-  --color-accent-warm: 194 65 12;
-  --color-on-accent-warm: 255 255 255;
-  --color-surface-container: 237 237 243;
-  --color-surface-container-high: 232 232 238;
-  --color-surface-dim: 217 217 223;
-  --color-on-tertiary-fixed-variant: 0 82 51;
-  --color-fuel-accent: 0 102 134;
+  --color-background: 247 246 241;
+  --color-surface: 247 246 241;
+  --color-surface-bright: 247 246 241;
   --color-surface-container-lowest: 255 255 255;
-  --color-error: 186 26 26;
-  --color-surface: 249 249 255;
-  --color-on-secondary-container: 0 97 111;
-  --color-on-primary-fixed-variant: 51 79 0;
-  --color-tertiary-container: 158 255 201;
-  --color-secondary-container: 44 226 254;
-  --color-surface-container-low: 243 243 249;
-  --color-on-secondary-fixed-variant: 0 78 90;
-  --color-secondary-fixed-dim: 19 218 245;
-  --color-background: 249 249 255;
-  --color-on-secondary-fixed: 0 31 37;
-  --color-surface-variant: 226 226 232;
-  --color-on-primary-fixed: 18 31 0;
-  --color-inverse-on-surface: 240 240 246;
-  --color-on-background: 26 28 32;
-  --color-surface-container-highest: 226 226 232;
-  --color-primary-fixed: 181 246 75;
-  --color-tertiary-fixed-dim: 46 225 151;
-  --color-surface-tint: 69 104 0;
-  --color-on-tertiary-fixed: 0 33 18;
+  --color-surface-container-low: 243 242 236;
+  --color-surface-container: 238 237 231;
+  --color-surface-container-high: 233 232 225;
+  --color-surface-container-highest: 226 225 218;
+  --color-surface-variant: 226 225 218;
+  --color-surface-dim: 220 219 212;
+  --color-on-surface: 17 17 17;
+  --color-on-background: 17 17 17;
+  --color-on-surface-variant: 78 77 71;
+  --color-outline: 122 121 113;
+  --color-outline-variant: 214 213 205;
+  --color-primary: 17 17 17;
+  --color-on-primary: 255 255 255;
+  --color-surface-tint: 17 17 17;
+  --color-inverse-primary: 255 214 10;
+  --color-primary-container: 255 214 10;
+  --color-on-primary-container: 17 17 17;
+  --color-primary-fixed: 255 214 10;
+  --color-primary-fixed-dim: 255 214 10;
+  --color-on-primary-fixed: 17 17 17;
+  --color-on-primary-fixed-variant: 17 17 17;
+  --color-secondary: 10 88 168;
+  --color-on-secondary: 255 255 255;
+  --color-secondary-container: 214 230 250;
+  --color-on-secondary-container: 8 60 115;
+  --color-secondary-fixed: 214 230 250;
+  --color-secondary-fixed-dim: 255 214 10;
+  --color-on-secondary-fixed: 17 17 17;
+  --color-on-secondary-fixed-variant: 8 60 115;
+  --color-tertiary: 20 95 43;
+  --color-on-tertiary: 255 255 255;
+  --color-tertiary-container: 211 238 217;
+  --color-on-tertiary-container: 15 70 32;
+  --color-tertiary-fixed: 211 238 217;
+  --color-tertiary-fixed-dim: 20 95 43;
+  --color-on-tertiary-fixed: 8 40 18;
+  --color-on-tertiary-fixed-variant: 15 70 32;
+  --color-error: 154 31 24;
+  --color-on-error: 255 255 255;
+  --color-error-container: 255 222 218;
+  --color-on-error-container: 120 20 14;
+  --color-error-base: 154 31 24;
+  --color-accent-warm: 178 60 0;
+  --color-on-accent-warm: 255 255 255;
+  --color-fuel-accent: 10 88 168;
+  --color-warning-soft: 255 244 214;
+  --color-success-light: 211 238 217;
+  --color-inverse-surface: 17 17 17;
+  --color-inverse-on-surface: 247 246 241;
 }
 
-/* Dark theme — same slate surfaces as before, but primary/secondary/tertiary
-   now follow the Vibrant Glass brand hues (lime/cyan/mint), using each
-   colour's own -fixed-dim / inverse- tone as the dark-mode anchor, per M3
-   convention. */
+/* ── Thème « Nuit » (au choix, menu Accessibilité) ──────────────────────────
+   Pour les personnes gênées par la lumière : des noirs en couches (jamais le
+   noir pur), le jaune pour ce qui compte (actions, prix, sélection), et des
+   signaux clairs. Tout le texte dépasse 7:1 sur les cartes. */
 html.dark {
-  --color-on-surface-variant: 178 186 158;
-  --color-inverse-surface: 230 237 243;
-  --color-error-base: 255 180 171;
-  --color-tertiary-fixed: 0 82 51;
-  --color-success-light: 6 59 48;
-  --color-outline-variant: 70 77 55;
-  --color-primary-fixed-dim: 51 79 0;
-  --color-on-primary-container: 189 255 83;
-  --color-on-tertiary-container: 87 254 178;
-  --color-secondary: 19 218 245;
-  --color-primary-container: 51 79 0;
-  --color-on-error-container: 255 218 214;
-  --color-warning-soft: 41 25 15;
-  --color-outline: 100 107 82;
-  --color-on-secondary: 0 31 37;
-  --color-tertiary: 46 225 151;
-  --color-inverse-primary: 69 104 0;
-  --color-on-tertiary: 0 33 18;
-  --color-on-surface: 230 237 243;
-  --color-secondary-fixed: 0 78 90;
-  --color-surface-bright: 45 51 59;
-  --color-on-primary: 18 31 0;
-  --color-primary: 154 217 46;
-  /* 105 0 5 (#690005), la valeur Material 3 : le rouge d'origine (179 0 0) ne
-     donnait que 4,24:1 sur le rouge clair du mode sombre, sous les 4,5:1 exigés.
-     Ne sert qu'aux paires bg-error/text-on-error (badge promo, micro actif). */
-  --color-on-error: 105 0 5;
-  --color-error-container: 179 0 0;
-  --color-accent-warm: 255 168 130;
-  /* accent-warm is light in dark mode, so on-accent-warm flips to a dark brown
-     for readable text/badges on it. */
-  --color-on-accent-warm: 40 20 0;
-  --color-surface-container: 33 38 45;
-  --color-surface-container-high: 45 51 59;
-  --color-surface-dim: 13 17 23;
-  --color-on-tertiary-fixed-variant: 46 225 151;
-  --color-fuel-accent: 123 209 250;
-  --color-surface-container-lowest: 22 27 34;
-  --color-error: 255 180 171;
-  --color-surface: 22 27 34;
-  --color-on-secondary-container: 161 239 255;
-  --color-on-primary-fixed-variant: 181 246 75;
-  --color-tertiary-container: 0 82 51;
-  --color-secondary-container: 0 78 90;
-  --color-surface-container-low: 28 33 40;
-  --color-on-secondary-fixed-variant: 19 218 245;
-  --color-secondary-fixed-dim: 0 78 90;
-  --color-background: 13 17 23;
-  --color-on-secondary-fixed: 161 239 255;
-  --color-surface-variant: 48 54 61;
-  --color-on-primary-fixed: 189 255 83;
-  --color-inverse-on-surface: 22 27 34;
-  --color-on-background: 230 237 243;
-  --color-surface-container-highest: 55 62 71;
-  --color-primary-fixed: 51 79 0;
-  --color-tertiary-fixed-dim: 0 82 51;
-  --color-surface-tint: 154 217 46;
-  --color-on-tertiary-fixed: 87 254 178;
+  --color-background: 10 10 11;
+  --color-surface: 10 10 11;
+  --color-surface-bright: 46 46 52;
+  --color-surface-container-lowest: 20 20 22;
+  --color-surface-container-low: 24 24 27;
+  --color-surface-container: 29 29 33;
+  --color-surface-container-high: 38 38 43;
+  --color-surface-container-highest: 46 46 52;
+  --color-surface-variant: 38 38 43;
+  --color-surface-dim: 10 10 11;
+  --color-on-surface: 246 245 240;
+  --color-on-background: 246 245 240;
+  --color-on-surface-variant: 185 184 175;
+  --color-outline: 130 129 121;
+  --color-outline-variant: 52 52 58;
+  --color-primary: 255 214 10;
+  --color-on-primary: 10 10 11;
+  --color-surface-tint: 255 214 10;
+  --color-inverse-primary: 17 17 17;
+  --color-primary-container: 255 214 10;
+  --color-on-primary-container: 10 10 11;
+  --color-primary-fixed: 255 214 10;
+  --color-primary-fixed-dim: 255 214 10;
+  --color-on-primary-fixed: 10 10 11;
+  --color-on-primary-fixed-variant: 10 10 11;
+  --color-secondary: 100 210 255;
+  --color-on-secondary: 10 10 11;
+  --color-secondary-container: 18 52 66;
+  --color-on-secondary-container: 160 228 255;
+  --color-secondary-fixed: 18 52 66;
+  --color-secondary-fixed-dim: 255 214 10;
+  --color-on-secondary-fixed: 10 10 11;
+  --color-on-secondary-fixed-variant: 160 228 255;
+  --color-tertiary: 48 209 88;
+  --color-on-tertiary: 10 10 11;
+  --color-tertiary-container: 16 54 26;
+  --color-on-tertiary-container: 140 236 160;
+  --color-tertiary-fixed: 16 54 26;
+  --color-tertiary-fixed-dim: 48 209 88;
+  --color-on-tertiary-fixed: 140 236 160;
+  --color-on-tertiary-fixed-variant: 48 209 88;
+  --color-error: 255 128 118;
+  --color-on-error: 10 10 11;
+  --color-error-container: 74 20 16;
+  --color-on-error-container: 255 200 194;
+  --color-error-base: 255 128 118;
+  --color-accent-warm: 255 214 10;
+  --color-on-accent-warm: 10 10 11;
+  --color-fuel-accent: 100 210 255;
+  --color-warning-soft: 51 39 15;
+  --color-success-light: 16 54 26;
+  --color-inverse-surface: 246 245 240;
+  --color-inverse-on-surface: 10 10 11;
 }
 
 /* High contrast (stacks on top of light or dark). */
@@ -139,7 +135,7 @@ html.contrast {
   --color-on-background: 0 0 0;
   --color-outline: 0 0 0;
   --color-outline-variant: 0 0 0;
-  --color-primary: 51 79 0;
+  --color-primary: 0 0 0;
   --color-surface: 255 255 255;
   --color-background: 255 255 255;
   --color-surface-container-lowest: 255 255 255;
@@ -150,7 +146,7 @@ html.contrast.dark {
   --color-on-background: 255 255 255;
   --color-outline: 255 255 255;
   --color-outline-variant: 201 201 197;
-  --color-primary: 189 255 83;
+  --color-primary: 255 230 0;
   --color-surface: 0 0 0;
   --color-background: 0 0 0;
   --color-surface-container-lowest: 10 10 10;
@@ -285,18 +281,14 @@ summary,
     @apply bg-surface-container-lowest rounded-xl shadow-card border border-outline-variant/10;
   }
   .btn-primary {
-    /* Vibrant Glass spec: lime-to-cyan gradient, bold Sora text, a slight
-       "lift" on hover via an expanded cyan shadow. Uses the -fixed-dim tones
-       (the vivid mid-saturation lime/cyan actually seen in the logo's
-       gradient) rather than the dark, desaturated `primary`/`secondary` —
-       those are accessible text-on-white tones, not surface colours, and
-       looked muddy/olive as a big button fill. Dark charcoal text (not
-       white) keeps contrast against the light gradient, matching the logo's
-       own charcoal-on-gradient look. */
+    /* Jour et Nuit : le jaune plein, texte noir (13:1 et plus). Le dégradé
+       citron-cyan d'avant passait sous 4,5:1 par endroits et vibrait pour les
+       yeux fragiles. */
     @apply min-h-[44px] inline-flex items-center justify-center gap-2 rounded-full
-           bg-gradient-to-r from-primary-fixed-dim to-secondary-fixed-dim px-6 py-2.5
-           font-display text-label-lg font-bold text-on-primary-fixed shadow-md transition-all
-           hover:-translate-y-0.5 hover:shadow-glow active:scale-95 active:translate-y-0;
+           bg-primary-container px-6 py-2.5
+           font-display text-label-lg font-bold text-on-primary-container shadow-md transition-all
+           hover:-translate-y-0.5 hover:shadow-glow active:scale-95 active:translate-y-0
+           disabled:opacity-50;
   }
   .btn-tonal {
     @apply min-h-[44px] inline-flex items-center justify-center gap-2 rounded-lg bg-surface-container-high
@@ -428,3 +420,73 @@ summary,
 .mascot-wave { animation: mascot-wave 1.8s ease-out infinite }
 .mascot-sparkle { animation: mascot-sparkle 1.1s ease-out both }
 .mascot-badge { animation: mascot-badge .5s cubic-bezier(.34,1.56,.64,1) both }
+
+/* ── Animations Jour / Nuit (2026-10-07) ─────────────────────────────────────
+   One vocabulary across the app: a spring that overshoots a little and settles,
+   items arriving in cascade, a tick that draws itself, a microphone that
+   breathes and ripples while it listens, and loaders that shimmer in place.
+   All of it stops with "Réduire les animations" (rule above) and nothing
+   flashes. */
+:root {
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  --ease-out: cubic-bezier(.22, 1, .36, 1);
+}
+@keyframes prixes-rise {
+  from { opacity: 0; transform: translateY(14px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+.prixes-rise { animation: prixes-rise .5s var(--ease-out) both; }
+
+/* The tick: a circle that pops, a check that draws, a name that gets struck. */
+.prixes-tick { transition: background-color .25s, border-color .25s, transform .4s var(--ease-spring); }
+.prixes-tick path {
+  fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 18; stroke-dashoffset: 18; transition: stroke-dashoffset .35s var(--ease-out) .1s;
+}
+.prixes-tick[data-on="true"] { transform: scale(1.1); }
+.prixes-tick[data-on="true"] path { stroke-dashoffset: 0; }
+.prixes-strike { position: relative; }
+.prixes-strike::after {
+  content: ""; position: absolute; left: 0; top: 55%; height: 2px; width: 0;
+  background: currentColor; transition: width .4s var(--ease-out) .15s;
+}
+.prixes-strike[data-on="true"]::after { width: 100%; }
+
+/* The microphone: a soft breath at rest, ripples while it listens. */
+@keyframes prixes-breathe { 50% { transform: scale(1.05); } }
+@keyframes prixes-morph {
+  0%, 100% { border-radius: 42% 58% 55% 45% / 48% 42% 58% 52%; }
+  33% { border-radius: 58% 42% 46% 54% / 55% 52% 48% 45%; }
+  66% { border-radius: 48% 52% 60% 40% / 42% 58% 42% 58%; }
+}
+.prixes-orb { animation: prixes-morph 6s ease-in-out infinite, prixes-breathe 3s ease-in-out infinite; }
+.prixes-orb[data-listening="true"] { animation-duration: 1.6s, 1s; }
+@keyframes prixes-ripple {
+  from { transform: scale(.85); opacity: .8; }
+  to { transform: scale(1.6); opacity: 0; }
+}
+.prixes-ripple { position: absolute; inset: 0; border-radius: 9999px; border: 2px solid rgb(var(--color-primary-container));
+  animation: prixes-ripple 2.1s var(--ease-out) infinite; pointer-events: none; }
+.prixes-ripple:nth-child(2) { animation-delay: .7s; }
+.prixes-ripple:nth-child(3) { animation-delay: 1.4s; }
+@keyframes prixes-bar { 0%, 100% { transform: scaleY(.3); } 50% { transform: scaleY(1); } }
+.prixes-bars { display: flex; align-items: center; gap: 3px; height: 22px; }
+.prixes-bars i { width: 4px; height: 100%; border-radius: 2px; background: rgb(var(--color-primary));
+  transform-origin: center; animation: prixes-bar .9s ease-in-out infinite; }
+.prixes-bars i:nth-child(2) { animation-delay: .12s } .prixes-bars i:nth-child(3) { animation-delay: .24s }
+.prixes-bars i:nth-child(4) { animation-delay: .36s } .prixes-bars i:nth-child(5) { animation-delay: .48s }
+
+/* Loading: grey lines that shimmer where the content will be. */
+@keyframes prixes-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.prixes-skeleton {
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgb(var(--color-surface-container-high)) 25%, rgb(var(--color-surface-container-lowest)) 50%, rgb(var(--color-surface-container-high)) 75%);
+  background-size: 200% 100%; animation: prixes-shimmer 1.4s linear infinite;
+}
+
+/* A message that slides in from the top (someone added to the shared list). */
+@keyframes prixes-drop-in { from { opacity: 0; transform: translateY(-120%); } to { opacity: 1; transform: none; } }
+.prixes-toast { animation: prixes-drop-in .55s var(--ease-spring) both; }
+
+/* The step pill slides under the current step. */
+.prixes-pill { transition: transform .55s var(--ease-spring); }

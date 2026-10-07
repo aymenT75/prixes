@@ -47,7 +47,7 @@ export function BottomNav() {
     <nav
       aria-label="Navigation principale"
       style={fontScale === "xl" ? ({ zoom: 1.18 / 1.38 } as React.CSSProperties) : undefined}
-      className="glass fixed inset-x-0 bottom-0 z-50 flex h-[80px] items-stretch justify-around border-t border-outline-variant/50 pb-[env(safe-area-inset-bottom)] shadow-nav">
+      className="fixed inset-x-0 bottom-0 z-50 flex h-[80px] bg-surface-container-lowest items-stretch justify-around border-t border-outline-variant/50 pb-[env(safe-area-inset-bottom)] shadow-nav">
       <Tab t={TABS[0]} active={isActive(TABS[0].href)} />
       <Tab t={TABS[1]} active={isActive(TABS[1].href)} />
       {/* The microphone is the brain of the app, and the only one: every page, dead
@@ -58,7 +58,7 @@ export function BottomNav() {
           onClick={() => openVoice(true)}
           aria-label="Parler à Prixes, assistant vocal"
           data-tour="voice-btn"
-          className="absolute -top-7 grid h-[76px] w-[76px] place-items-center rounded-full bg-primary text-on-primary shadow-float ring-4 ring-surface transition-transform active:scale-90"
+          className="absolute -top-7 grid h-[76px] w-[76px] place-items-center rounded-full bg-primary-container text-on-primary-container shadow-glow ring-4 ring-surface transition-transform active:scale-90"
         >
           <Icon name="mic" fill style={{ fontSize: 40 }} />
         </button>

@@ -133,8 +133,8 @@ export function AccessibilityFab() {
             />
             <ToggleRow
               icon="dark_mode"
-              title="Mode sombre"
-              subtitle="Réduit l'éblouissement"
+              title="Thème Nuit"
+              subtitle="Noir et jaune, contre l'éblouissement"
               on={dark}
               onToggle={toggleDark}
             />

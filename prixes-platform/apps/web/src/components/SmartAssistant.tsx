@@ -267,7 +267,7 @@ export function SmartAssistant({ start = false }: {
       <button
         onClick={() => openVoice(true)}
         aria-label="Parler à Prixes, assistant vocal"
-        className="grid h-20 w-20 place-items-center rounded-full bg-primary text-on-primary shadow-float ring-8 ring-primary-container/40 active:scale-95"
+        className="prixes-orb grid h-20 w-20 place-items-center bg-primary-container text-on-primary-container shadow-glow active:scale-95"
       >
         <Icon name="mic" fill style={{ fontSize: 40 }} />
       </button>

@@ -874,13 +874,25 @@ export function VoiceAssistant() {
               <button
                 onClick={startListening}
                 aria-label={phase === "listening" ? "J'écoute" : "Parler"}
-                className={`relative grid h-20 w-20 place-items-center rounded-full text-on-primary shadow-float transition-colors ${
-                  phase === "listening" ? "bg-accent-warm" : "bg-primary"
-                }`}
+                className="relative grid h-20 w-20 place-items-center rounded-full bg-primary-container text-on-primary-container shadow-glow transition-transform active:scale-95"
               >
-                {phase === "listening" && <span className="absolute inset-0 animate-ping rounded-full bg-accent-warm/40" />}
+                {/* Listening shows in shape, not only in colour: ripples around
+                    the button and bars that move, for anyone who cannot hear the
+                    "bip" or read the status line. */}
+                {phase === "listening" && (
+                  <span aria-hidden>
+                    <span className="prixes-ripple" />
+                    <span className="prixes-ripple" />
+                    <span className="prixes-ripple" />
+                  </span>
+                )}
                 <Icon name={phase === "listening" ? "graphic_eq" : "mic"} fill style={{ fontSize: 40 }} className="relative" />
               </button>
+              {phase === "listening" && (
+                <span className="prixes-bars" aria-hidden>
+                  <i /><i /><i /><i /><i />
+                </span>
+              )}
               <p className="text-label-lg text-on-surface-variant">{status}</p>
             </div>
 

@@ -22,11 +22,11 @@ export function VoiceHero() {
   return (
     <section aria-labelledby="voice-hero-title" className="mb-6 overflow-hidden rounded-[28px] shadow-float">
       <MascotScene pose="ecoute" state="listening" className="h-[200px]" />
-      <div className="bg-gradient-to-br from-lime-200 via-lime-100 to-cyan-200 px-5 pb-5 pt-4 text-center dark:from-surface-container dark:via-surface-container dark:to-surface-container-high">
-        <h2 id="voice-hero-title" className="text-[22px] font-extrabold text-slate-900 dark:text-on-surface">
+      <div className="bg-surface-container-lowest px-5 pb-5 pt-4 text-center">
+        <h2 id="voice-hero-title" className="text-[22px] font-extrabold text-on-surface">
           Que voulez-vous faire ?
         </h2>
-        <p className="text-[15px] font-semibold text-slate-700 dark:text-on-surface-variant">
+        <p className="text-[15px] font-semibold text-on-surface-variant">
           Touchez le micro <span className="whitespace-nowrap">en bas</span> et parlez. Je m&apos;occupe du reste.
           <Icon name="arrow_downward" className="ml-1 align-[-5px] text-[20px] text-primary" />
         </p>

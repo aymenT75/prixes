@@ -226,7 +226,19 @@ export default function ListPage() {
             </button>
           )}
 
-          {isLoading && <p className="py-10 text-center text-on-surface-variant">Chargement…</p>}
+          {isLoading && (
+            <div className="space-y-2" role="status" aria-label="Chargement de la liste">
+              {[0, 1, 2].map((k) => (
+                <div key={k} className="card flex items-center gap-3 p-4">
+                  <span className="prixes-skeleton h-7 w-7 flex-shrink-0" />
+                  <span className="flex-1 space-y-2">
+                    <span className="prixes-skeleton block h-3.5" style={{ width: `${70 - k * 12}%` }} />
+                    <span className="prixes-skeleton block h-3 w-1/3" />
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {shared && share && (
             <button
@@ -238,7 +250,7 @@ export default function ListPage() {
                   <span
                     key={m.id}
                     aria-hidden
-                    className={`grid h-8 w-8 place-items-center rounded-full border-2 border-primary-container bg-primary text-micro text-on-primary ${i ? "-ml-2" : ""}`}
+                    className={`grid h-8 w-8 place-items-center rounded-full border-2 border-primary-container bg-on-primary-container text-micro text-primary-container ${i ? "-ml-2" : ""}`}
                   >
                     {m.initials}
                   </span>
@@ -267,9 +279,10 @@ export default function ListPage() {
                 )}
               </div>
               <div className="space-y-2">
-                {items.map((it) => (
+                {items.map((it, index) => (
                   <ListRow
                     key={it.id}
+                    index={index}
                     item={it}
                     onToggle={() => update.mutate({ id: it.id, body: { checked: !it.checked } })}
                     onQty={(q) => update.mutate({ id: it.id, body: { quantity: q } })}
@@ -470,7 +483,7 @@ function Welcome({ onClose }: { onClose: () => void }) {
   return (
     <section
       aria-labelledby="t-welcome"
-      className="mb-5 rounded-2xl bg-gradient-to-br from-primary-container/60 to-secondary-container/50 p-4"
+      className="prixes-rise mb-5 rounded-2xl border border-primary-container bg-primary-container/25 p-4"
     >
       <h2 id="t-welcome" className="text-headline-md text-on-surface">
         Vos courses en 3 étapes
@@ -510,22 +523,28 @@ function Stepper({
 }) {
   return (
     <nav aria-label="Étapes des courses" className="mb-5">
-      <ol className="grid grid-cols-3 gap-2">
+      {/* One yellow pill slides under the current step (a spring, not a jump),
+          so moving from step to step is felt as progress. */}
+      <ol className="relative grid grid-cols-3 gap-1 rounded-2xl border border-outline-variant bg-surface-container-lowest p-1">
+        <li
+          aria-hidden
+          className="prixes-pill pointer-events-none absolute bottom-1 left-1 top-1 rounded-xl bg-primary-container shadow-glow"
+          style={{
+            width: "calc((100% - 0.5rem - 0.5rem) / 3)",
+            transform: `translateX(calc(${step - 1} * (100% + 0.25rem)))`,
+          }}
+        />
         {STEPS.map((s) => {
           const current = s.n === step;
           const done = s.n < step;
           return (
-            <li key={s.n} className="min-w-0">
+            <li key={s.n} className="relative min-w-0">
               <button
                 onClick={() => onStep(s.n)}
                 disabled={s.n > 1 && !canCompare}
                 aria-current={current ? "step" : undefined}
-                className={`flex min-h-[64px] w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center transition-colors disabled:opacity-40 ${
-                  current
-                    ? "bg-primary text-on-primary shadow-float"
-                    : done
-                      ? "bg-primary-container text-on-primary-container"
-                      : "bg-surface-container text-on-surface-variant"
+                className={`flex min-h-[64px] w-full flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-center transition-colors duration-300 disabled:opacity-40 ${
+                  current ? "text-on-primary-container" : done ? "text-on-surface" : "text-on-surface-variant"
                 }`}
               >
                 <span className="flex items-center gap-1 text-label-md">
@@ -573,11 +592,14 @@ function BackStep({ onClick, label }: { onClick: () => void; label: string }) {
 
 function ListRow({
   item,
+  index = 0,
   onToggle,
   onQty,
   onRemove,
 }: {
   item: ShoppingItem;
+  /** Position in the list: rows arrive one after the other, 60 ms apart. */
+  index?: number;
   onToggle: () => void;
   onQty: (q: number) => void;
   onRemove: () => void;
@@ -587,6 +609,8 @@ function ListRow({
   // the cross got one word per line ("Échalot-es"); there it takes the card's
   // whole width, under the tick, picture and cross.
   const big = useA11y((s) => s.fontScale === "xl");
+  const [on, setOn] = useState(item.checked);
+  useEffect(() => setOn(item.checked), [item.checked]);
   // Loose fruit and vegetables read like the shop's label, per kilo; the
   // recipe amount ("0,500 pièce") meant nothing to anyone and is dropped there.
   const fresh = item.barcode?.startsWith("fl:") ?? false;
@@ -601,23 +625,34 @@ function ListRow({
     // below the contrast a low-vision reader needs. Only the picture fades now;
     // the strike-through and the ticked box say "done".
     <div
-      style={nutriBarStyle(item.nutriscore)}
-      className={`card flex items-center gap-3 p-3 ${big ? "flex-wrap" : ""}`}
+      className={`prixes-rise card flex items-center gap-3 p-3 ${big ? "flex-wrap" : ""}`}
+      style={{ ...nutriBarStyle(item.nutriscore), animationDelay: `${Math.min(index, 12) * 60}ms` }}
     >
       {/* A checkbox that names its item: "Cocher" alone, forty times over, told a
           screen-reader user nothing about which line or whether it was done. */}
       <button
-        onClick={onToggle}
+        onClick={() => {
+          setOn(!on);
+          if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(12);
+          onToggle();
+        }}
         role="checkbox"
-        aria-checked={item.checked}
+        aria-checked={on}
         aria-label={label}
         className="grid min-h-11 min-w-11 flex-shrink-0 place-items-center"
       >
-        <Icon
-          name={item.checked ? "check_circle" : "radio_button_unchecked"}
-          fill={item.checked}
-          className={`text-[26px] ${item.checked ? "text-primary" : "text-outline-variant"}`}
-        />
+        {/* The circle fills, the tick draws itself, the name gets struck: done,
+            at a glance, in the shop. */}
+        <span
+          data-on={on}
+          className={`prixes-tick grid h-7 w-7 place-items-center rounded-full border-2 ${
+            on ? "border-primary-container bg-primary-container text-on-primary-container" : "border-outline"
+          }`}
+        >
+          <svg viewBox="0 0 14 14" className="h-4 w-4" aria-hidden>
+            <path d="M2.5 7.5l3 3 6-6.5" />
+          </svg>
+        </span>
       </button>
 
       <Thumb item={item} />
@@ -627,8 +662,8 @@ function ListRow({
           gives the name the row's width and the buttons room for a full 44 px. */}
       <div className={`min-w-0 flex-1 ${big ? "order-last basis-full" : ""}`}>
         <p
-          className={`break-words text-label-lg ${
-            item.checked ? "text-on-surface-variant line-through" : "text-on-surface"
+          className={`break-words text-label-lg line-through transition-[color,text-decoration-color] duration-300 ${
+            on ? "text-on-surface-variant decoration-current" : "text-on-surface decoration-transparent"
           }`}
         >
           {item.barcode ? (

@@ -111,9 +111,8 @@ export default {
         card: "0px 4px 12px rgba(0, 0, 0, 0.05)",
         float: "0px 8px 24px rgba(0, 0, 0, 0.12)",
         nav: "0px -4px 12px rgba(0, 0, 0, 0.05)",
-        // "Ambient Glow" — soft, cyan-tinted shadow simulating light through
-        // colored glass (Vibrant Glass spec: 10% opacity, 30px blur, secondary cyan).
-        glow: "0px 8px 30px rgba(44, 226, 254, 0.10)",
+        // Soft yellow halo under the main actions (Jour et Nuit).
+        glow: "0px 8px 28px rgba(255, 214, 10, 0.35)",
       },
     },
   },

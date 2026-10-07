@@ -259,7 +259,7 @@ export function JoinInvite({ code, onDone }: { code: string; onDone: () => void 
       className="fixed inset-0 z-[60] grid place-items-center bg-black/40 p-4 backdrop-blur-sm outline-none"
     >
       <div className="w-full max-w-md overflow-hidden rounded-xl bg-surface-container-lowest shadow-float">
-        <div className="bg-gradient-to-b from-primary-container/60 to-secondary-container/50 p-6 text-center">
+        <div className="bg-primary-container/25 p-6 text-center">
         <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-primary text-on-primary">
           <Icon name="list_alt" className="text-[30px]" />
         </span>

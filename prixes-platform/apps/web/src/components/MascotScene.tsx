@@ -12,13 +12,18 @@
 
 import type { Pose } from "@/lib/voiceTasks";
 
+// One background for every pose, drawn from the theme: a yellow glow on the
+// surface colour, so the scene follows Jour and Nuit instead of six fixed
+// pastel gradients that glared at night.
+const SCENE_BG =
+  "radial-gradient(circle at 50% 45%, rgb(var(--color-primary-container) / .55), transparent 62%), rgb(var(--color-surface-container))";
 const BACKGROUND: Record<Pose, string> = {
-  ecoute: "radial-gradient(circle at 25% 20%,#f7fee7,transparent 55%),linear-gradient(135deg,#bef264,#67e8f9)",
-  roule: "radial-gradient(circle at 25% 20%,#ecfccb,transparent 55%),linear-gradient(135deg,#a3e635,#22d3ee)",
-  plein: "radial-gradient(circle at 25% 20%,#fdf4ff,transparent 55%),linear-gradient(135deg,#c4b5fd,#f0abfc 50%,#fda4af)",
-  pompe: "radial-gradient(circle at 25% 20%,#fff7ed,transparent 55%),linear-gradient(135deg,#fdba74,#fb7185 55%,#f472b6)",
-  loupe: "radial-gradient(circle at 25% 20%,#ecfeff,transparent 55%),linear-gradient(135deg,#67e8f9,#60a5fa)",
-  assiette: "radial-gradient(circle at 25% 20%,#fefce8,transparent 55%),linear-gradient(135deg,#fef08a,#fdba74 55%,#fb923c)",
+  ecoute: SCENE_BG,
+  roule: SCENE_BG,
+  plein: SCENE_BG,
+  pompe: SCENE_BG,
+  loupe: SCENE_BG,
+  assiette: SCENE_BG,
 };
 
 export type SceneState = "listening" | "working" | "done" | "failed";
@@ -71,7 +76,7 @@ export function MascotScene({
         className={`relative mb-2 h-[88%] w-auto drop-shadow-2xl ${motion}`}
       />
       {badge && (
-        <span className="mascot-badge absolute right-3 top-3 max-w-[60%] truncate rounded-full bg-gradient-to-br from-fuchsia-500 to-orange-400 px-3 py-1.5 text-[15px] font-extrabold text-white shadow-lg">
+        <span className="mascot-badge absolute right-3 top-3 max-w-[60%] truncate rounded-full bg-primary-container px-3 py-1.5 text-[15px] font-extrabold text-on-primary-container shadow-lg">
           {badge}
         </span>
       )}

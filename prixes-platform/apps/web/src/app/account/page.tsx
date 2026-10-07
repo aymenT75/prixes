@@ -207,10 +207,10 @@ export default function AccountPage() {
 
       {/* Settings */}
       <section className="card p-2">
-        <Row icon="dark_mode" title="Mode sombre" subtitle="Changer le thème">
+        <Row icon="dark_mode" title="Thème Nuit" subtitle="Noir et jaune, contre l'éblouissement">
           {mounted && (
             <label className="relative inline-flex cursor-pointer items-center">
-              <input type="checkbox" className="peer sr-only" aria-label="Mode sombre" checked={isDark} onChange={toggle} />
+              <input type="checkbox" className="peer sr-only" aria-label="Thème Nuit" checked={isDark} onChange={toggle} />
               <div className="h-6 w-11 rounded-full bg-surface-variant after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-on-surface after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full" />
             </label>
           )}
