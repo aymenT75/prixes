@@ -17,7 +17,7 @@ test.describe("Home page (golden path)", () => {
 
     // The 4 quick-access tools from the redesign.
     for (const label of ["Ma liste", "Alertes", "Magasins", "Mon avis"]) {
-      await expect(page.getByRole("link", { name: new RegExp(label) })).toBeVisible();
+      await expect(page.locator("main").getByRole("link", { name: new RegExp(label) })).toBeVisible();
     }
   });
 

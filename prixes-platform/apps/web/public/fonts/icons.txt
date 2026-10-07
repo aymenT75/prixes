@@ -1,5 +1,6 @@
 ac_unit
 accessibility_new
+account_balance_wallet
 account_circle
 add
 add_a_photo
@@ -16,12 +17,12 @@ auto_awesome
 badge
 bar_chart
 barcode
-barcode_scanner
 blender
 bolt
 browse
 calendar_month
 cancel
+celebration
 check
 check_circle
 chevron_right
@@ -55,8 +56,6 @@ explore_off
 favorite
 feedback
 fitness_center
-flashlight_off
-flashlight_on
 forum
 graphic_eq
 grocery
@@ -64,11 +63,11 @@ group
 health_and_safety
 help
 home
-hourglass_top
 info
 input
 ios
 ios_share
+join
 light
 light_mode
 lightbulb
@@ -104,13 +103,11 @@ pageview
 password
 person
 person_remove
-photo_camera
 playlist_add
+priority
 privacy_tip
 progress_activity
 public
-qr_code
-qr_code_scanner
 radar
 radio
 radio_button_unchecked
@@ -124,7 +121,6 @@ reviews
 robot
 savings
 scan
-scanner
 schedule
 schema
 search
@@ -142,8 +138,7 @@ soup_kitchen
 spa
 square
 star
-stop
-storage
+step
 store
 storefront
 switch
@@ -151,6 +146,7 @@ tab
 task
 thermometer
 touch_app
+traffic
 transform
 trending_down
 trending_up

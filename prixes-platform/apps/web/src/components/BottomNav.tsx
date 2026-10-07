@@ -12,7 +12,10 @@ const TABS = [
   // go there. The voice assistant stays in the centre button.
   { href: "/list", label: "Courses", icon: "shopping_cart", tour: "nav-assistant" },
   { href: "/fuel", label: "Carburant", icon: "local_gas_station", tour: "nav-fuel" },
-  { href: "/scanner", label: "Scanner", icon: "qr_code_scanner", tour: "nav-scanner" },
+  // The chains around you and what your list costs in each (the barcode
+  // scanner and the photo were removed on 2026-10-07: the assistant does the
+  // looking for you).
+  { href: "/stores", label: "Magasins", icon: "storefront", tour: "nav-stores" },
 ];
 
 function Tab({ t, active }: { t: (typeof TABS)[number]; active: boolean }) {

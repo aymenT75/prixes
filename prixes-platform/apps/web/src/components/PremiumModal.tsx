@@ -25,7 +25,6 @@ import { useDialog } from "@/lib/useDialog";
 const INCLUDED = [
   { icon: "restaurant_menu", label: "Menus inventés sur mesure", hint: "par l'IA, au-delà de nos recettes" },
   { icon: "auto_awesome", label: "Assistant qui comprend tout", hint: "n'importe quelle phrase devient un panier chiffré" },
-  { icon: "photo_camera", label: "Reconnaissance d'un produit sur photo", hint: "quand le code-barres est inconnu" },
 ];
 
 type Plan = "monthly" | "yearly";
@@ -121,7 +120,7 @@ export function PremiumModal() {
         </ul>
 
         <p className="mt-4 rounded-xl bg-surface-container p-3 text-body-md text-on-surface-variant">
-          Toujours gratuit : l’assistant vocal et sa voix naturelle, le comparateur, le scanner, le carburant, la liste de courses, les
+          Toujours gratuit : l’assistant vocal et sa voix naturelle, le comparateur, les magasins proches, le carburant, la liste de courses, les
           alertes prix, <strong className="text-on-surface">les menus de la semaine avec nos recettes</strong>{" "}
           et l&apos;assistant pour les plats de nos recettes.
         </p>

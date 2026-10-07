@@ -357,6 +357,8 @@ export interface BasketItem {
   quantity: number;
   unit_price: number;
   line_total: number;
+  /** Where to find it in the shop ("Frais", "Épicerie salée"…). */
+  aisle?: string;
 }
 
 export interface StoreBasketDetail {

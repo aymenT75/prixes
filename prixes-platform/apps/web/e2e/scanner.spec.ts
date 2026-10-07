@@ -1,17 +1,13 @@
 import { expect, test } from "./fixtures";
 
-test.describe("Scanner (manual barcode entry — no camera required)", () => {
-  test("page renders without a camera and manual entry navigates to product detail", async ({
-    page,
-  }) => {
-    // No camera permission granted — this is the realistic case for most CI/
-    // headless runs, and the manual-entry fallback must work regardless.
+// The scanner was replaced by the "Magasins" tab (2026-10-07): old links to
+// /scanner must land somewhere useful, and the tab must be there.
+test.describe("Magasins (replaces the scanner)", () => {
+  test("the bottom bar offers Magasins and /scanner leads there", async ({ page }) => {
+    await page.goto("/");
+    const nav = page.getByRole("navigation", { name: "Navigation principale" });
+    await expect(nav.getByRole("link", { name: /Magasins/ })).toBeVisible();
     await page.goto("/scanner");
-    await expect(page.getByPlaceholder("Saisir un code-barres")).toBeVisible();
-
-    await page.getByPlaceholder("Saisir un code-barres").fill("3017760000011");
-    await page.getByRole("button", { name: "Chercher" }).click();
-
-    await expect(page).toHaveURL(/\/courses\/detail\?barcode=3017760000011/);
+    await expect(page).toHaveURL(/\/stores/);
   });
 });

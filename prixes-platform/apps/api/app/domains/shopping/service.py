@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.products import service as product_service
 from app.domains.products.models import PricePoint, Product
+from app.domains.shopping.aisles import OTHER, aisle_for
 from app.domains.shopping.models import ShoppingItem
 from app.domains.shopping.schemas import (
     BasketItem,
@@ -185,6 +186,7 @@ class PricedLine:
     quantity: int
     label: str
     per_store: dict[str, Decimal]
+    aisle: str = OTHER
 
 
 def _merge_by_barcode(lines: list[tuple[str, int, str]]) -> list[tuple[str, int, str]]:
@@ -232,6 +234,11 @@ async def price_lines(
                 quantity=quantity,
                 label=display or (product.name if product else None) or barcode,
                 per_store=_lowest_price_per_store(prices),
+                aisle=aisle_for(
+                    barcode,
+                    product.categories if product else None,
+                    (product.name if product else None) or display,
+                ),
             )
         )
     return priced
@@ -351,6 +358,7 @@ def _allocate(lines: list[PricedLine], stores: tuple[str, ...]) -> SplitOption:
                 quantity=line.quantity,
                 unit_price=price,
                 line_total=line_total,
+                aisle=line.aisle,
             )
         )
 

@@ -76,8 +76,8 @@ describe("parseIntent", () => {
   // ── Every feature by voice ────────────────────────────────────────────────
   it("runs the tasks each page does on arrival", () => {
     expect(parseIntent("les magasins proches")).toMatchObject({ type: "task", path: "/stores", task: { kind: "stores" } });
-    expect(parseIntent("ouvre le scanner")).toMatchObject({ type: "task", path: "/scanner", task: { kind: "scan" } });
-    expect(parseIntent("scanne un produit")).toMatchObject({ task: { kind: "scan" } });
+    expect(parseIntent("ouvre le scanner")).toMatchObject({ type: "task", path: "/stores", task: { kind: "stores" } });
+    expect(parseIntent("scanne un produit")).toMatchObject({ task: { kind: "stores" } });
     expect(parseIntent("où faire mes courses")).toMatchObject({ type: "task", path: "/list", task: { kind: "split" } });
     expect(parseIntent("quel est le magasin le moins cher")).toMatchObject({ task: { kind: "split" } });
   });

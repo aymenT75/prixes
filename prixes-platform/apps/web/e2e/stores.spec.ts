@@ -8,7 +8,7 @@ test.describe("Stores (geolocation fallback — RGPD requirement)", () => {
     await context.clearPermissions();
     await page.goto("/stores");
 
-    await expect(page.getByRole("heading", { name: "Magasins proches" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Magasins", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Utiliser ma position" }).click();
 
     await expect(page.getByText("Position refusée. Activez la localisation.")).toBeVisible();

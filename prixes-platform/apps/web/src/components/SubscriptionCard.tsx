@@ -78,7 +78,7 @@ export function SubscriptionCard() {
           <p className="text-body-md text-on-surface-variant">
             {status.premium
               ? until && `Actif, renouvelé le ${until}`
-              : "Menus avec nos recettes, comparateur, scanner et liste inclus"}
+              : "Menus avec nos recettes, comparateur, magasins et liste inclus"}
           </p>
         </div>
       </div>

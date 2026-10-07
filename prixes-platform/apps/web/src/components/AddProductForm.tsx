@@ -93,23 +93,12 @@ export function AddProductForm({
         <h3 className="text-headline-md text-on-surface">Ajouter ce produit</h3>
       </div>
       <p className="mb-4 text-body-md text-on-surface-variant">
-        Ce produit n&apos;est pas encore dans notre base. Prenez-le en photo pour le
-        reconnaître, ou saisissez son nom.
+        Ce produit n&apos;est pas encore dans notre base. Saisissez son nom pour l&apos;ajouter.
       </p>
 
       <p className="mb-4 rounded-lg bg-surface-container-high px-3 py-2 text-micro text-on-surface-variant">
         Code-barres&nbsp;: <span className="font-bold text-on-surface">{barcode}</span>
       </p>
-
-      <button
-        type="button"
-        onClick={takePhoto}
-        disabled={recognizing || busy}
-        className="btn-outline mb-4 w-full py-3"
-      >
-        <Icon name="photo_camera" className="text-[20px]" />
-        {recognizing ? "Reconnaissance…" : "Prendre une photo"}
-      </button>
 
       {hint && <p className="mb-3 text-micro text-on-surface-variant">{hint}</p>}
 

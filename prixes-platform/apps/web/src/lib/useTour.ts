@@ -40,10 +40,10 @@ export const TOUR_STEPS: TourStep[] = [
     mandatory: true,
   },
   {
-    id: "scanner",
-    target: '[data-tour="nav-scanner"]',
-    title: "Scannez un code-barres",
-    body: "Visez le code-barres d'un produit en rayon pour voir son prix instantanément.",
+    id: "stores",
+    target: '[data-tour="nav-stores"]',
+    title: "Les magasins autour de vous",
+    body: "Prixes trouve les enseignes proches et vous dit ce que coûte votre liste dans chacune.",
   },
   {
     id: "fuel",

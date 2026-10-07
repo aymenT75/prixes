@@ -82,13 +82,6 @@ function CoursesInner() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
-        <Link
-          href="/scanner"
-          aria-label="Scanner un code-barres"
-          className="grid h-11 w-11 flex-shrink-0 place-items-center overflow-hidden rounded-full text-primary"
-        >
-          <Icon name="qr_code_scanner" />
-        </Link>
       </form>
 
       <div className="mb-3 flex items-center justify-between gap-2">

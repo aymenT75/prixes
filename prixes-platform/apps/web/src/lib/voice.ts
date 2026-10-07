@@ -603,9 +603,14 @@ export function parseIntent(raw: string): Intent {
     return { type: "task", task: { kind: "stores" }, path: "/stores", say: "Je cherche les magasins autour de vous." };
   }
 
-  // Scanner: open straight onto the camera.
+  // The barcode scanner is gone: say so and point to what replaces it.
   if (/\b(scanne|scanner|scan|code barre|code-barre|code-barres|codes barres)\b/.test(t)) {
-    return { type: "task", task: { kind: "scan" }, path: "/scanner", say: "J'ouvre la caméra. Visez le code-barres." };
+    return {
+      type: "task",
+      task: { kind: "stores" },
+      path: "/stores",
+      say: "Le scanner n'existe plus : dites-moi plutôt le produit. Voici les magasins autour de vous.",
+    };
   }
 
   // Navigation by keyword — checked before the generic search phrase below so

@@ -6,16 +6,18 @@ import { useEffect, useState } from "react";
 
 import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
+import { InStoreGuide } from "@/components/InStoreGuide";
 import { NearbyStoreChoice, type NearbyPick } from "@/components/NearbyStoreChoice";
 import { PageHeader } from "@/components/PageHeader";
 import { JoinInvite, SHARE_KEY, ShareListSheet } from "@/components/ShareListSheet";
 import { SmartAssistant } from "@/components/SmartAssistant";
 import { StorePlan } from "@/components/StorePlan";
 import { api } from "@/lib/api";
+import { byAisle, readBudget, saveBudget } from "@/lib/courses";
 import { distance, eur, nutriBarStyle, nutriHint, perKiloLabel } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
-import type { ShoppingItem, SplitResult } from "@/lib/types";
+import type { ShoppingItem, SplitResult, StoreBasketDetail } from "@/lib/types";
 import { spokenPrice, useVoiceTask } from "@/lib/voiceTasks";
 
 export default function ListPage() {
@@ -32,6 +34,16 @@ export default function ListPage() {
   // to the comparison by chain.
   const [picked, setPicked] = useState<NearbyPick | null>(null);
   const [noNearby, setNoNearby] = useState(false);
+  // The shop being walked with the in-store guide, if any.
+  const [guide, setGuide] = useState<StoreBasketDetail | null>(null);
+  // The shopping budget: said once, kept on this phone; the weekly menu's
+  // budget stands in until then.
+  const [budget, setBudgetState] = useState<number | null>(null);
+  useEffect(() => setBudgetState(readBudget()), []);
+  const setBudget = (v: number | null) => {
+    setBudgetState(v);
+    saveBudget(v);
+  };
   // A newcomer did not understand what this tab was for: the first visit opens
   // on three lines that say it, once. Read after mount (static export: reading
   // storage during render breaks hydration).
@@ -73,13 +85,25 @@ export default function ListPage() {
   // after mount: the static export has no search params at render time.
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get("rejoindre");
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("rejoindre");
     if (code) setInviteCode(code);
+    // From the Magasins tab: straight to the comparison of the shops around.
+    if (params.get("etape") === "2") setStep(2);
   }, []);
   const closeInvite = () => {
     setInviteCode(null);
     window.history.replaceState(null, "", window.location.pathname);
   };
+
+  const { data: mealPrefs } = useQuery({
+    queryKey: ["meal-preferences"],
+    queryFn: () => api.getMealPreferences(),
+    enabled: !!user && budget == null,
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const effectiveBudget = budget ?? mealPrefs?.budget_eur ?? null;
 
   const { data, isLoading } = useQuery({
     queryKey: ["shopping"],
@@ -118,6 +142,13 @@ export default function ListPage() {
       setNoNearby(false);
     },
   });
+
+  // Arriving on step 2 by link: run the comparison once the list is known.
+  const arrivedOnCompare = step === 2 && !plan && !organise.isPending && !organise.isError;
+  useEffect(() => {
+    if (arrivedOnCompare && user) organise.mutate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- when step 2 opens without a comparison
+  }, [arrivedOnCompare, user]);
 
   /** Steps 2 and 3 need a comparison: run it on the way in when there is none. */
   function goTo(next: Step) {
@@ -203,6 +234,15 @@ export default function ListPage() {
       {welcome && <Welcome onClose={closeWelcome} />}
       {shareOpen && <ShareListSheet onClose={() => setShareOpen(false)} />}
       {inviteCode && <JoinInvite code={inviteCode} onDone={closeInvite} />}
+      {guide && (
+        <InStoreGuide
+          basket={guide}
+          list={items}
+          saving={savingAt(plan, guide)}
+          onTake={(id) => update.mutate({ id, body: { checked: true } })}
+          onClose={() => setGuide(null)}
+        />
+      )}
 
       <Stepper step={step} onStep={goTo} canCompare={items.length > 0} />
 
@@ -350,6 +390,8 @@ export default function ListPage() {
               {(plan.by_store?.length ?? 0) > 0 && !noNearby ? (
                 <NearbyStoreChoice
                   plan={plan}
+                  budget={effectiveBudget}
+                  onBudget={setBudget}
                   onPick={(p) => {
                     setPicked(p);
                     goTo(3);
@@ -397,27 +439,12 @@ export default function ListPage() {
           </h2>
           {organise.isPending && <Working />}
           {picked && !organise.isPending && (
-            <div className="card mt-3 p-4">
-              <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                <span className="text-headline-md text-on-surface">{picked.basket.store}</span>
-                <span className="text-headline-md text-primary">{eur(picked.basket.subtotal)}</span>
-              </div>
-              <p className="mt-1 flex items-center gap-1 text-body-md text-on-surface-variant">
-                <Icon name="near_me" className="text-[18px] text-primary" />
-                {distance(picked.branch.distance_km)}
-                {picked.branch.address ? ` · ${picked.branch.address}` : ""}
-              </p>
-              <p className="text-body-md text-on-surface-variant">
-                {picked.basket.items.length} article{picked.basket.items.length > 1 ? "s" : ""} à prendre
-                ici
-              </p>
-              <Link
-                href={`/stores/map?store=${encodeURIComponent(picked.basket.store)}`}
-                className="btn-primary mt-3 w-full py-3"
-              >
-                <Icon name="directions" className="text-[20px]" /> Itinéraire vers {picked.basket.store}
-              </Link>
-            </div>
+            <ChosenStore
+              pick={picked}
+              itemsTotal={plan?.options[0]?.items_total ?? picked.basket.items.length}
+              budget={effectiveBudget}
+              onGuide={() => setGuide(picked.basket)}
+            />
           )}
           {!picked && option && !organise.isPending && (
             <ol className="mt-3 space-y-3">
@@ -443,6 +470,9 @@ export default function ListPage() {
                   >
                     <Icon name="directions" className="text-[20px]" /> Itinéraire vers {basket.store}
                   </Link>
+                  <button onClick={() => setGuide(basket)} className="btn-outline mt-2 w-full py-3">
+                    <Icon name="record_voice_over" className="text-[20px]" /> Me guider dans {basket.store}
+                  </button>
                 </li>
               ))}
             </ol>
@@ -464,6 +494,111 @@ export default function ListPage() {
           <BackStep onClick={() => goTo(2)} label="Revoir la comparaison" />
         </section>
       )}
+    </div>
+  );
+}
+
+/**
+ * What the same products would cost at the dearest shop that sells as many of
+ * them, minus this shop's total: the saving said at the end of the trip.
+ */
+function savingAt(plan: SplitResult | null, basket: StoreBasketDetail): { amount: number; versus: string } | null {
+  const here = Number(basket.subtotal);
+  const rivals = (plan?.by_store ?? []).filter(
+    (b) => b.store !== basket.store && b.items.length >= basket.items.length,
+  );
+  if (!rivals.length) return null;
+  const dearest = rivals.reduce((a, b) => (Number(b.subtotal) > Number(a.subtotal) ? b : a));
+  const amount = Math.round((Number(dearest.subtotal) - here) * 100) / 100;
+  return amount > 0 ? { amount, versus: dearest.store } : null;
+}
+
+/** Step 3 with a shop chosen: the list at its prices, aisle by aisle, and the budget. */
+function ChosenStore({
+  pick,
+  itemsTotal,
+  budget,
+  onGuide,
+}: {
+  pick: NearbyPick;
+  /** Priced lines of the whole list: what this shop does not sell is said. */
+  itemsTotal: number;
+  budget: number | null;
+  onGuide: () => void;
+}) {
+  const total = Number(pick.basket.subtotal);
+  const over = budget != null && total > budget;
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="card p-4">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+          <span className="text-headline-md text-on-surface">{pick.basket.store}</span>
+          <span className="text-label-md text-on-surface-variant">rangée par rayon</span>
+        </div>
+        <p className="mt-1 flex items-center gap-1 text-body-md text-on-surface-variant">
+          <Icon name="near_me" className="text-[18px] text-primary" />
+          {distance(pick.branch.distance_km)}
+          {pick.branch.address ? ` · ${pick.branch.address}` : ""}
+        </p>
+        {itemsTotal > pick.basket.items.length && (
+          <p className="mt-2 rounded-xl bg-surface-container p-3 text-body-md text-on-surface-variant">
+            {pick.basket.items.length} article{pick.basket.items.length > 1 ? "s" : ""} sur {itemsTotal} ici.
+            Les {itemsTotal - pick.basket.items.length} autres ne sont pas vendus dans ce magasin, ou leur prix
+            n&apos;y est pas encore connu.
+          </p>
+        )}
+        <div className="mt-3 space-y-3">
+          {byAisle(pick.basket.items).map((g) => (
+            <div key={g.aisle}>
+              <p className="text-micro font-extrabold uppercase tracking-wider text-on-surface-variant">{g.aisle}</p>
+              <ul>
+                {g.items.map((it) => (
+                  <li
+                    key={it.barcode}
+                    className="flex justify-between gap-3 border-b border-dashed border-outline-variant py-2 text-body-md last:border-0"
+                  >
+                    <span className="min-w-0 break-words text-on-surface">
+                      {it.label}
+                      {it.quantity > 1 ? ` × ${it.quantity}` : ""}
+                    </span>
+                    <span className="whitespace-nowrap tabular-nums text-on-surface">{eur(it.line_total)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="card space-y-2 p-4">
+        <div className="flex items-baseline justify-between">
+          <span className="text-label-lg text-on-surface">Total estimé</span>
+          <span className="text-headline-md tabular-nums text-on-surface">{eur(total)}</span>
+        </div>
+        {budget != null && (
+          <>
+            <div className="h-2.5 overflow-hidden rounded-full bg-surface-container" aria-hidden>
+              <i
+                className={`block h-full rounded-full transition-[width] duration-700 ${over ? "bg-error" : "bg-primary-container"}`}
+                style={{ width: `${Math.min(100, (total / budget) * 100)}%` }}
+              />
+            </div>
+            <p className={`text-body-md ${over ? "text-error" : "text-on-surface-variant"}`}>
+              {over
+                ? `${eur(total - budget)} au-dessus de votre budget de ${eur(budget)}`
+                : `${eur(budget - total)} sous votre budget de ${eur(budget)}`}
+            </p>
+          </>
+        )}
+      </div>
+      <Link
+        href={`/stores/map?store=${encodeURIComponent(pick.basket.store)}`}
+        className="btn-primary w-full py-3"
+      >
+        <Icon name="directions" className="text-[20px]" /> Itinéraire vers {pick.basket.store}
+      </Link>
+      <button onClick={onGuide} className="btn-outline w-full py-3">
+        <Icon name="record_voice_over" className="text-[20px]" /> Au magasin : me guider rayon par rayon
+      </button>
     </div>
   );
 }

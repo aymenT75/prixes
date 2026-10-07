@@ -103,6 +103,8 @@ class BasketItem(BaseModel):
     quantity: int
     unit_price: Decimal
     line_total: Decimal
+    # Where to find it in the shop ("Frais", "Épicerie salée"…), for the in-store guide.
+    aisle: str = "Autres rayons"
 
 
 class StoreBasketDetail(BaseModel):

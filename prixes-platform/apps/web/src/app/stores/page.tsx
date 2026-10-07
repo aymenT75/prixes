@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { Icon } from "@/components/Icon";
@@ -122,7 +123,22 @@ export default function StoresPage() {
 
   return (
     <div>
-      <PageHeader title="Magasins proches" />
+      <PageHeader title="Magasins" />
+
+      {/* The question people come here with: where is my list cheapest. */}
+      <Link
+        href="/list?etape=2"
+        className="mb-5 flex min-h-11 items-center gap-3 rounded-2xl border-2 border-primary-container bg-primary-container/25 p-4 text-on-surface"
+      >
+        <Icon name="shopping_cart" className="text-[28px]" />
+        <span className="min-w-0 flex-1">
+          <span className="block text-label-lg">Ma liste dans ces enseignes</span>
+          <span className="block text-body-md text-on-surface-variant">
+            Le prix de vos courses dans chaque magasin autour de vous
+          </span>
+        </span>
+        <Icon name="chevron_right" />
+      </Link>
 
       {coords && (
         <div className="mb-5 flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
