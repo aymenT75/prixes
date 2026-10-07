@@ -16,11 +16,13 @@ import { useA11y } from "@/lib/useA11y";
 // overlay hides that whole settling phase; this component takes it away only once
 // the app is genuinely laid out.
 const BOOT_ID = "prixes-boot";
-// Keep in sync with the fade duration in the overlay's inline CSS (layout.tsx).
-const FADE_MS = 280;
-// Long enough for the receipt to finish printing (1.2 s in layout.tsx): a
-// receipt cut off halfway reads as a glitch. A slower load simply runs longer.
-const MIN_VISIBLE_MS = 1200;
+// Keep in sync with the overlay's inline CSS (layout.tsx): the fade, and the
+// pull-away of the cart once the app is ready.
+const FADE_MS = 220;
+const GO_MS = 520;
+// Long enough to see the engine rev before it pulls away. A slower load simply
+// revs longer.
+const MIN_VISIBLE_MS = 900;
 // Never trap the user behind the loader because one signal never settles.
 const FAILSAFE_MS = 6000;
 // Web fonts are bundled, so they resolve in a few ms — but document.fonts.ready
@@ -46,10 +48,11 @@ function dismissBoot() {
   // performance.now() is measured from navigation start, so this is the real age
   // of the overlay, not the age of this chunk.
   const wait = Math.max(0, MIN_VISIBLE_MS - performance.now());
+  const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   window.setTimeout(() => {
-    hideNativeSplash();
     if (!el) return;
-    el.setAttribute("data-hidden", "true");
+    el.setAttribute("data-go", "true");
+    window.setTimeout(() => el.setAttribute("data-hidden", "true"), still ? 0 : GO_MS);
     // Hide, never remove: the overlay is rendered by layout.tsx, so it is a React
     // -owned child of <body>. Detaching it behind React's back leaves a stale
     // fiber, and the next commit that touches <body> throws NotFoundError
@@ -57,7 +60,7 @@ function dismissBoot() {
     // full-screen "Une erreur critique est survenue" on an ordinary tab change.
     window.setTimeout(() => {
       el.style.display = "none";
-    }, FADE_MS);
+    }, (still ? 0 : GO_MS) + FADE_MS);
   }, wait);
 }
 
@@ -80,6 +83,10 @@ export function BootScreen() {
       window.clearTimeout(cap);
     };
   }, []);
+
+  // The overlay is painted (this runs after it): the native launch screen, which
+  // shows the same icon at the same place, can go, so the engine rev is seen.
+  useEffect(() => hideNativeSplash(), []);
 
   useEffect(() => {
     const id = window.setTimeout(dismissBoot, FAILSAFE_MS);

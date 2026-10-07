@@ -9,7 +9,7 @@ const SRC = path.join(ROOT, "public/logo-mark.png");
 // Dominant corner colour of the artwork's gradient — used as the maskable
 // icon's edge-to-edge background so the source's white corner bleed (from
 // cropping a rounded shape out of a square photo) never shows through.
-const BG = { r: 0xa9, g: 0xe0, b: 0x34, alpha: 1 };
+const BG = { r: 0xff, g: 0xd6, b: 0x0a, alpha: 1 };
 
 /** Resize the mark to fill `size`, then clip rounded corners (radius as a
  * fraction of size) so no white corner-bleed from the source crop shows. */

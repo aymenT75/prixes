@@ -84,35 +84,47 @@ if(s.dark===true)r.classList.add("dark");
 // still clears itself instead of trapping the user behind it.
 const bootStyles = `
 #prixes-boot{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;
-align-items:center;justify-content:center;gap:22px;background:#F7F6F1;
-zoom:calc(1 / var(--zoom-scale, 1));opacity:1;transition:opacity 280ms ease-out;
+align-items:center;justify-content:center;gap:22px;background:#F7F6F1;overflow:hidden;
+zoom:calc(1 / var(--zoom-scale, 1));opacity:1;transition:opacity 220ms ease-out;
 animation:prixes-boot-failsafe 1ms linear 10s forwards}
 html.dark #prixes-boot{background:#0A0A0B}
 #prixes-boot[data-hidden="true"]{opacity:0;pointer-events:none}
-#prixes-boot .prixes-boot-ticket{position:relative;width:196px;padding-top:9px}
-#prixes-boot .prixes-boot-printer{position:absolute;top:0;left:-14px;right:-14px;height:18px;border-radius:9px;
-background:#111111;z-index:1}
-html.dark #prixes-boot .prixes-boot-printer{background:#FFD60A}
-#prixes-boot .prixes-boot-paper{position:relative;background:#fff;color:#18200F;padding:14px 14px 10px;
-font:500 12.5px/1.85 ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-border:1px solid #E3E8DA;border-top:0;box-shadow:0 14px 30px rgba(20,40,0,.16);
-clip-path:inset(0 -48px 100% -48px);
-animation:prixes-boot-print 1.1s steps(7,end) .1s forwards}
-#prixes-boot .prixes-boot-paper b{display:block;text-align:center;font:800 17px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;
-color:#111111;margin-bottom:4px}
-#prixes-boot .prixes-boot-paper span{display:flex;justify-content:space-between;gap:10px}
-#prixes-boot .prixes-boot-paper em{font-style:normal}
-#prixes-boot .prixes-boot-total{border-top:1px dashed #9AA38E;margin-top:3px;padding-top:3px}
-#prixes-boot .prixes-boot-save{color:#145F2B;font-weight:700;background:#FFD60A;padding:0 4px;border-radius:4px}
-#prixes-boot .prixes-boot-label{margin:8px 0 0;font:500 14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;
-letter-spacing:.01em;color:#4E4D47;animation:prixes-boot-blink 1.4s ease-in-out infinite}
+#prixes-boot .prixes-boot-car{position:relative;width:min(22vmax,240px);aspect-ratio:1}
+#prixes-boot .prixes-boot-body{display:block;width:100%;height:100%;border-radius:22.5%;
+box-shadow:0 14px 34px rgba(17,17,17,.18);
+animation:prixes-boot-rev .16s linear .25s infinite}
+#prixes-boot .prixes-boot-puff{position:absolute;left:-2%;bottom:14%;width:18%;aspect-ratio:1;border-radius:50%;
+background:rgba(17,17,17,.16);opacity:0;animation:prixes-boot-puff .9s ease-out .25s infinite}
+html.dark #prixes-boot .prixes-boot-puff{background:rgba(246,245,240,.2)}
+#prixes-boot .prixes-boot-puff:nth-of-type(2){animation-delay:.55s}
+#prixes-boot .prixes-boot-puff:nth-of-type(3){animation-delay:.85s}
+#prixes-boot .prixes-boot-line{position:absolute;right:104%;height:5%;border-radius:9px;background:#111111;
+width:0;opacity:0}
+html.dark #prixes-boot .prixes-boot-line{background:#FFD60A}
+#prixes-boot .prixes-boot-line:nth-of-type(4){top:30%}
+#prixes-boot .prixes-boot-line:nth-of-type(5){top:50%}
+#prixes-boot .prixes-boot-line:nth-of-type(6){top:70%}
+#prixes-boot[data-go="true"] .prixes-boot-car{animation:prixes-boot-go .52s cubic-bezier(.55,0,.9,.35) forwards}
+#prixes-boot[data-go="true"] .prixes-boot-body{animation:none}
+#prixes-boot[data-go="true"] .prixes-boot-line{animation:prixes-boot-streak .52s ease-out forwards}
+#prixes-boot[data-go="true"] .prixes-boot-puff{animation:prixes-boot-burst .4s ease-out forwards}
+#prixes-boot .prixes-boot-label{margin:0;font:600 14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;
+letter-spacing:.02em;color:#4E4D47}
 html.dark #prixes-boot .prixes-boot-label{color:#B9B8AF}
-@keyframes prixes-boot-print{to{clip-path:inset(0 -48px -48px -48px)}}
-@keyframes prixes-boot-blink{50%{opacity:.6}}
+#prixes-boot[data-go="true"] .prixes-boot-label{opacity:0;transition:opacity .15s}
+@keyframes prixes-boot-rev{0%,100%{transform:none}25%{transform:translate(-1px,-2px) rotate(-.7deg)}
+50%{transform:translate(1px,0) rotate(.5deg)}75%{transform:translate(0,-1px) rotate(-.3deg)}}
+@keyframes prixes-boot-puff{0%{opacity:.9;transform:translate(0,0) scale(.4)}
+100%{opacity:0;transform:translate(-160%,-40%) scale(1.6)}}
+@keyframes prixes-boot-burst{0%{opacity:1;transform:scale(.6)}100%{opacity:0;transform:translate(-260%,-20%) scale(2.6)}}
+@keyframes prixes-boot-go{0%{transform:none}22%{transform:translateX(-7%) rotate(-6deg)}
+100%{transform:translateX(130vw) rotate(-2deg)}}
+@keyframes prixes-boot-streak{0%{width:0;opacity:0}30%{width:60%;opacity:.9}100%{width:140%;opacity:0}}
 @keyframes prixes-boot-failsafe{to{opacity:0;visibility:hidden}}
 @media (prefers-reduced-motion:reduce){
-#prixes-boot .prixes-boot-paper{animation:none;clip-path:none}
-#prixes-boot .prixes-boot-label{animation:none}
+#prixes-boot .prixes-boot-body,#prixes-boot .prixes-boot-puff{animation:none}
+#prixes-boot[data-go="true"] .prixes-boot-car,#prixes-boot[data-go="true"] .prixes-boot-line,
+#prixes-boot[data-go="true"] .prixes-boot-puff{animation:none}
 }`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -129,20 +141,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-background text-on-surface antialiased">
         {/* Covers the app until it is fully laid out — removed by <BootScreen/>. */}
         <div id="prixes-boot" role="status" aria-live="polite" aria-label="Chargement de Prixes">
-          {/* A till receipt printing line by line, ending on the saving: what the
-              app does, told while it loads. Plain HTML and CSS, so it plays from
-              the raw page before any script runs. The figures are an illustration. */}
-          <div className="prixes-boot-ticket" aria-hidden="true">
-            <i className="prixes-boot-printer" />
-            <div className="prixes-boot-paper">
-              <b>Prixes</b>
-              <span><em>Lait</em><em>1,11</em></span>
-              <span><em>Pain</em><em>0,89</em></span>
-              <span><em>Pâtes</em><em>0,79</em></span>
-              <span><em>Tomates</em><em>1,30</em></span>
-              <span className="prixes-boot-total"><em>Total</em><em>4,09 €</em></span>
-              <span className="prixes-boot-save"><em>Économisé</em><em>−1,20 €</em></span>
-            </div>
+          {/* The app icon, exactly where the iPhone's launch screen left it, revs
+              like an engine while the app loads, then pulls away fast when it is
+              ready. Plain HTML and CSS: it plays before any script runs. */}
+          <div className="prixes-boot-car" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element -- painted before React, no loader */}
+            <img className="prixes-boot-body" src="/logo-boot.png" alt="" width={240} height={240} />
+            <i className="prixes-boot-puff" />
+            <i className="prixes-boot-puff" />
+            <i className="prixes-boot-puff" />
+            <i className="prixes-boot-line" />
+            <i className="prixes-boot-line" />
+            <i className="prixes-boot-line" />
           </div>
           <p className="prixes-boot-label">Chargement…</p>
         </div>
