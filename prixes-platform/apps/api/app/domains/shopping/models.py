@@ -59,7 +59,35 @@ class ShoppingItem(Base, TimestampMixin):
     # measure whether the assistant's suggestions actually get bought.
     source: Mapped[str] = mapped_column(String(16), default="manual", server_default="manual")
 
+    # ── Added in 0014, for a list shared with family ──
+    # Who put the line on the list and who ticked it off. Null for lines from
+    # before sharing existed, and for a list nobody shares.
+    added_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    checked_by: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+
     @property
     def label(self) -> str:
         """Best available display name, never empty."""
         return self.name or self.free_text or self.barcode or "?"
+
+
+class ListMember(Base, TimestampMixin):
+    """Someone who uses another person's list instead of their own.
+
+    One shared list per person: a member's own lines are set aside (not deleted)
+    and come back if they leave.
+    """
+
+    __tablename__ = "list_members"
+
+    member_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+
+
+class ListInvite(Base, TimestampMixin):
+    """The code that lets someone join a list. One per owner, replaced on demand."""
+
+    __tablename__ = "list_invites"
+
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
+    code: Mapped[str] = mapped_column(String(8), unique=True, index=True)

@@ -133,6 +133,26 @@ export interface ShoppingItem {
   nutriscore: string | null;
   /** What the price is the price *of* — "500 g", "2 L". Null for a free-text line. */
   pack: string | null;
+  /** On a shared list, someone else who added or bought this line. */
+  added_by_name?: string | null;
+  checked_by_name?: string | null;
+}
+
+// ── Liste partagée ──
+export interface ShareMember {
+  id: string;
+  name: string;
+  initials: string;
+  role: "owner" | "member";
+  you: boolean;
+}
+
+export interface ShareState {
+  is_owner: boolean;
+  owner_name: string | null;
+  /** The invite code, for the owner only; null until one is created. */
+  code: string | null;
+  members: ShareMember[];
 }
 
 // ── Smart Assistant ──

@@ -51,6 +51,10 @@ class ShoppingItemOut(BaseModel):
     # What the price is the price *of* ("500 g", "2 L"). Without it the list can
     # only say "0,75 € / u.", which reads as one leek rather than a 500 g bunch.
     pack: str | None = None
+    # On a shared list, who else added or bought this line ("ajouté par Marie").
+    # Left empty for the reader's own actions and on a list nobody shares.
+    added_by_name: str | None = None
+    checked_by_name: str | None = None
 
 
 class ShoppingListOut(BaseModel):
@@ -156,3 +160,24 @@ class NewsOut(BaseModel):
     drops: list[DropOut]
     # Monday of the week a Sunday menu was composed for, while not yet offered.
     menu_ready: str | None = None
+
+
+# ── Liste partagée ──
+class ShareMember(BaseModel):
+    id: uuid.UUID
+    name: str
+    initials: str
+    role: str  # owner | member
+    you: bool
+
+
+class ShareOut(BaseModel):
+    is_owner: bool
+    owner_name: str | None
+    # The invite code, shown to the owner only; None until one is created.
+    code: str | None
+    members: list[ShareMember]
+
+
+class JoinIn(BaseModel):
+    code: str = Field(min_length=4, max_length=12)

@@ -39,6 +39,7 @@ import type {
   StoresNearbyResult,
   TokenPair,
   User,
+  ShareState,
 } from "./types";
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
@@ -331,6 +332,17 @@ export const api = {
     }
   },
   clearChecked: () => request<{ removed: number }>("/shopping/clear-checked", { method: "POST" }),
+
+  // ── Liste partagée ──
+  getShare: () => request<ShareState>("/shopping/share"),
+  createShareCode: () => request<ShareState>("/shopping/share/code", { method: "POST" }),
+  previewShare: (code: string) =>
+    request<{ owner_name: string }>(`/shopping/share/preview?code=${encodeURIComponent(code)}`),
+  joinShare: (code: string) =>
+    request<ShareState>("/shopping/share/join", { method: "POST", body: JSON.stringify({ code }) }),
+  leaveShare: () => request<ShareState>("/shopping/share", { method: "DELETE" }),
+  removeShareMember: (id: string) =>
+    request<ShareState>(`/shopping/share/members/${id}`, { method: "DELETE" }),
   /** What happened while the app was closed: list price drops, a Sunday menu. */
   getNews: () => request<{ drops: NewsDrop[]; menu_ready: string | null }>("/shopping/news"),
   menuSeen: () => request<void>("/shopping/news/menu-seen", { method: "POST" }),

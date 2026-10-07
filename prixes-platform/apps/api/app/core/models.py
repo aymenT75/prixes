@@ -6,7 +6,7 @@ from app.domains.devices.models import Device
 from app.domains.feedback.models import Feedback
 from app.domains.fuel.models import FuelStation
 from app.domains.products.models import PricePoint, Product
-from app.domains.shopping.models import ShoppingItem
+from app.domains.shopping.models import ListInvite, ListMember, ShoppingItem
 from app.domains.users.models import User
 
 __all__ = [
@@ -15,6 +15,8 @@ __all__ = [
     "Product",
     "PricePoint",
     "ShoppingItem",
+    "ListMember",
+    "ListInvite",
     "PriceAlert",
     "Device",
     "Feedback",

@@ -31,6 +31,7 @@ from app.core.redis import redis_client
 from app.domains.mealplan import catalog
 from app.domains.shopping import service as shopping_service
 from app.domains.shopping.schemas import ShoppingItemIn
+from app.domains.shopping.share import list_owner
 from app.domains.smartcart.prompt import SMART_CART_SYSTEM, smart_cart_user_prompt
 from app.domains.smartcart.resolve import resolve_lines
 from app.domains.smartcart.schemas import (
@@ -214,7 +215,9 @@ async def commit(
         )
         for line in lines
     ]
-    _, created, merged = await shopping_service.bulk_add(db, user_id, payload)
+    _, created, merged = await shopping_service.bulk_add(
+        db, await list_owner(db, user_id), payload, user_id
+    )
 
     # Mark the draft as acted on — this is what makes the collection worth
     # keeping: proposed vs actually bought, per user.

@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.core.deps import CurrentUser, DbSession
+from app.domains.shopping import share as shopping_share
 from app.domains.users.models import User
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -74,6 +75,8 @@ async def delete_my_account(user: CurrentUser, db: DbSession) -> None:
     user.oauth_provider = None
     user.oauth_sub = None
     user.is_banned = True
+    # An erased account leaves every shared list it was part of.
+    await shopping_share.forget_user(db, user.id)
 
 
 @router.get("/{user_id}", response_model=UserPublic)

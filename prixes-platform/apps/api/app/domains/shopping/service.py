@@ -68,7 +68,13 @@ async def _find_duplicate(
     return (await db.execute(stmt)).scalars().first()
 
 
-async def add_item(db: AsyncSession, user_id: uuid.UUID, data: ShoppingItemIn) -> ShoppingItem:
+async def add_item(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    data: ShoppingItemIn,
+    actor: uuid.UUID | None = None,
+) -> ShoppingItem:
+    """Add to `user_id`'s list. `actor` is who did it, when the list is shared."""
     product = None
     if data.barcode:
         # Ensure the product exists/cached (also backfills name for the list label).
@@ -89,6 +95,7 @@ async def add_item(db: AsyncSession, user_id: uuid.UUID, data: ShoppingItemIn) -
         unit=data.unit,
         source=data.source,
         name=data.name or (product.name if product else None) or data.free_text,
+        added_by=actor or user_id,
     )
     db.add(item)
     await db.flush()
@@ -96,7 +103,10 @@ async def add_item(db: AsyncSession, user_id: uuid.UUID, data: ShoppingItemIn) -
 
 
 async def bulk_add(
-    db: AsyncSession, user_id: uuid.UUID, lines: list[ShoppingItemIn]
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    lines: list[ShoppingItemIn],
+    actor: uuid.UUID | None = None,
 ) -> tuple[list[ShoppingItem], int, int]:
     """Add a whole basket. Returns (items, created, merged).
 
@@ -107,7 +117,7 @@ async def bulk_add(
     items: list[ShoppingItem] = []
     for line in lines:
         before = await _find_duplicate(db, user_id, line)
-        item = await add_item(db, user_id, line)
+        item = await add_item(db, user_id, line, actor)
         if before is None:
             created += 1
         else:
@@ -117,13 +127,18 @@ async def bulk_add(
 
 
 async def update_item(
-    db: AsyncSession, user_id: uuid.UUID, item_id: uuid.UUID, data: ShoppingItemUpdate
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    item_id: uuid.UUID,
+    data: ShoppingItemUpdate,
+    actor: uuid.UUID | None = None,
 ) -> ShoppingItem:
     item = await _owned(db, user_id, item_id)
     if data.quantity is not None:
         item.quantity = data.quantity
     if data.checked is not None:
         item.checked = data.checked
+        item.checked_by = (actor or user_id) if data.checked else None
     await db.flush()
     return item
 

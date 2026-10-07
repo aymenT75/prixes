@@ -17,6 +17,7 @@ from app.domains.mealplan.schemas import MealPlanIn, MealPlanOut, MealPreference
 from app.domains.shopping import service as shopping_service
 from app.domains.shopping.router import _enrich
 from app.domains.shopping.schemas import BulkAddOut, ShoppingItemIn
+from app.domains.shopping.share import list_owner
 
 router = APIRouter(prefix="/meal-plan", tags=["meal-plan"])
 
@@ -139,7 +140,9 @@ async def to_shopping_list(
         for line in plan.basket
         if not line.optional
     ]
-    items, created, merged = await shopping_service.bulk_add(db, user.id, payload)
+    items, created, merged = await shopping_service.bulk_add(
+        db, await list_owner(db, user.id), payload, user.id
+    )
     return BulkAddOut(added=created, merged=merged, items=await _enrich(db, items))
 
 

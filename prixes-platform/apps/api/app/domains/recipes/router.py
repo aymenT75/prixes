@@ -25,6 +25,7 @@ from app.domains.recipes.fetch import fetch_html
 from app.domains.shopping import service as shopping_service
 from app.domains.shopping.router import _enrich
 from app.domains.shopping.schemas import BulkAddOut, ShoppingItemIn
+from app.domains.shopping.share import list_owner
 from app.domains.smartcart.resolve import resolve_lines
 from app.domains.smartcart.schemas import ResolvedLine
 
@@ -109,5 +110,7 @@ async def import_recipe(
 @router.post("/to-list", response_model=BulkAddOut, status_code=201)
 async def to_shopping_list(data: AddIn, db: DbSession, user: CurrentUser) -> BulkAddOut:
     lines = [line.model_copy(update={"source": "recipe"}) for line in data.lines]
-    items, created, merged = await shopping_service.bulk_add(db, user.id, lines)
+    items, created, merged = await shopping_service.bulk_add(
+        db, await list_owner(db, user.id), lines, user.id
+    )
     return BulkAddOut(added=created, merged=merged, items=await _enrich(db, items))

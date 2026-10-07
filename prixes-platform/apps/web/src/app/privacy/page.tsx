@@ -54,6 +54,13 @@ export default function PrivacyPage() {
             baisses de prix.
           </li>
           <li>
+            <strong className="text-on-surface">Liste partagée</strong> — si vous partagez votre
+            liste ou en rejoignez une, les personnes de cette liste voient votre nom
+            d&apos;utilisateur, les produits et qui les a ajoutés ou achetés. Rien
+            d&apos;autre de votre compte ne leur est montré. Vous pouvez quitter la liste à
+            tout moment.
+          </li>
+          <li>
             <strong className="text-on-surface">Avis</strong> — le message que vous
             envoyez via le formulaire, et votre email si vous le renseignez (facultatif,
             uniquement pour vous répondre).

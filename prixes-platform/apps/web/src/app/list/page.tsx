@@ -8,6 +8,7 @@ import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
 import { NearbyStoreChoice, type NearbyPick } from "@/components/NearbyStoreChoice";
 import { PageHeader } from "@/components/PageHeader";
+import { JoinInvite, SHARE_KEY, ShareListSheet } from "@/components/ShareListSheet";
 import { SmartAssistant } from "@/components/SmartAssistant";
 import { StorePlan } from "@/components/StorePlan";
 import { api } from "@/lib/api";
@@ -58,10 +59,33 @@ export default function ListPage() {
     retry: false,
   });
 
+  // Family sharing: who is on the list. A shared list refreshes itself so what
+  // the others add shows up without pulling.
+  const { data: share } = useQuery({
+    queryKey: SHARE_KEY,
+    queryFn: () => api.getShare(),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const shared = (share?.members.length ?? 0) > 1;
+  const [shareOpen, setShareOpen] = useState(false);
+  // An invitation link (/list?rejoindre=ABC123) opens the "join" card. Read
+  // after mount: the static export has no search params at render time.
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get("rejoindre");
+    if (code) setInviteCode(code);
+  }, []);
+  const closeInvite = () => {
+    setInviteCode(null);
+    window.history.replaceState(null, "", window.location.pathname);
+  };
+
   const { data, isLoading } = useQuery({
     queryKey: ["shopping"],
     queryFn: () => api.getShoppingList(),
     enabled: !!user,
+    refetchInterval: shared ? 15_000 : false,
   });
 
   const invalidate = () => {
@@ -144,6 +168,11 @@ export default function ListPage() {
     return (
       <div>
         <PageHeader title="Mes courses" />
+        {inviteCode && (
+          <p className="mb-4 rounded-xl bg-primary-container p-3 text-body-md text-on-primary-container" role="status">
+            Connectez-vous pour rejoindre la liste à laquelle on vous a invité.
+          </p>
+        )}
         <SmartAssistant />
         <div className="card flex flex-col items-center gap-3 p-8 text-center">
           <Icon name="list_alt" className="text-[40px] text-outline-variant" />
@@ -172,6 +201,8 @@ export default function ListPage() {
       <PageHeader title="Mes courses" />
 
       {welcome && <Welcome onClose={closeWelcome} />}
+      {shareOpen && <ShareListSheet onClose={() => setShareOpen(false)} />}
+      {inviteCode && <JoinInvite code={inviteCode} onDone={closeInvite} />}
 
       <Stepper step={step} onStep={goTo} canCompare={items.length > 0} />
 
@@ -186,12 +217,55 @@ export default function ListPage() {
           {/* An empty list starts from the microphone; a list in progress shows
               itself first, the thing people come back for. */}
           {!isLoading && items.length === 0 && <SmartAssistant start />}
+          {!isLoading && items.length === 0 && !shared && (
+            <button
+              onClick={() => setShareOpen(true)}
+              className="-mt-2 mb-4 flex min-h-11 w-full items-center justify-center gap-1 text-label-md text-primary"
+            >
+              <Icon name="share" className="text-[18px]" /> Partager ou rejoindre une liste
+            </button>
+          )}
 
           {isLoading && <p className="py-10 text-center text-on-surface-variant">Chargement…</p>}
 
+          {shared && share && (
+            <button
+              onClick={() => setShareOpen(true)}
+              className="mb-3 flex min-h-11 w-full items-center gap-2 rounded-xl bg-primary-container px-3 py-2 text-left text-body-md text-on-primary-container"
+            >
+              <span className="flex flex-shrink-0">
+                {share.members.map((m, i) => (
+                  <span
+                    key={m.id}
+                    aria-hidden
+                    className={`grid h-8 w-8 place-items-center rounded-full border-2 border-primary-container bg-primary text-micro text-on-primary ${i ? "-ml-2" : ""}`}
+                  >
+                    {m.initials}
+                  </span>
+                ))}
+              </span>
+              <span className="min-w-0 flex-1 break-words">
+                {share.is_owner
+                  ? `Liste partagée avec ${share.members.filter((m) => !m.you).map((m) => m.name).join(" et ")}`
+                  : `Liste de ${share.owner_name}`}
+              </span>
+              <Icon name="chevron_right" className="text-[20px]" />
+            </button>
+          )}
+
           {items.length > 0 && (
             <>
-              <h2 className="mb-2 text-headline-md text-on-surface">Ma liste</h2>
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-headline-md text-on-surface">Ma liste</h2>
+                {!shared && (
+                  <button
+                    onClick={() => setShareOpen(true)}
+                    className="inline-flex min-h-11 items-center gap-1 rounded-full border border-primary px-4 text-label-md text-primary"
+                  >
+                    <Icon name="share" className="text-[18px]" /> Partager
+                  </button>
+                )}
+              </div>
               <div className="space-y-2">
                 {items.map((it) => (
                   <ListRow
@@ -576,6 +650,11 @@ function ListRow({
         {/* One line, two facts. A third ("· assistant") pushed this to four wrapped
             lines on a 375 px screen; the notepad thumbnail already marks a line the
             catalog has no product for. */}
+        {(item.checked ? item.checked_by_name : item.added_by_name) && (
+          <p className="text-micro text-primary">
+            {item.checked ? `acheté par ${item.checked_by_name}` : `ajouté par ${item.added_by_name}`}
+          </p>
+        )}
         <p className="break-words text-micro text-on-surface-variant">
           {recipeAmount && <span>{recipeAmount} · </span>}
           {perKilo ??
