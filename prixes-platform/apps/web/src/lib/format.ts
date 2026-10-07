@@ -181,3 +181,19 @@ export function nutriBarStyle(grade: string | null | undefined): import("react")
     backgroundColor: `color-mix(in srgb, ${c} 10%, rgb(var(--color-surface-container-lowest)))`,
   };
 }
+
+/**
+ * "2,40 € le kilo" for loose fruit and vegetables (barcode `fl:…`).
+ *
+ * Their price is stored per purchase step ("250 g") so recipes and baskets add
+ * up; on a shopping list people read the price the way the shop shows it, per
+ * kilo. Null when the step cannot be read, so the caller falls back.
+ */
+export function perKiloLabel(price: number, pack: string | null | undefined): string | null {
+  const m = /^\s*([\d.,]+)\s*(kg|g)\s*$/i.exec(pack ?? "");
+  if (!m) return null;
+  const amount = parseFloat(m[1].replace(",", "."));
+  const kg = m[2].toLowerCase() === "kg" ? amount : amount / 1000;
+  if (!kg) return null;
+  return `${eur(price / kg)} le kilo`;
+}

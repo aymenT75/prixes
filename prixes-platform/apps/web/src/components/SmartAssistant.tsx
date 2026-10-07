@@ -15,6 +15,7 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import * as z from "zod/mini";
 
@@ -100,8 +101,17 @@ function messageFor(error: unknown): string {
   return "Une erreur est survenue. Réessayez.";
 }
 
-export function SmartAssistant() {
+export function SmartAssistant({ start = false }: {
+  /**
+   * The empty-list look: a big microphone and examples to touch, the text box
+   * one tap away. An empty box that says nothing was the first thing a newcomer
+   * met, and they did not know what to do with it.
+   */
+  start?: boolean;
+} = {}) {
   const qc = useQueryClient();
+  const openVoice = useA11y((s) => s.setVoiceOpen);
+  const [typing, setTyping] = useState(false);
   const { user, openLogin } = useApp();
   const { allergens, diets } = useA11y();
   const [prompt, setPrompt] = useState("");
@@ -245,24 +255,50 @@ export function SmartAssistant() {
       d ? { ...d, lines: d.lines.map((l, i) => (i === index ? { ...l, ...patch } : l)) } : d,
     );
 
-  if (status && !status.available) return null;
+  const unavailable = !!status && !status.available;
+  if (unavailable && !start) return null;
 
   const kept = draft?.lines.filter((l) => l.keep) ?? [];
   const keptTotal = kept.reduce((sum, l) => sum + (l.best_price ?? 0) * l.quantity, 0);
   const keptUnpriced = kept.filter((l) => l.best_price == null).length;
 
+  const startHead = start && (
+    <div className="flex flex-col items-center gap-3 text-center">
+      <button
+        onClick={() => openVoice(true)}
+        aria-label="Parler à Prixes, assistant vocal"
+        className="grid h-20 w-20 place-items-center rounded-full bg-primary text-on-primary shadow-float ring-8 ring-primary-container/40 active:scale-95"
+      >
+        <Icon name="mic" fill style={{ fontSize: 40 }} />
+      </button>
+      <h2 id="smart-assistant-title" className="text-headline-md text-on-surface">
+        Dites ce qu&apos;il vous faut
+      </h2>
+      <p className="text-body-md text-on-surface-variant">
+        Touchez le micro et parlez{unavailable ? "." : ", ou touchez un exemple :"}
+      </p>
+    </div>
+  );
+  const showForm = !start || typing;
+
   return (
     <section className="card mb-4 p-4" aria-labelledby="smart-assistant-title">
+      {startHead}
+      {!start && (
       <div className="flex items-center gap-2">
         <Icon name="auto_awesome" className="text-[20px] text-primary" />
         <h2 id="smart-assistant-title" className="text-label-lg text-on-surface">
           Assistant courses
         </h2>
       </div>
+      )}
+      {!start && (
       <p className="mt-1 text-body-md text-on-surface-variant">
         Dites ce que vous voulez préparer, je monte la liste et je compare les prix.
       </p>
+      )}
 
+      {showForm && !unavailable && (
       <div className="mt-3 flex items-end gap-2">
         <textarea
           value={prompt}
@@ -281,9 +317,10 @@ export function SmartAssistant() {
           className="min-h-[52px] flex-1 resize-none rounded-xl border border-outline-variant bg-surface-container-lowest p-3 text-body-md text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:outline-none disabled:opacity-60"
         />
       </div>
+      )}
 
-      {!draft && !generate.isPending && (
-        <div className="mt-2 flex flex-wrap gap-2">
+      {!draft && !generate.isPending && !unavailable && (
+        <div className={`mt-2 flex flex-wrap gap-2 ${start ? "justify-center" : ""}`}>
           {EXAMPLES.map((example) => (
             <button
               key={example}
@@ -299,6 +336,7 @@ export function SmartAssistant() {
         </div>
       )}
 
+      {showForm && !unavailable && (
       <button
         onClick={submit}
         disabled={generate.isPending || prompt.trim().length < 3}
@@ -307,6 +345,23 @@ export function SmartAssistant() {
         <Icon name="auto_awesome" className="text-[18px]" />
         {generate.isPending ? "Un instant…" : "Créer ma liste"}
       </button>
+      )}
+
+      {start && !typing && !draft && !generate.isPending && (
+        <div className="mt-3 flex flex-wrap justify-center gap-x-4">
+          {!unavailable && (
+            <button
+              onClick={() => setTyping(true)}
+              className="flex min-h-11 items-center gap-1 text-label-md text-primary"
+            >
+              <Icon name="edit" className="text-[18px]" /> Écrire plutôt
+            </button>
+          )}
+          <Link href="/courses" className="flex min-h-11 items-center gap-1 text-label-md text-primary">
+            <Icon name="search" className="text-[18px]" /> Chercher un produit
+          </Link>
+        </div>
+      )}
 
       {generate.isPending && (
         <p role="status" aria-live="polite" className="mt-3 text-center text-body-md text-on-surface-variant">

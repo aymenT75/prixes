@@ -11,7 +11,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { SmartAssistant } from "@/components/SmartAssistant";
 import { StorePlan } from "@/components/StorePlan";
 import { api } from "@/lib/api";
-import { distance, eur, nutriBarStyle, nutriHint } from "@/lib/format";
+import { distance, eur, nutriBarStyle, nutriHint, perKiloLabel } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
 import type { ShoppingItem, SplitResult } from "@/lib/types";
@@ -31,6 +31,25 @@ export default function ListPage() {
   // to the comparison by chain.
   const [picked, setPicked] = useState<NearbyPick | null>(null);
   const [noNearby, setNoNearby] = useState(false);
+  // A newcomer did not understand what this tab was for: the first visit opens
+  // on three lines that say it, once. Read after mount (static export: reading
+  // storage during render breaks hydration).
+  const [welcome, setWelcome] = useState(false);
+  useEffect(() => {
+    try {
+      setWelcome(localStorage.getItem(WELCOME_KEY) !== "1");
+    } catch {
+      /* storage blocked: no welcome card */
+    }
+  }, []);
+  const closeWelcome = () => {
+    setWelcome(false);
+    try {
+      localStorage.setItem(WELCOME_KEY, "1");
+    } catch {
+      /* ignore */
+    }
+  };
 
   const { data: meta } = useQuery({
     queryKey: ["meta"],
@@ -152,25 +171,23 @@ export default function ListPage() {
     <div>
       <PageHeader title="Mes courses" />
 
+      {welcome && <Welcome onClose={closeWelcome} />}
+
       <Stepper step={step} onStep={goTo} canCompare={items.length > 0} />
 
       {step === 1 && (
         <>
-          {/* An empty list starts from the assistant; a list in progress shows
+          {!isLoading && items.length === 0 && (
+            <p className="-mt-3 mb-4 text-center text-body-md text-on-surface-variant">
+              Ajoutez d&apos;abord des produits pour comparer les magasins.
+            </p>
+          )}
+
+          {/* An empty list starts from the microphone; a list in progress shows
               itself first, the thing people come back for. */}
-          {!isLoading && items.length === 0 && <SmartAssistant />}
+          {!isLoading && items.length === 0 && <SmartAssistant start />}
 
           {isLoading && <p className="py-10 text-center text-on-surface-variant">Chargement…</p>}
-
-          {!isLoading && items.length === 0 && (
-            <div className="card flex flex-col items-center gap-2 p-8 text-center text-on-surface-variant">
-              <Icon name="shopping_cart" className="text-[36px] text-outline-variant" />
-              <p className="text-body-md">Votre liste est vide.</p>
-              <Link href="/courses" className="btn-primary mt-2">
-                <Icon name="add" className="text-[18px]" /> Ajouter des produits
-              </Link>
-            </div>
-          )}
 
           {items.length > 0 && (
             <>
@@ -190,7 +207,7 @@ export default function ListPage() {
               <div className="card mt-4 flex flex-wrap items-center justify-between gap-3 p-4">
                 <div>
                   <p className="text-micro uppercase tracking-wider text-on-surface-variant">
-                    Estimation (meilleur prix)
+                    Environ
                   </p>
                   <p className="text-headline-md text-on-surface">{eur(estimate)}</p>
                 </div>
@@ -201,7 +218,7 @@ export default function ListPage() {
                 )}
               </div>
 
-              <NextStep onClick={() => goTo(2)} label="Comparer les magasins" />
+              <NextStep onClick={() => goTo(2)} label="Étape 2 : trouver le magasin le moins cher" />
 
               <h2 className="mb-2 mt-8 text-headline-md text-on-surface">Ajouter à la liste</h2>
               <SmartAssistant />
@@ -366,11 +383,46 @@ export default function ListPage() {
 
 type Step = 1 | 2 | 3;
 
-const STEPS: { n: Step; label: string; icon: string }[] = [
-  { n: 1, label: "Préparer", icon: "list_alt" },
-  { n: 2, label: "Comparer", icon: "savings" },
-  { n: 3, label: "Y aller", icon: "directions" },
+const STEPS: { n: Step; label: string; hint: string; icon: string }[] = [
+  { n: 1, label: "Préparer", hint: "ma liste", icon: "list_alt" },
+  { n: 2, label: "Comparer", hint: "les magasins", icon: "savings" },
+  { n: 3, label: "Y aller", hint: "avec l'itinéraire", icon: "directions" },
 ];
+
+const WELCOME_KEY = "prixes.courses.welcome";
+
+/** Shown on the first visit only: what this tab does, in three lines. */
+function Welcome({ onClose }: { onClose: () => void }) {
+  return (
+    <section
+      aria-labelledby="t-welcome"
+      className="mb-5 rounded-2xl bg-gradient-to-br from-primary-container/60 to-secondary-container/50 p-4"
+    >
+      <h2 id="t-welcome" className="text-headline-md text-on-surface">
+        Vos courses en 3 étapes
+      </h2>
+      <ol className="mt-3 space-y-2.5">
+        {[
+          ["Faites votre liste", "à la voix ou en cherchant un produit."],
+          ["Prixes trouve le magasin", "le moins cher près de chez vous."],
+          ["Prixes vous y guide", "puis vous cochez la liste en magasin."],
+        ].map(([strong, rest], i) => (
+          <li key={strong} className="grid grid-cols-[28px_minmax(0,1fr)] items-start gap-2.5">
+            <span className="grid h-7 w-7 place-items-center rounded-full bg-primary text-label-md text-on-primary">
+              {i + 1}
+            </span>
+            <span className="text-body-md text-on-surface">
+              <strong>{strong}</strong> {rest}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <button onClick={onClose} className="btn-primary mt-4 w-full py-3">
+        C&apos;est parti
+      </button>
+    </section>
+  );
+}
 
 /** The three steps, always visible: where you are and what comes next. */
 function Stepper({
@@ -407,6 +459,7 @@ function Stepper({
                   <span className="sr-only">Étape</span> {s.n}
                 </span>
                 <span className="max-w-full break-words text-label-lg">{s.label}</span>
+                <span className="max-w-full break-words text-[12px] leading-tight opacity-90">{s.hint}</span>
               </button>
             </li>
           );
@@ -460,9 +513,13 @@ function ListRow({
   // the cross got one word per line ("Échalot-es"); there it takes the card's
   // whole width, under the tick, picture and cross.
   const big = useA11y((s) => s.fontScale === "xl");
+  // Loose fruit and vegetables read like the shop's label, per kilo; the
+  // recipe amount ("0,500 pièce") meant nothing to anyone and is dropped there.
+  const fresh = item.barcode?.startsWith("fl:") ?? false;
+  const perKilo = fresh && item.best_price != null ? perKiloLabel(item.best_price, item.pack) : null;
   const recipeAmount =
-    item.amount != null && item.unit
-      ? `${String(item.amount).replace(/\.0+$/, "").replace(".", ",")} ${item.unit}`
+    !fresh && item.amount != null && item.unit
+      ? `${String(Number(item.amount)).replace(".", ",")} ${item.unit}`
       : null;
 
   return (
@@ -521,9 +578,10 @@ function ListRow({
             catalog has no product for. */}
         <p className="break-words text-micro text-on-surface-variant">
           {recipeAmount && <span>{recipeAmount} · </span>}
-          {item.best_price != null
-            ? `${eur(item.best_price)} / ${item.pack || "u."}`
-            : "prix inconnu"}
+          {perKilo ??
+            (item.best_price != null
+              ? `${eur(item.best_price)}${item.pack ? ` · ${item.pack}` : ""}`
+              : "prix inconnu")}
         </p>
 
         {/* 44 px touch areas (Apple's minimum) around the same 36 px discs: a
