@@ -13,7 +13,7 @@ import { JoinInvite, SHARE_KEY, ShareListSheet } from "@/components/ShareListShe
 import { SmartAssistant } from "@/components/SmartAssistant";
 import { StorePlan } from "@/components/StorePlan";
 import { api } from "@/lib/api";
-import { byAisle, readBudget, saveBudget } from "@/lib/courses";
+import { byAisle, readBudget, saveBudget, useCoursesRequest, useStoreAdvice } from "@/lib/courses";
 import { distance, eur, nutriBarStyle, nutriHint, perKiloLabel } from "@/lib/format";
 import { useApp } from "@/lib/store";
 import { useA11y } from "@/lib/useA11y";
@@ -91,6 +91,13 @@ export default function ListPage() {
     // From the Magasins tab: straight to the comparison of the shops around.
     if (params.get("etape") === "2") setStep(2);
   }, []);
+  // Asked by voice: whichever copy of the page is on screen opens the shop choice.
+  const voiceCompare = useCoursesRequest((s) => s.compare);
+  useEffect(() => {
+    if (!voiceCompare) return;
+    useCoursesRequest.setState({ compare: false });
+    setStep(2);
+  }, [voiceCompare]);
   const closeInvite = () => {
     setInviteCode(null);
     window.history.replaceState(null, "", window.location.pathname);
@@ -169,13 +176,33 @@ export default function ListPage() {
       openLogin(true);
       return;
     }
+    useCoursesRequest.setState({ compare: true });
     organise
       .mutateAsync()
-      .then((result) => {
-        setStep(2);
+      .then(async (result) => {
         const best = result.options[0];
         if (!best) {
           finish("Je ne connais aucun prix pour votre liste. Ajoutez des produits, puis redemandez.", "plein", false);
+          return;
+        }
+        // The shops around: the assistant asks the same question as the screen,
+        // and "oui" picks the advised shop.
+        const advice = await new Promise<ReturnType<typeof useStoreAdvice.getState> | null>((resolve) => {
+          const ready = (s: ReturnType<typeof useStoreAdvice.getState>) => !!s.spoken || s.none;
+          if (ready(useStoreAdvice.getState())) return resolve(useStoreAdvice.getState());
+          const stop = useStoreAdvice.subscribe((s) => {
+            if (!ready(s)) return;
+            stop();
+            clearTimeout(timer);
+            resolve(s);
+          });
+          const timer = setTimeout(() => {
+            stop();
+            resolve(null);
+          }, 20_000);
+        });
+        if (advice?.spoken && advice.store) {
+          finish(advice.spoken, "plein", true, { kind: "store-pick", store: advice.store });
           return;
         }
         const where = best.stores.join(" puis ");
@@ -374,7 +401,7 @@ export default function ListPage() {
           <h2 id="t-compare" className="text-headline-md text-on-surface">
             Où acheter votre liste au meilleur prix
           </h2>
-          {organise.isPending && <Working />}
+          {organise.isPending && !plan && <Working />}
           {organise.isError && (
             <p className="py-6 text-body-md text-error" role="alert">
               Je n&apos;ai pas pu comparer les magasins.{" "}
@@ -383,7 +410,7 @@ export default function ListPage() {
               </button>
             </p>
           )}
-          {plan && !organise.isPending && (
+          {plan && (
             <>
               {/* The shops around you first, closest and cheapest marked: the
                   choice of where to go is the user's. */}
@@ -437,8 +464,8 @@ export default function ListPage() {
           <h2 id="t-go" className="text-headline-md text-on-surface">
             {!picked && option && option.stores.length > 1 ? "Votre tournée" : "Votre magasin"}
           </h2>
-          {organise.isPending && <Working />}
-          {picked && !organise.isPending && (
+          {organise.isPending && !plan && <Working />}
+          {picked && (
             <ChosenStore
               pick={picked}
               itemsTotal={plan?.options[0]?.items_total ?? picked.basket.items.length}
@@ -446,7 +473,7 @@ export default function ListPage() {
               onGuide={() => setGuide(picked.basket)}
             />
           )}
-          {!picked && option && !organise.isPending && (
+          {!picked && option && (
             <ol className="mt-3 space-y-3">
               {option.baskets.map((basket, i) => (
                 <li key={basket.store} className="card p-4">

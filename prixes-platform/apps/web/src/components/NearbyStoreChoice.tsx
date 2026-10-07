@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
-import { adviceReason, rankStores, readPriority, savePriority } from "@/lib/courses";
+import { adviceReason, rankStores, readPriority, savePriority, useStoreAdvice } from "@/lib/courses";
 import { distance, eur } from "@/lib/format";
 import { getCurrentPosition } from "@/lib/geo";
 import { findBranch } from "@/lib/stores";
@@ -96,7 +96,10 @@ export function NearbyStoreChoice({
         const useful = found.filter((r) => r.items * 2 >= most);
         setRows(useful);
         setStatus(useful.length ? "ready" : "none");
-        if (!useful.length) onUnavailable();
+        if (!useful.length) {
+          useStoreAdvice.setState({ none: true });
+          onUnavailable();
+        }
       })
       // Location is required here: the whole point of this step is the shops
       // around you, so there is no answer without it — ask again instead.
@@ -115,9 +118,25 @@ export function NearbyStoreChoice({
     ? `${best.store} est ${adviceReason(best, rows)} : ${eur(best.total)} à ${distance(best.km)}. On fait les courses chez ${best.store} ?`
     : "";
 
-  // Said aloud once the shops are known, for anyone who asked to hear the pages.
+  // What is advised right now, for the voice assistant (a spoken "oui" = "Oui, X").
+  const spoken = best
+    ? `${best.store} est ${adviceReason(best, rows)} : ${spokenPrice(best.total)}, à ${spokenDistance(best.km)}. On fait les courses chez ${best.store} ?`
+    : null;
   useEffect(() => {
-    if (status === "ready" && best && autoRead) {
+    if (status !== "ready" || !best) return;
+    useStoreAdvice.setState({ store: best.store, question, spoken, accept: () => onPick(best), none: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- follows the advice
+  }, [status, best, question, spoken]);
+  useEffect(
+    () => () => useStoreAdvice.setState({ store: null, question: null, spoken: null, accept: null, none: false }),
+    [],
+  );
+  const voiceOpen = useA11y((s) => s.voiceOpen);
+
+  // Said aloud once the shops are known, for anyone who asked to hear the pages
+  // (not when the assistant is open: it asks the question itself).
+  useEffect(() => {
+    if (status === "ready" && best && autoRead && !voiceOpen) {
       speak(
         `${best.store} est ${adviceReason(best, rows)} : ${spokenPrice(best.total)}, à ${spokenDistance(best.km)}. On fait les courses chez ${best.store} ?`,
       );

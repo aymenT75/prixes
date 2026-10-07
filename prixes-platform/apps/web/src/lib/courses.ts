@@ -6,7 +6,37 @@
  * without a page.
  */
 
+import { create } from "zustand";
+
 import type { BasketItem } from "./types";
+
+// ── The advice on screen, for the voice assistant ──
+// The shop choice publishes what it advises; the assistant says it and a
+// spoken "oui" calls `accept`, exactly like touching "Oui, X".
+interface StoreAdvice {
+  store: string | null;
+  /** The question as shown on screen. */
+  question: string | null;
+  /** The same question for the ear (prices and distances in words). */
+  spoken: string | null;
+  accept: (() => void) | null;
+  /** No shop near enough: the comparison by chain is shown instead. */
+  none: boolean;
+}
+/**
+ * "Où faire mes courses ?" said to the assistant: the list page opens on the
+ * shop choice. Kept outside the page because the page can re-mount while the
+ * assistant is talking, which lost a step held in its own state.
+ */
+export const useCoursesRequest = create<{ compare: boolean }>(() => ({ compare: false }));
+
+export const useStoreAdvice = create<StoreAdvice>(() => ({
+  store: null,
+  question: null,
+  spoken: null,
+  accept: null,
+  none: false,
+}));
 
 // ── Remembered settings (this phone only) ──
 const BUDGET_KEY = "prixes.courses.budget";

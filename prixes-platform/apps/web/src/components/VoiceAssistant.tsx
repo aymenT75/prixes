@@ -23,6 +23,7 @@ import { ApiError, api } from "@/lib/api";
 import type { SearchHit } from "@/lib/types";
 import { earcon, type Earcon } from "@/lib/earcons";
 import { useApp } from "@/lib/store";
+import { useStoreAdvice } from "@/lib/courses";
 import { dropsSentence, loadNews, markMenuOffered, markNewsTold, useNews } from "@/lib/news";
 import { isNetworkError, isOffline } from "@/lib/offline";
 import { nativePlatform } from "@/lib/platform";
@@ -304,6 +305,25 @@ export function VoiceAssistant() {
       return;
     }
     const offer = result.offer;
+    if (offer?.kind === "store-pick") {
+      answer(result.say, {
+        pose: result.pose,
+        ok: result.ok,
+        ask: () => {
+          useStoreAdvice.getState().accept?.();
+          answer(
+            `C'est parti pour ${offer.store}. Votre liste est rangée par rayon. Au magasin, touchez « me guider » et je vous lis chaque produit.`,
+            { pose: "roule", ok: true },
+          );
+        },
+        no: () =>
+          answer("D'accord. Choisissez une autre enseigne à l'écran, ou bougez le curseur vers le plus proche.", {
+            pose: "ecoute",
+            ok: true,
+          }),
+      });
+      return;
+    }
     const ask = offer?.kind === "menu-basket" ? () => void addMenuBasket(offer.items) : undefined;
     answer(result.say, { pose: result.pose, ok: result.ok, ask });
   }, [result, clearResult, answer, addMenuBasket]);
@@ -346,14 +366,15 @@ export function VoiceAssistant() {
   }, []);
 
   /** The first catalogue product a spoken name designates, or null. */
-  const productFor = useCallback(async (query: string) => {
-    try {
-      const found = await api.searchProducts(query);
-      return found.items[0] ?? null;
-    } catch {
-      return null;
-    }
-  }, []);
+  // Same ranking as a spoken search: "ajoute du lait" adds milk, not the
+  // cheapest "lait de coco" (seen on the full-circuit test, 07/10).
+  const productFor = useCallback(
+    async (query: string) => {
+      const { items } = await runSearch(query);
+      return items[0] ?? null;
+    },
+    [runSearch],
+  );
 
   /** Says goodbye and closes: the conversation is over, the mic stops reopening. */
   const goodbye = useCallback(

@@ -32,7 +32,10 @@ export type BasketLine = Parameters<typeof api.addBasketToList>[0][number];
  * A next step the assistant proposes after a result, done on a spoken "oui".
  * It carries what it needs: a week that was not saved can still reach the list.
  */
-export type VoiceOffer = { kind: "menu-basket"; items: BasketLine[] };
+export type VoiceOffer =
+  | { kind: "menu-basket"; items: BasketLine[] }
+  /** "On fait les courses chez X ?" — oui picks the advised shop. */
+  | { kind: "store-pick"; store: string };
 
 export interface VoiceResult {
   say: string;
