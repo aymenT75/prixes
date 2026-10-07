@@ -1,9 +1,9 @@
 import { expect, test } from "./fixtures";
 
-test.describe("Courses (product search)", () => {
+test.describe("Recherche (product search)", () => {
   test("browse shows the seeded catalog", async ({ page }) => {
     await page.goto("/courses");
-    await expect(page.getByRole("heading", { name: "Courses" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Recherche" })).toBeVisible();
     await expect(page.getByText("Produits populaires")).toBeVisible();
 
     // Requires the DB to be seeded (scripts/seed.py) — otherwise this is the

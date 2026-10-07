@@ -31,12 +31,12 @@ test.describe("Home page (golden path)", () => {
     await expect(page.getByRole("dialog", { name: "Assistant vocal Prixes" })).toBeVisible();
   });
 
-  test("searching from home navigates to Courses with the query", async ({ page }) => {
+  test("searching from home opens the search with the query", async ({ page }) => {
     await page.goto("/");
     await page.getByLabel("Rechercher un produit").fill("yaourt");
     await page.getByLabel("Rechercher un produit").press("Enter");
 
     await expect(page).toHaveURL(/\/courses\?q=yaourt/);
-    await expect(page.getByRole("heading", { name: "Courses" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Recherche" })).toBeVisible();
   });
 });
