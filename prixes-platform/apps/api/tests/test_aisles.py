@@ -7,8 +7,9 @@ def test_loose_produce_is_at_the_entrance():
 
 def test_name_beats_a_broad_category():
     # Open Food Facts files pasta and coffee alike under "plant-based-foods".
-    assert aisle_for("1", "plant-based-foods-and-beverages", "Pâtes sans gluten") == "Épicerie salée"
-    assert aisle_for("2", "plant-based-foods-and-beverages", "Café moulu") == "Épicerie sucrée"
+    broad = "plant-based-foods-and-beverages"
+    assert aisle_for("1", broad, "Pâtes sans gluten") == "Épicerie salée"
+    assert aisle_for("2", broad, "Café moulu") == "Épicerie sucrée"
 
 
 def test_category_when_the_name_says_nothing():
