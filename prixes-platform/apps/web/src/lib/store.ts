@@ -2,7 +2,7 @@
 import { signOut } from "firebase/auth";
 import { create } from "zustand";
 
-import { api } from "./api";
+import { ApiError, api } from "./api";
 import { auth } from "./firebase";
 import { clearOffline, isNetworkError, readCopy } from "./offline";
 import { isNativeApp } from "./platform";
@@ -40,7 +40,10 @@ export const useApp = create<AppState>((set) => ({
     } catch (e) {
       // No network is not a logout: opening the app in a shop with no signal
       // used to clear the session. Keep it, with the account last seen.
-      if (isNetworkError(e)) {
+      // Same for a server that is down or restarting (502, 503…): only a
+      // refused session (401, 403) is a logout.
+      const refused = e instanceof ApiError && (e.status === 401 || e.status === 403);
+      if (isNetworkError(e) || !refused) {
         set({ user: readCopy<User>("me"), loading: false });
         return;
       }

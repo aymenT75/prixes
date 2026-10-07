@@ -66,7 +66,10 @@ async function refreshTokens(): Promise<boolean> {
     body: JSON.stringify({ refresh_token: refresh }),
   });
   if (!res.ok) {
-    tokenStore.clear();
+    // Only a refused refresh token ends the session. A 502 while the server
+    // restarts for an update used to log everyone out who opened the app in
+    // that minute.
+    if (res.status === 401 || res.status === 403) tokenStore.clear();
     return false;
   }
   const data = (await res.json()) as TokenPair;
