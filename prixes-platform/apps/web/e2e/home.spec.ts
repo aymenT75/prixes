@@ -1,24 +1,15 @@
 import { expect, test } from "./fixtures";
 
 test.describe("Home page (golden path)", () => {
-  test("loads with the voice hero, search, and tool shortcuts", async ({ page }) => {
+  test("greets, asks where to shop today, and keeps the search", async ({ page }) => {
     await page.goto("/");
 
     await expect(page.getByRole("heading", { name: "Prixes", exact: true })).toBeVisible();
-    // The voice-first hero: the Caddie, the question, and examples to tap.
-    await expect(page.getByRole("heading", { name: "Que voulez-vous faire ?" })).toBeVisible();
-    for (const example of ["Une raclette pour 6", "Essence la moins chère", "Compose mon menu"]) {
-      await expect(page.getByRole("button", { name: `« ${example} »` }).first()).toBeVisible();
-    }
-
-    // Greeting + search are always present, even signed out.
-    await expect(page.getByRole("heading", { name: /Bonjour/ })).toBeVisible();
+    // The question the home page answers before it is asked.
+    await expect(page.getByRole("heading", { name: /Bonjour.*où fait-on nos courses aujourd/ })).toBeVisible();
+    // Signed out, the assistant offers to listen or to sign in.
+    await expect(page.getByRole("region", { name: "Votre prochaine course" })).toBeVisible();
     await expect(page.getByRole("search")).toBeVisible();
-
-    // The 4 quick-access tools from the redesign.
-    for (const label of ["Ma liste", "Alertes", "Magasins", "Mon avis"]) {
-      await expect(page.locator("main").getByRole("link", { name: new RegExp(label) })).toBeVisible();
-    }
   });
 
   test("there is exactly one microphone, and it opens the assistant", async ({ page }) => {

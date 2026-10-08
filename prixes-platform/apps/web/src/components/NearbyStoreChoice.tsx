@@ -48,6 +48,7 @@ export function NearbyStoreChoice({
   onPick,
   onUnavailable,
   more,
+  autoPick,
 }: {
   plan: SplitResult;
   /** What is left of the month's budget (null without one). */
@@ -60,6 +61,8 @@ export function NearbyStoreChoice({
   onUnavailable: () => void;
   /** Shown under the list once there is one (the two-chain split, for instance). */
   more?: React.ReactNode;
+  /** Already chosen (« On y va » on the home page): picked as soon as it is found. */
+  autoPick?: string | null;
 }) {
   const [status, setStatus] = useState<Status>("locating");
   const [rows, setRows] = useState<Row[]>([]);
@@ -115,6 +118,14 @@ export function NearbyStoreChoice({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per comparison or retry
   }, [plan, attempt]);
+
+  // Chosen on the home page: straight to that shop, no second question.
+  useEffect(() => {
+    if (status !== "ready" || !autoPick) return;
+    const row = rows.find((r) => r.store === autoPick);
+    if (row) onPick(row);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once the shops are known
+  }, [status]);
 
   const ranked = useMemo(() => rankStores(rows, priority, budget), [rows, priority, budget]);
   const best = ranked[0];

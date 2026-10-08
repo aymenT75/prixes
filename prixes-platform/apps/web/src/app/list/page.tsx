@@ -83,7 +83,10 @@ export default function ListPage() {
     if (code) setInviteCode(code);
     // From the Magasins tab: straight to the comparison of the shops around.
     if (params.get("etape") === "2") setStep(2);
+    setAutoPick(params.get("magasin"));
   }, []);
+  // « On y va » on the home page: the shop is already chosen.
+  const [autoPick, setAutoPick] = useState<string | null>(null);
   // Asked by voice: whichever copy of the page is on screen opens the shop choice.
   const voiceCompare = useCoursesRequest((s) => s.compare);
   useEffect(() => {
@@ -463,6 +466,7 @@ export default function ListPage() {
               {(plan.by_store?.length ?? 0) > 0 && !noNearby ? (
                 <NearbyStoreChoice
                   plan={plan}
+                  autoPick={autoPick}
                   budget={effectiveBudget}
                   monthly={monthly}
                   onBudget={(v) => saveMonthly.mutate(v)}

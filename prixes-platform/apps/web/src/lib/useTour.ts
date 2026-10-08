@@ -33,11 +33,10 @@ export const TOUR_STEPS: TourStep[] = [
       "moins cher.",
   },
   {
-    id: "colors",
-    target: '[data-tour="products-list"]',
-    title: "Pourquoi ces couleurs ? \u{1F3A8}",
-    body: "Chaque produit est coloré selon son Nutri-Score : vert = bonne qualité nutritionnelle, rouge = à limiter. Les badges Eco-Score et NOVA suivent la même logique. Appuyez sur l'icône ℹ️ « Légende des couleurs » à tout moment pour le détail complet.",
-    mandatory: true,
+    id: "today",
+    target: '[data-tour="today"]',
+    title: "Où faire vos courses aujourd'hui",
+    body: "À chaque ouverture, Prixes a déjà comparé les magasins autour de vous pour votre liste. Touchez « On y va ».",
   },
   {
     id: "stores",
@@ -50,12 +49,6 @@ export const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="nav-fuel"]',
     title: "Carburant",
     body: "Comparez les prix des carburants dans les stations autour de vous.",
-  },
-  {
-    id: "stores",
-    target: '[data-tour="shortcut-stores"]',
-    title: "Magasins proches",
-    body: "Localisez le supermarché le plus proche de vous et son itinéraire.",
   },
   {
     id: "voice",
