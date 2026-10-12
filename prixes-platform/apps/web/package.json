@@ -15,7 +15,7 @@
     "cap:sync": "npm run build:mobile && cap sync",
     "cap:ios": "npm run build:mobile && cap sync ios && cap open ios",
     "cap:android": "npm run build:mobile && cap sync android && cap open android",
-    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#faf9f5' --splashBackgroundColor '#faf9f5'"
+    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#F7F3EA' --splashBackgroundColor '#F7F3EA'"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",

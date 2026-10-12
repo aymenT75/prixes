@@ -35,8 +35,8 @@ const storeIcon = L.divIcon({
 
 const userIcon = L.divIcon({
   className: "",
-  html: `<div style="width:18px;height:18px;border-radius:50%;background:#2563eb;
-    border:3px solid #fff;box-shadow:0 0 0 3px rgba(37,99,235,.35)"></div>`,
+  html: `<div style="width:18px;height:18px;border-radius:50%;background:#14213D;
+    border:3px solid #fff;box-shadow:0 0 0 3px rgba(201,162,39,.4)"></div>`,
   iconSize: [18, 18],
   iconAnchor: [9, 9],
 });
@@ -127,7 +127,7 @@ export default function StoreMap({ user, store }: { user: LatLon; store: MapStor
           />
           <Polyline
             positions={line}
-            pathOptions={{ color: "#2563eb", weight: 5, opacity: 0.75 }}
+            pathOptions={{ color: "#14213D", weight: 5, opacity: 0.75 }}
           />
           <FitBounds points={line} />
         </MapContainer>

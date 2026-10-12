@@ -24,7 +24,7 @@ const config: CapacitorConfig = {
       launchShowDuration: 3000,
       launchFadeOutDuration: 200,
       // Same off-white as the boot overlay and the launch screen drawable.
-      backgroundColor: "#F7F6F1",
+      backgroundColor: "#F7F3EA",
       showSpinner: false,
       androidScaleType: "CENTER_CROP",
     },

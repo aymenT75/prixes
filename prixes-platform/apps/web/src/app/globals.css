@@ -13,39 +13,39 @@
    `primary-container` le jaune. Signaux (bleu, vert, rouge) foncés pour rester
    au-dessus de 7:1 sur blanc, le niveau conseillé aux malvoyants. */
 :root {
-  --color-background: 247 246 241;
-  --color-surface: 247 246 241;
-  --color-surface-bright: 247 246 241;
+  --color-background: 247 243 234;
+  --color-surface: 247 243 234;
+  --color-surface-bright: 247 243 234;
   --color-surface-container-lowest: 255 255 255;
-  --color-surface-container-low: 243 242 236;
-  --color-surface-container: 238 237 231;
-  --color-surface-container-high: 233 232 225;
-  --color-surface-container-highest: 226 225 218;
-  --color-surface-variant: 226 225 218;
-  --color-surface-dim: 220 219 212;
-  --color-on-surface: 17 17 17;
-  --color-on-background: 17 17 17;
-  --color-on-surface-variant: 78 77 71;
-  --color-outline: 122 121 113;
-  --color-outline-variant: 214 213 205;
-  --color-primary: 17 17 17;
-  --color-on-primary: 255 255 255;
-  --color-surface-tint: 17 17 17;
-  --color-inverse-primary: 255 214 10;
-  --color-primary-container: 255 214 10;
-  --color-on-primary-container: 17 17 17;
-  --color-primary-fixed: 255 214 10;
-  --color-primary-fixed-dim: 255 214 10;
-  --color-on-primary-fixed: 17 17 17;
-  --color-on-primary-fixed-variant: 17 17 17;
-  --color-secondary: 10 88 168;
+  --color-surface-container-low: 242 237 225;
+  --color-surface-container: 236 230 216;
+  --color-surface-container-high: 230 223 207;
+  --color-surface-container-highest: 222 214 197;
+  --color-surface-variant: 222 214 197;
+  --color-surface-dim: 216 208 190;
+  --color-on-surface: 20 33 61;
+  --color-on-background: 20 33 61;
+  --color-on-surface-variant: 74 82 102;
+  --color-outline: 118 122 135;
+  --color-outline-variant: 222 214 195;
+  --color-primary: 20 33 61;
+  --color-on-primary: 247 243 234;
+  --color-surface-tint: 20 33 61;
+  --color-inverse-primary: 224 184 76;
+  --color-primary-container: 201 162 39;
+  --color-on-primary-container: 20 33 61;
+  --color-primary-fixed: 201 162 39;
+  --color-primary-fixed-dim: 201 162 39;
+  --color-on-primary-fixed: 20 33 61;
+  --color-on-primary-fixed-variant: 20 33 61;
+  --color-secondary: 30 64 130;
   --color-on-secondary: 255 255 255;
-  --color-secondary-container: 214 230 250;
-  --color-on-secondary-container: 8 60 115;
-  --color-secondary-fixed: 214 230 250;
-  --color-secondary-fixed-dim: 255 214 10;
+  --color-secondary-container: 221 229 244;
+  --color-on-secondary-container: 18 42 92;
+  --color-secondary-fixed: 221 229 244;
+  --color-secondary-fixed-dim: 201 162 39;
   --color-on-secondary-fixed: 17 17 17;
-  --color-on-secondary-fixed-variant: 8 60 115;
+  --color-on-secondary-fixed-variant: 18 42 92;
   --color-tertiary: 20 95 43;
   --color-on-tertiary: 255 255 255;
   --color-tertiary-container: 211 238 217;
@@ -59,13 +59,13 @@
   --color-error-container: 255 222 218;
   --color-on-error-container: 120 20 14;
   --color-error-base: 154 31 24;
-  --color-accent-warm: 178 60 0;
+  --color-accent-warm: 150 112 10;
   --color-on-accent-warm: 255 255 255;
-  --color-fuel-accent: 10 88 168;
-  --color-warning-soft: 255 244 214;
+  --color-fuel-accent: 30 64 130;
+  --color-warning-soft: 248 236 205;
   --color-success-light: 211 238 217;
-  --color-inverse-surface: 17 17 17;
-  --color-inverse-on-surface: 247 246 241;
+  --color-inverse-surface: 20 33 61;
+  --color-inverse-on-surface: 243 235 216;
 }
 
 /* ── Thème « Nuit » (au choix, menu Accessibilité) ──────────────────────────
@@ -73,39 +73,39 @@
    noir pur), le jaune pour ce qui compte (actions, prix, sélection), et des
    signaux clairs. Tout le texte dépasse 7:1 sur les cartes. */
 html.dark {
-  --color-background: 10 10 11;
-  --color-surface: 10 10 11;
-  --color-surface-bright: 46 46 52;
-  --color-surface-container-lowest: 20 20 22;
-  --color-surface-container-low: 24 24 27;
-  --color-surface-container: 29 29 33;
-  --color-surface-container-high: 38 38 43;
-  --color-surface-container-highest: 46 46 52;
-  --color-surface-variant: 38 38 43;
-  --color-surface-dim: 10 10 11;
-  --color-on-surface: 246 245 240;
-  --color-on-background: 246 245 240;
-  --color-on-surface-variant: 185 184 175;
-  --color-outline: 130 129 121;
-  --color-outline-variant: 52 52 58;
-  --color-primary: 255 214 10;
-  --color-on-primary: 10 10 11;
-  --color-surface-tint: 255 214 10;
-  --color-inverse-primary: 17 17 17;
-  --color-primary-container: 255 214 10;
-  --color-on-primary-container: 10 10 11;
-  --color-primary-fixed: 255 214 10;
-  --color-primary-fixed-dim: 255 214 10;
-  --color-on-primary-fixed: 10 10 11;
-  --color-on-primary-fixed-variant: 10 10 11;
-  --color-secondary: 100 210 255;
-  --color-on-secondary: 10 10 11;
-  --color-secondary-container: 18 52 66;
-  --color-on-secondary-container: 160 228 255;
-  --color-secondary-fixed: 18 52 66;
-  --color-secondary-fixed-dim: 255 214 10;
-  --color-on-secondary-fixed: 10 10 11;
-  --color-on-secondary-fixed-variant: 160 228 255;
+  --color-background: 14 26 51;
+  --color-surface: 14 26 51;
+  --color-surface-bright: 44 62 98;
+  --color-surface-container-lowest: 18 32 60;
+  --color-surface-container-low: 21 36 66;
+  --color-surface-container: 23 40 74;
+  --color-surface-container-high: 31 50 88;
+  --color-surface-container-highest: 40 60 100;
+  --color-surface-variant: 31 50 88;
+  --color-surface-dim: 14 26 51;
+  --color-on-surface: 243 235 216;
+  --color-on-background: 243 235 216;
+  --color-on-surface-variant: 176 184 204;
+  --color-outline: 128 138 162;
+  --color-outline-variant: 44 62 98;
+  --color-primary: 212 175 55;
+  --color-on-primary: 14 26 51;
+  --color-surface-tint: 212 175 55;
+  --color-inverse-primary: 20 33 61;
+  --color-primary-container: 212 175 55;
+  --color-on-primary-container: 14 26 51;
+  --color-primary-fixed: 212 175 55;
+  --color-primary-fixed-dim: 212 175 55;
+  --color-on-primary-fixed: 14 26 51;
+  --color-on-primary-fixed-variant: 14 26 51;
+  --color-secondary: 140 175 240;
+  --color-on-secondary: 14 26 51;
+  --color-secondary-container: 30 52 96;
+  --color-on-secondary-container: 190 210 250;
+  --color-secondary-fixed: 30 52 96;
+  --color-secondary-fixed-dim: 212 175 55;
+  --color-on-secondary-fixed: 14 26 51;
+  --color-on-secondary-fixed-variant: 190 210 250;
   --color-tertiary: 48 209 88;
   --color-on-tertiary: 10 10 11;
   --color-tertiary-container: 16 54 26;
@@ -119,16 +119,22 @@ html.dark {
   --color-error-container: 74 20 16;
   --color-on-error-container: 255 200 194;
   --color-error-base: 255 128 118;
-  --color-accent-warm: 255 214 10;
-  --color-on-accent-warm: 10 10 11;
-  --color-fuel-accent: 100 210 255;
-  --color-warning-soft: 51 39 15;
+  --color-accent-warm: 212 175 55;
+  --color-on-accent-warm: 14 26 51;
+  --color-fuel-accent: 140 175 240;
+  --color-warning-soft: 58 48 20;
   --color-success-light: 16 54 26;
-  --color-inverse-surface: 246 245 240;
-  --color-inverse-on-surface: 10 10 11;
+  --color-inverse-surface: 243 235 216;
+  --color-inverse-on-surface: 14 26 51;
 }
 
 /* High contrast (stacks on top of light or dark). */
+/* At night, gold washed over navy turns khaki: highlighted cards and the
+   active tab take a lighter navy instead, the gold stays on borders and text. */
+html.dark [class*="bg-primary-container/"] {
+  background-color: rgb(31 50 88);
+}
+
 html.contrast {
   --color-on-surface: 0 0 0;
   --color-on-surface-variant: 27 28 26;
@@ -190,7 +196,7 @@ body {
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  src: url("/fonts/material-symbols-outlined.woff2?v=7744d46f14") format("woff2");
+  src: url("/fonts/material-symbols-outlined.woff2?v=8ab14c40dc") format("woff2");
 }
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
@@ -221,7 +227,7 @@ body {
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1.5px solid rgb(255 255 255 / 0.5);
-  box-shadow: 0px 8px 30px rgba(44, 226, 254, 0.1);
+  box-shadow: 0px 8px 30px rgba(201, 162, 39, 0.12);
 }
 html.dark .glass {
   border-color: rgb(255 255 255 / 0.1);

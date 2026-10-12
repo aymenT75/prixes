@@ -84,23 +84,23 @@ if(s.dark===true)r.classList.add("dark");
 // still clears itself instead of trapping the user behind it.
 const bootStyles = `
 #prixes-boot{position:fixed;inset:0;z-index:2147483647;display:flex;flex-direction:column;
-align-items:center;justify-content:center;gap:22px;background:#F7F6F1;overflow:hidden;
+align-items:center;justify-content:center;gap:22px;background:#F7F3EA;overflow:hidden;
 zoom:calc(1 / var(--zoom-scale, 1));opacity:1;transition:opacity 220ms ease-out;
 animation:prixes-boot-failsafe 1ms linear 10s forwards}
-html.dark #prixes-boot{background:#0A0A0B}
+html.dark #prixes-boot{background:#0E1A33}
 #prixes-boot[data-hidden="true"]{opacity:0;pointer-events:none}
 #prixes-boot .prixes-boot-car{position:relative;width:min(22vmax,240px);aspect-ratio:1}
 #prixes-boot .prixes-boot-body{display:block;width:100%;height:100%;border-radius:22.5%;
-box-shadow:0 14px 34px rgba(17,17,17,.18);
+box-shadow:0 14px 34px rgba(20,33,61,.22);
 animation:prixes-boot-rev .16s linear .25s infinite}
 #prixes-boot .prixes-boot-puff{position:absolute;left:-2%;bottom:14%;width:18%;aspect-ratio:1;border-radius:50%;
-background:rgba(17,17,17,.16);opacity:0;animation:prixes-boot-puff .9s ease-out .25s infinite}
-html.dark #prixes-boot .prixes-boot-puff{background:rgba(246,245,240,.2)}
+background:rgba(20,33,61,.16);opacity:0;animation:prixes-boot-puff .9s ease-out .25s infinite}
+html.dark #prixes-boot .prixes-boot-puff{background:rgba(212,175,55,.22)}
 #prixes-boot .prixes-boot-puff:nth-of-type(2){animation-delay:.55s}
 #prixes-boot .prixes-boot-puff:nth-of-type(3){animation-delay:.85s}
-#prixes-boot .prixes-boot-line{position:absolute;right:104%;height:5%;border-radius:9px;background:#111111;
+#prixes-boot .prixes-boot-line{position:absolute;right:104%;height:5%;border-radius:9px;background:#14213D;
 width:0;opacity:0}
-html.dark #prixes-boot .prixes-boot-line{background:#FFD60A}
+html.dark #prixes-boot .prixes-boot-line{background:#D4AF37}
 #prixes-boot .prixes-boot-line:nth-of-type(4){top:30%}
 #prixes-boot .prixes-boot-line:nth-of-type(5){top:50%}
 #prixes-boot .prixes-boot-line:nth-of-type(6){top:70%}
@@ -109,8 +109,8 @@ html.dark #prixes-boot .prixes-boot-line{background:#FFD60A}
 #prixes-boot[data-go="true"] .prixes-boot-line{animation:prixes-boot-streak .52s ease-out forwards}
 #prixes-boot[data-go="true"] .prixes-boot-puff{animation:prixes-boot-burst .4s ease-out forwards}
 #prixes-boot .prixes-boot-label{margin:0;font:600 14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;
-letter-spacing:.02em;color:#4E4D47}
-html.dark #prixes-boot .prixes-boot-label{color:#B9B8AF}
+letter-spacing:.02em;color:#4A5266}
+html.dark #prixes-boot .prixes-boot-label{color:#B0B8CC}
 #prixes-boot[data-go="true"] .prixes-boot-label{opacity:0;transition:opacity .15s}
 @keyframes prixes-boot-rev{0%,100%{transform:none}25%{transform:translate(-1px,-2px) rotate(-.7deg)}
 50%{transform:translate(1px,0) rotate(.5deg)}75%{transform:translate(0,-1px) rotate(-.3deg)}}

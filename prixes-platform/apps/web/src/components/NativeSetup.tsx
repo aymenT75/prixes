@@ -44,14 +44,22 @@ export function NativeSetup() {
         import("@capacitor/app"),
       ]);
 
-      // Dark icons/text on the app's light background.
-      try {
-        await StatusBar.setStyle({ style: Style.Dark });
+      // Status bar text follows the theme: navy on ivory by day, light at night.
+      const paint = async () => {
+        const night = document.documentElement.classList.contains("dark");
+        await StatusBar.setStyle({ style: night ? Style.Dark : Style.Light });
         if (nativePlatform() === "android") {
           // setBackgroundColor is Android-only. Matches the boot overlay and the
           // launch screen so the status bar never changes colour mid-startup.
-          await StatusBar.setBackgroundColor({ color: "#FDFDFD" });
+          await StatusBar.setBackgroundColor({ color: night ? "#0E1A33" : "#F7F3EA" });
         }
+      };
+      try {
+        await paint();
+        new MutationObserver(() => void paint().catch(() => {})).observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["class"],
+        });
       } catch {
         /* status bar not available */
       }
