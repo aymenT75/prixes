@@ -30,6 +30,8 @@ _COUNTABLE = {"pièce", "piece", "tranche", "botte", "sachet", "boîte", "pot"}
 # "6 x 33 cl", "4x25cl", "lot de 6"
 _MULTIPACK = re.compile(r"(\d+)\s*[x×]\s*", re.IGNORECASE)
 _LOT = re.compile(r"lot\s+de\s+(\d+)", re.IGNORECASE)
+# A pack sold loose or by the bunch: a few pieces make one.
+_LOOSE = re.compile(r"variable|vrac|filet|barquette|botte|r[ée]gime|au poids", re.IGNORECASE)
 # Below this, a parsed pack is a data error, not a grocery item (see parse_quantity).
 _MIN_PACK = Decimal("0.005")
 
@@ -95,13 +97,25 @@ def packs_needed(amount: Decimal, unit: str, pack_quantity: str | None) -> int:
     """
     needed = to_base_amount(amount, unit)
     if needed is None:
-        # Countable unit: "6 pièces" is 6 items, anything else is one.
-        return max(1, min(99, int(amount))) if unit.lower() in _COUNTABLE else 1
+        if unit.lower() not in _COUNTABLE:
+            return 1
+        count = max(1, min(99, int(amount)))
+        text = (pack_quantity or "").lower()
+        # A lot of N: "12 œufs" in boxes of 6 is 2 boxes.
+        if (m := _MULTIPACK.search(text)) or (m := _LOT.search(text)):
+            per = int(m.group(1))
+            return max(1, min(99, -(-count // per))) if per > 0 else count
+        # Sold by weight, loose or in a bunch: "4 bananes" is one bunch, not
+        # four (a list showed 9,80 € for four bananas, 12/10).
+        if parse_quantity(text) is not None or _LOOSE.search(text):
+            return 1
+        # Countable unit, unknown pack: "6 pièces" is 6 items.
+        return count
     pack = parse_quantity(pack_quantity)
     if pack is None or pack[1] != needed[1] or pack[0] <= 0:
         return 1
-    count = (needed[0] / pack[0]).to_integral_value(rounding=ROUND_CEILING)
-    return max(1, min(99, int(count)))
+    packs = (needed[0] / pack[0]).to_integral_value(rounding=ROUND_CEILING)
+    return max(1, min(99, int(packs)))
 
 
 def unit_price(price: Decimal | float | None, quantity: str | None) -> tuple[Decimal, str] | None:

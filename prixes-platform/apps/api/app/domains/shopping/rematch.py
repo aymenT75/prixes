@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.products.models import Product
-from app.domains.products.units import to_base_amount
+from app.domains.products.units import packs_needed, to_base_amount
 from app.domains.shopping.equivalents import key_words
 from app.domains.shopping.models import ShoppingItem
 from app.domains.smartcart.resolve import fit_penalty, resolve_lines
@@ -63,7 +63,14 @@ async def rematch(db: AsyncSession, owner_id: uuid.UUID) -> int:
         amount = item.amount if item.amount and item.amount > 0 else Decimal(1)
         needed = to_base_amount(Decimal(amount), unit)
         if current is not None and fit_penalty(label, key_words(label), needed, current) == 0:
-            continue  # already the right thing in the right size
+            # The right thing: only the number of packs may be off ("4 bananes"
+            # counted as four bunches before packs_needed knew loose produce).
+            if item.source != "manual" and item.amount:
+                packs = packs_needed(Decimal(amount), unit, current.quantity)
+                if packs != item.quantity:
+                    item.quantity = packs
+                    changed += 1
+            continue
         line = AiLine(
             product_name=label, amount=float(amount), unit=unit, category="épicerie salée"
         )
@@ -79,6 +86,5 @@ async def rematch(db: AsyncSession, owner_id: uuid.UUID) -> int:
         item.name = label
         item.quantity = max(1, best.quantity)
         changed += 1
-    if changed:
-        await db.flush()
+    await db.flush()
     return changed

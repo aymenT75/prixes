@@ -27,3 +27,11 @@ def test_the_equivalent_is_the_same_kind_of_thing() -> None:
     assert not acceptable("Persil", "Le Gourmand Soja, Poivre et Persil", key_words("Persil"))
     assert acceptable("Riz", "Riz long grain", key_words("Riz"))
     assert acceptable("Emmental râpé", "Emmental français râpé", key_words("Emmental râpé"))
+
+
+def test_a_prepared_product_is_not_the_raw_one() -> None:
+    assert not acceptable("Carottes", "CAROTTES râpées", key_words("Carottes"))
+    assert not acceptable("Poulet", "Poulet rôti mayonnaise", key_words("Poulet"))
+    assert not acceptable("Tomates", "Tomates basilic", key_words("Tomates"))
+    assert acceptable("Carottes râpées", "Carottes râpées bio", key_words("Carottes râpées"))
+    assert acceptable("Salade", "Salade mélangée", key_words("Salade"))

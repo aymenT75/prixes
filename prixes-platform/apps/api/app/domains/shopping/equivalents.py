@@ -74,6 +74,17 @@ def _qualified(name: str, word: str) -> bool:
     return re.search(rf"\b{word}s? (de|d|a|au|aux)\b", name) is not None
 
 
+# Words that make another product of a raw one: "carottes râpées" is a salad,
+# "poulet rôti mayonnaise" a sandwich, "tomates basilic" a sauce. Allowed only
+# when the original says them too.
+_PREPARED = re.compile(
+    r"\b(rapee?s?|rotie?s?|mayo|mayonnaise|basilic|provencale|cuisinee?s?|preparee?s?|"
+    r"sauce|soupe|veloute|puree|chips|compote|confiture|jus|nectar|sirop|sandwich|wrap|"
+    r"tarte|quiche|pizza|gateau|biscuits?|nuggets|panee?s?|cordon|farcie?s?|marinee?s?|"
+    r"sechee?s?|coulis|concentre|confite?s?|aromatisee?s?|saveur|gout|boisson|bonbons?)\b"
+)
+
+
 def acceptable(original: str, candidate: str, keys: list[str]) -> bool:
     plain_orig, plain_cand = _plain(original), _plain(candidate)
     plain_orig = re.sub(r"[^a-z]+", " ", plain_orig)
@@ -84,6 +95,9 @@ def acceptable(original: str, candidate: str, keys: list[str]) -> bool:
     # "Tapenade olives noires", "Persil" is not "Le Gourmand soja poivre et persil".
     cand_keys = key_words(candidate)
     if not cand_keys or cand_keys[0].rstrip("s") != keys[0].rstrip("s"):
+        return False
+    added = set(_PREPARED.findall(plain_cand)) - set(_PREPARED.findall(plain_orig))
+    if added:
         return False
     return not any(_qualified(plain_cand, k) and not _qualified(plain_orig, k) for k in keys)
 

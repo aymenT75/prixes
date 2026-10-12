@@ -165,6 +165,9 @@ def test_no_conflict_when_product_declares_nothing() -> None:
         (Decimal("2"), "L", "1L", 2),
         (Decimal("0.2"), "kg", "500 g", 1),      # never round down to zero
         (Decimal("6"), "pièce", None, 6),        # countable units pass through
+        (Decimal("4"), "pièce", "variable", 1),  # 4 bananes: one bunch
+        (Decimal("6"), "pièce", "1 kg", 1),      # 6 pommes in a 1 kg bag
+        (Decimal("12"), "pièce", "6 x 1", 2),    # 12 œufs in boxes of 6
         (Decimal("300"), "g", "6 x 33 cl", 1),   # mass vs volume: refuse to guess
         (Decimal("500"), "g", None, 1),          # unknown pack size
     ],
