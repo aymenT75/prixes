@@ -186,13 +186,14 @@ function ProductDetail() {
   // same geolocation prompt the store map already asks for, just surfaced here
   // immediately instead of requiring an extra tap into the price list.
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
+  // No position (refused, or a browser that never answers): stop looking, so
+  // the card does not spin forever (seen on a desktop Chrome, 12/10).
+  const [geoFailed, setGeoFailed] = useState(false);
   useEffect(() => {
     if (!targetStore) return;
     getCurrentPosition()
       .then(setCoords)
-      .catch(() => {
-        /* denied/unsupported — the store comparison list below still works without it */
-      });
+      .catch(() => setGeoFailed(true));
   }, [targetStore]);
 
   const { data: nearby, isFetching: nearbyFetching } = useQuery({
@@ -202,7 +203,7 @@ function ProductDetail() {
   });
 
   const nearestBranch = nearby && targetStore ? pickBranch(nearby.items, targetStore) : null;
-  const locatingBranch = !!targetStore && (!coords || nearbyFetching);
+  const locatingBranch = !!targetStore && !geoFailed && (!coords || nearbyFetching);
 
   const dietList = parseAllergens(data?.diets ?? null);
   const allergenList = parseAllergens(data?.allergens ?? null);
@@ -588,6 +589,14 @@ function ProductDetail() {
             <p className="flex items-center gap-2 text-body-md text-on-surface-variant">
               <Icon name="progress_activity" className="animate-spin text-[18px]" />
               Recherche du magasin le plus proche…
+            </p>
+          )}
+          {geoFailed && (
+            <p className="text-body-md text-on-surface-variant">
+              Position indisponible.{" "}
+              <Link href="/stores" className="text-primary underline underline-offset-2">
+                Chercher par adresse
+              </Link>
             </p>
           )}
           {!locatingBranch && coords && nearestBranch && (

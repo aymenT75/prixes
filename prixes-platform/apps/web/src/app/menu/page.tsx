@@ -459,8 +459,14 @@ const BASICS = /^(sel|poivre|huile|beurre|ail|oignon|eau|sucre|farine)\b/i;
  * and used again on another).
  */
 function WeekFacts({ plan }: { plan: MealPlan }) {
-  const total = Number(plan.split?.options[plan.split.options.length - 1]?.total ?? plan.estimated_total ?? 0);
-  const perMeal = plan.meals.length && plan.servings ? total / (plan.meals.length * plan.servings) : 0;
+  // The whole basket at its best known prices: a single shop's trolley that
+  // holds 4 items of 16 gave « 1,38 € par repas » (12/10), far below the truth.
+  const total = Number(plan.estimated_total ?? 0);
+  const priced = plan.basket.filter((l) => l.best_price != null).length;
+  const perMeal =
+    plan.meals.length && plan.servings && priced * 2 >= plan.basket.length
+      ? total / (plan.meals.length * plan.servings)
+      : 0;
   const days = new Map<string, Set<string>>();
   for (const m of plan.meals) {
     for (const ing of m.ingredients) {
@@ -478,7 +484,8 @@ function WeekFacts({ plan }: { plan: MealPlan }) {
       {perMeal > 0 && (
         <p className="rounded-xl bg-primary-container/25 p-3 text-body-md text-on-surface">
           <Icon name="euro" className="mr-1 align-[-4px] text-[18px]" />
-          Environ <b>{eur(perMeal)}</b> par personne et par repas.
+          Environ <b>{eur(perMeal)}</b> par personne et par repas
+          {priced < plan.basket.length ? ` (prix connus pour ${priced} ingrédients sur ${plan.basket.length})` : ""}.
         </p>
       )}
       {shared.length > 0 && (

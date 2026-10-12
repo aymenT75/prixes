@@ -98,7 +98,10 @@ export function SubscriptionCard() {
       )}
 
       {/* On iPhone: no way to a web payment, nor to manage one (Apple's rules). */}
-      {!ios && (status.premium || status.can_manage) ? (
+      {/* An access granted for life has no subscription to manage. */}
+      {!ios &&
+      (status.premium || status.can_manage) &&
+      !(status.premium_until && new Date(status.premium_until).getFullYear() >= 2099) ? (
         <button
           onClick={manage}
           disabled={busy || !status.can_manage}

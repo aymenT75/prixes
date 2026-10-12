@@ -17,6 +17,7 @@ import { api } from "@/lib/api";
 import { adviceReason, rankStores, readPriority, savePriority, useStoreAdvice } from "@/lib/courses";
 import { distance, eur } from "@/lib/format";
 import { getCurrentPosition } from "@/lib/geo";
+import { isNativeApp } from "@/lib/platform";
 import { findBranch } from "@/lib/stores";
 import type { SplitResult, Store, StoreBasketDetail } from "@/lib/types";
 import { useA11y } from "@/lib/useA11y";
@@ -69,6 +70,8 @@ export function NearbyStoreChoice({
   const [here, setHere] = useState<{ lat: number; lon: number } | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [attempt, setAttempt] = useState(0);
+  // Typed instead of located: a desktop without location, or a refusal.
+  const [manual, setManual] = useState<{ lat: number; lon: number } | null>(null);
   // Read after mount: the static export has no storage at render time.
   const [priority, setPriority] = useState(25);
   useEffect(() => setPriority(readPriority()), []);
@@ -77,7 +80,7 @@ export function NearbyStoreChoice({
   useEffect(() => {
     let alive = true;
     setStatus("locating");
-    getCurrentPosition()
+    (manual ? Promise.resolve(manual) : getCurrentPosition())
       .then((pos) => {
         if (alive) setHere(pos);
         return api.storesNearby(pos.lat, pos.lon, 10, 50);
@@ -117,7 +120,7 @@ export function NearbyStoreChoice({
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per comparison or retry
-  }, [plan, attempt]);
+  }, [plan, attempt, manual]);
 
   // Chosen on the home page: straight to that shop, no second question.
   useEffect(() => {
@@ -181,18 +184,26 @@ export function NearbyStoreChoice({
     return (
       <div className="card mt-3 flex flex-col items-center gap-3 p-6 text-center" role="alert">
         <Icon name="location_on" className="text-[40px] text-primary" />
-        <p className="text-headline-md text-on-surface">La localisation est nécessaire</p>
+        <p className="text-headline-md text-on-surface">Où êtes-vous ?</p>
         <p className="text-body-md text-on-surface-variant">
-          Prixes en a besoin pour trouver les magasins autour de vous et choisir le moins cher. Votre
+          Je n&apos;ai pas pu vous localiser. Donnez une adresse, ou réessayez la localisation. Votre
           position n&apos;est jamais enregistrée.
         </p>
-        <p className="text-body-md text-on-surface-variant">
-          Si vous l&apos;avez refusée : Réglages de l&apos;iPhone › Prixes › Position › « Lorsque
-          l&apos;app est active ».
-        </p>
-        <button onClick={() => setAttempt((n) => n + 1)} className="btn-primary w-full py-3">
-          <Icon name="my_location" className="text-[20px]" /> Activer la localisation
-        </button>
+        {isNativeApp() && (
+          <p className="text-body-md text-on-surface-variant">
+            Si vous l&apos;avez refusée : Réglages de l&apos;iPhone › Prixes › Position › « Lorsque
+            l&apos;app est active ».
+          </p>
+        )}
+        <AddressPicker onPick={(c) => setManual(c)} />
+        <div className="grid w-full grid-cols-2 gap-2">
+          <button onClick={() => setAttempt((n) => n + 1)} className="btn-outline py-3">
+            <Icon name="my_location" className="text-[20px]" /> Réessayer
+          </button>
+          <button onClick={onUnavailable} className="btn-outline py-3">
+            Comparer sans distance
+          </button>
+        </div>
       </div>
     );
   }
@@ -392,6 +403,55 @@ function Radar({ here, rows, best }: { here: { lat: number; lon: number }; rows:
           </span>
         );
       })}
+    </div>
+  );
+}
+
+/** A town or an address, found as you type (OpenStreetMap, through our API). */
+function AddressPicker({ onPick }: { onPick: (c: { lat: number; lon: number }) => void }) {
+  const [q, setQ] = useState("");
+  const [hits, setHits] = useState<{ label: string; lat: number; lon: number }[]>([]);
+  useEffect(() => {
+    const text = q.trim();
+    if (text.length < 3) {
+      setHits([]);
+      return;
+    }
+    const t = setTimeout(() => {
+      api
+        .geocodeAddress(text)
+        .then((r) => setHits(r.items.slice(0, 4)))
+        .catch(() => setHits([]));
+    }, 350);
+    return () => clearTimeout(t);
+  }, [q]);
+  return (
+    <div className="w-full text-left">
+      <label htmlFor="where" className="text-label-md text-on-surface">
+        Votre ville ou adresse
+      </label>
+      <input
+        id="where"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Ex. Lyon, ou 12 rue de la Paix, Paris"
+        className="input mt-1 min-h-11 w-full"
+        autoComplete="street-address"
+      />
+      {hits.length > 0 && (
+        <ul className="mt-2 space-y-1">
+          {hits.map((h) => (
+            <li key={`${h.lat},${h.lon}`}>
+              <button
+                onClick={() => onPick({ lat: h.lat, lon: h.lon })}
+                className="w-full rounded-xl bg-surface-container px-3 py-2 text-left text-body-md text-on-surface"
+              >
+                {h.label.split(",").slice(0, 3).join(",")}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
