@@ -339,6 +339,8 @@ export const api = {
   clearChecked: () => request<{ removed: number }>("/shopping/clear-checked", { method: "POST" }),
 
   // ── Liste partagée ──
+  /** Re-match lines tied to the wrong product (wrong kind, or a pack far too big). */
+  rematchList: () => request<{ changed: number }>("/shopping/rematch", { method: "POST" }),
   // ── Placard (« Je l'ai déjà ») ──
   getPantry: () => request<PantryItem[]>("/shopping/pantry"),
   addToPantry: (item: { barcode?: string | null; name: string; avoided?: number | null }) =>

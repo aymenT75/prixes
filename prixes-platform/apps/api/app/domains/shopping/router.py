@@ -144,6 +144,16 @@ async def clear_checked(db: DbSession, user: CurrentUser) -> dict[str, int]:
     return {"removed": removed}
 
 
+@router.post("/rematch")
+async def rematch_list(db: DbSession, user: CurrentUser) -> dict[str, int]:
+    """Re-match lines tied to the wrong product (wrong kind or pack size)."""
+    from app.domains.shopping.rematch import rematch  # local: imports the smart cart
+
+    changed = await rematch(db, await share.list_owner(db, user.id))
+    await db.commit()
+    return {"changed": changed}
+
+
 @router.get("/split", response_model=SplitResult)
 async def split(
     db: DbSession,

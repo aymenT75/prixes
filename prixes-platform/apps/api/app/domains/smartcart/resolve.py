@@ -26,7 +26,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.products import service as product_service
 from app.domains.products.models import PricePoint, Product
-from app.domains.products.units import packs_needed, to_base_amount, unit_price
+from app.domains.products.units import (
+    packs_needed,
+    parse_quantity,
+    to_base_amount,
+    unit_price,
+)
+from app.domains.shopping.equivalents import acceptable, key_words
 from app.domains.smartcart.schemas import AiLine, ResolvedLine
 
 # Below this a "match" is noise — better an honest free-text line.
@@ -42,6 +48,15 @@ _MAX_AMOUNT = Decimal(9999)
 _MAX_PACKS = 10
 # Candidates kept per line before the price lookup.
 _MAX_CANDIDATES = 8
+# A pack this many times bigger than what is needed is the wrong format: "lait,
+# 1 L" matched to a pack of six litres showed 7,02 € on the list (12/10).
+_OVERSIZE = Decimal("2.5")
+# The penalties that keep a close name from winning when it is not the thing:
+# another kind of product ("boisson au riz" for "riz", "lait de coco" for
+# "lait"), the wrong format, or a pack sold by volume for a thing sold by weight.
+_NOT_THE_THING = 0.35
+_TOO_BIG = 0.25
+_WRONG_MEASURE = 0.3
 
 _PUNCT = re.compile(r"[^a-z0-9 ]+")
 
@@ -158,6 +173,26 @@ class _Candidate:
     similarity: float
 
 
+def fit_penalty(
+    query: str,
+    keys: list[str],
+    needed: tuple[Decimal, str] | None,
+    product: Product,
+) -> float:
+    """How far a candidate is from what was asked, beyond its name: the kind of
+    product, and the size of the pack against the amount needed."""
+    penalty = 0.0
+    if keys and not acceptable(query, product.name or "", keys):
+        penalty += _NOT_THE_THING
+    pack = parse_quantity(product.quantity)
+    if needed and pack:
+        if pack[1] != needed[1]:
+            penalty += _WRONG_MEASURE
+        elif pack[0] > needed[0] * _OVERSIZE:
+            penalty += _TOO_BIG
+    return penalty
+
+
 async def _best_prices(db: AsyncSession, barcodes: list[str]) -> dict[str, Decimal]:
     """Cheapest known price per barcode, in one query rather than one per line."""
     if not barcodes:
@@ -205,11 +240,15 @@ async def resolve_lines(
             optional=line.optional,
         )
 
+        keys = key_words(line.product_name)
+        needed = to_base_amount(amount, line.unit)
         best: _Candidate | None = None
         best_score = 0.0
         for candidate in shortlist:
             conflict = allergen_conflict(candidate.product, avoid)
-            score = candidate.similarity
+            score = candidate.similarity - fit_penalty(
+                line.product_name, keys, needed, candidate.product
+            )
             # A product we can price is worth more than a marginally closer name
             # we can't: the whole promise is a costed basket.
             if candidate.product.barcode in prices:

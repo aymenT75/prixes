@@ -123,6 +123,27 @@ export default function ListPage() {
     refetchInterval: shared ? 15_000 : false,
   });
 
+  // Once a day, lines matched before matching checked the kind of product and
+  // the pack size are matched again (a six-pack for « lait, 1 L », 12/10).
+  useEffect(() => {
+    if (!user) return;
+    const KEY = "prixes.list.rematched";
+    const today = new Date().toDateString();
+    try {
+      if (localStorage.getItem(KEY) === today) return;
+      localStorage.setItem(KEY, today);
+    } catch {
+      /* storage blocked: still worth doing */
+    }
+    void api
+      .rematchList()
+      .then((r) => {
+        if (r.changed) qc.invalidateQueries({ queryKey: ["shopping"] });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per signed-in visit
+  }, [user]);
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["shopping"] });
     setPlan(null);
