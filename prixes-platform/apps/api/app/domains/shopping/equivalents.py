@@ -82,8 +82,11 @@ _PREPARED = re.compile(
     r"sauce|soupe|veloute|puree|chips|compote|confiture|jus|nectar|sirop|sandwich|wrap|"
     r"tarte|quiche|pizza|gateau|biscuits?|nuggets|panee?s?|cordon|farcie?s?|marinee?s?|"
     r"sechee?s?|coulis|concentre|confite?s?|aromatisee?s?|saveur|gout|boisson|bonbons?|"
-    r"curry|tajine|couscous|risotto|gratin|lasagnes?|parmentier|paella|poelee|plat|recette|avec)\b"
+    r"curry|tajine|couscous|risotto|gratin|lasagnes?|parmentier|paella|poelee|plat|recette|avec|"
+    r"pers|personnes?|portions?)\b"
 )
+# Catalogue categories of ready meals: never an equivalent of an ingredient.
+_MEAL_CATEGORY = re.compile(r"\bmeals?\b|plats? pr[ée]par|prepared|sandwich", re.IGNORECASE)
 
 
 def acceptable(original: str, candidate: str, keys: list[str]) -> bool:
@@ -122,7 +125,13 @@ async def find_equivalents(
     conditions = [folded.like(f"%{k}%") for k in keys]
     rows = (
         await db.execute(
-            select(Product.barcode, Product.name, PricePoint.store, func.min(PricePoint.price))
+            select(
+                Product.barcode,
+                Product.name,
+                Product.categories,
+                PricePoint.store,
+                func.min(PricePoint.price),
+            )
             .join(PricePoint, PricePoint.barcode == Product.barcode)
             .where(
                 and_(*conditions),
@@ -130,15 +139,17 @@ async def find_equivalents(
                 Product.barcode != barcode,
                 Product.name.is_not(None),
             )
-            .group_by(Product.barcode, Product.name, PricePoint.store)
+            .group_by(Product.barcode, Product.name, Product.categories, PricePoint.store)
             .limit(_MAX_CANDIDATES)
         )
     ).all()
 
     reference = Decimal(str(median(known_prices))) if known_prices else None
     best: dict[str, Equivalent] = {}
-    for cand_barcode, cand_name, store, price in rows:
+    for cand_barcode, cand_name, categories, store, price in rows:
         if store is None or price is None or not acceptable(name, cand_name, keys):
+            continue
+        if categories and _MEAL_CATEGORY.search(categories):
             continue
         if reference is not None and not (reference * _LOW <= price <= reference * _HIGH):
             continue
