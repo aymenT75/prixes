@@ -81,7 +81,8 @@ _PREPARED = re.compile(
     r"\b(rapee?s?|rotie?s?|mayo|mayonnaise|basilic|provencale|cuisinee?s?|preparee?s?|"
     r"sauce|soupe|veloute|puree|chips|compote|confiture|jus|nectar|sirop|sandwich|wrap|"
     r"tarte|quiche|pizza|gateau|biscuits?|nuggets|panee?s?|cordon|farcie?s?|marinee?s?|"
-    r"sechee?s?|coulis|concentre|confite?s?|aromatisee?s?|saveur|gout|boisson|bonbons?)\b"
+    r"sechee?s?|coulis|concentre|confite?s?|aromatisee?s?|saveur|gout|boisson|bonbons?|"
+    r"curry|tajine|couscous|risotto|gratin|lasagnes?|parmentier|paella|poelee|plat|recette|avec)\b"
 )
 
 
