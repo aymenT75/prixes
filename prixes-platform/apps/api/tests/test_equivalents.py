@@ -40,3 +40,11 @@ def test_a_prepared_product_is_not_the_raw_one() -> None:
 def test_a_ready_meal_is_not_the_ingredient() -> None:
     assert not acceptable("Poulet", "Poulet Curry Coco riz blanc", key_words("Poulet"))
     assert not acceptable("Poulet", "Le poulet patates pour 1 pers", key_words("Poulet"))
+    assert not acceptable("Poulet", "Poulet basquaise", key_words("Poulet"))
+    assert not acceptable(
+        "Poulet", "Le Poulet tandoori semoule aux petits légumes", key_words("Poulet")
+    )
+    assert not acceptable("Tomates", "Tomates entières pelées", key_words("Tomates"))
+    # A variety and a size are fine.
+    assert acceptable("Tomates", "Tomates cerises", key_words("Tomates"))
+    assert acceptable("Lait", "Lait demi écrémé", key_words("Lait"))

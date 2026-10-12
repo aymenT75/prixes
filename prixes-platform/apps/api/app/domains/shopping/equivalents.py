@@ -83,10 +83,18 @@ _PREPARED = re.compile(
     r"tarte|quiche|pizza|gateau|biscuits?|nuggets|panee?s?|cordon|farcie?s?|marinee?s?|"
     r"sechee?s?|coulis|concentre|confite?s?|aromatisee?s?|saveur|gout|boisson|bonbons?|"
     r"curry|tajine|couscous|risotto|gratin|lasagnes?|parmentier|paella|poelee|plat|recette|avec|"
-    r"pers|personnes?|portions?)\b"
+    r"pers|personnes?|portions?|basquaise|tandoori|tikka|pelee?s?|trio|duo|assortiment|"
+    r"cuite?s?)\b"
 )
+# An equivalent may add a few words (a variety, a brand, a size), not a recipe:
+# "Le poulet tandoori semoule aux petits légumes" is a dish, not "Poulet".
+_MAX_EXTRA_WORDS = 3
 # Catalogue categories of ready meals: never an equivalent of an ingredient.
 _MEAL_CATEGORY = re.compile(r"\bmeals?\b|plats? pr[ée]par|prepared|sandwich", re.IGNORECASE)
+
+
+def _words(text: str) -> set[str]:
+    return {w for w in text.split() if w not in _STOP and len(w) >= 3}
 
 
 def acceptable(original: str, candidate: str, keys: list[str]) -> bool:
@@ -102,6 +110,8 @@ def acceptable(original: str, candidate: str, keys: list[str]) -> bool:
         return False
     added = set(_PREPARED.findall(plain_cand)) - set(_PREPARED.findall(plain_orig))
     if added:
+        return False
+    if len(_words(plain_cand) - _words(plain_orig)) > _MAX_EXTRA_WORDS:
         return False
     return not any(_qualified(plain_cand, k) and not _qualified(plain_orig, k) for k in keys)
 
