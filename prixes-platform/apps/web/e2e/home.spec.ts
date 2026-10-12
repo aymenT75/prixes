@@ -23,11 +23,14 @@ test.describe("Home page (golden path)", () => {
   });
 
   test("searching from home opens the search with the query", async ({ page }) => {
-    await page.goto("/");
+    // networkidle: the form is hydrated, so Enter goes through the app's router
+    // (a submit before hydration reloaded the home page instead — flaky in CI).
+    await page.goto("/", { waitUntil: "networkidle" });
     await page.getByLabel("Rechercher un produit").fill("yaourt");
     await page.getByLabel("Rechercher un produit").press("Enter");
 
-    await expect(page).toHaveURL(/\/courses\?q=yaourt/);
+    // The search page compiles on first visit in `next dev`.
+    await expect(page).toHaveURL(/\/courses\?q=yaourt/, { timeout: 20_000 });
     await expect(page.getByRole("heading", { name: "Recherche" })).toBeVisible();
   });
 });

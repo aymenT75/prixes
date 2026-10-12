@@ -76,7 +76,10 @@ export function MealQuestionnaire({
   saving,
   onDone,
   onCancel,
+  doneLabel = "Composer ma semaine",
 }: {
+  /** The last button: on the home page the answers are only kept. */
+  doneLabel?: string;
   initial: MealPreferences;
   allergens: string[];
   saving: boolean;
@@ -311,7 +314,7 @@ export function MealQuestionnaire({
           {last ? (
             <>
               <Icon name="restaurant_menu" className="text-[18px]" />
-              {saving ? "Enregistrement…" : "Composer ma semaine"}
+              {saving ? "Enregistrement…" : doneLabel}
             </>
           ) : (
             <>

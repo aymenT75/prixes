@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { GetToKnow } from "@/components/GetToKnow";
 import { Icon } from "@/components/Icon";
 import { NewsCard } from "@/components/NewsCard";
 import { PageHeader } from "@/components/PageHeader";
@@ -36,6 +37,7 @@ export default function HomePage() {
         Bonjour{user ? ` ${user.username}` : ""}, où fait-on nos courses aujourd&apos;hui&nbsp;?
       </h2>
 
+      <GetToKnow />
       <TodayShop />
       <NewsCard />
       <TodayPromos />

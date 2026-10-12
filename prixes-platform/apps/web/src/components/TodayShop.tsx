@@ -68,6 +68,12 @@ export function TodayShop() {
     enabled: !!user && toBuy.length > 0,
     staleTime: 10 * 60_000,
   });
+  // The household, from "Faisons connaissance": the week's list is made for it.
+  const { data: prefs } = useQuery({
+    queryKey: ["meal-prefs"],
+    queryFn: () => api.getMealPreferences(),
+    enabled: !!user,
+  });
   const { data: month } = useQuery({
     queryKey: ["budget"],
     queryFn: () => api.getBudget(),
@@ -172,12 +178,16 @@ export function TodayShop() {
     return (
       <Panel who="Votre liste est vide">
         <p className="text-[17px] font-semibold leading-snug">
-          Je vous prépare celle de la semaine ? Les repas, vos habitudes et les promos du moment.
+          Je vous prépare celle de la semaine
+          {prefs ? ` pour ${prefs.servings} personne${prefs.servings > 1 ? "s" : ""}` : ""} ? Les repas, vos
+          habitudes et les promos du moment.
         </p>
         <div className="grid grid-cols-[1.3fr_1fr] gap-2">
           <button
             onClick={() => {
-              useVoiceTask.getState().queue({ kind: "cart", prompt: "les courses de la semaine" });
+              const who = prefs ? ` pour ${prefs.servings} personne${prefs.servings > 1 ? "s" : ""}` : "";
+              const likes = prefs?.styles.length ? `, cuisine ${prefs.styles.join(", ")}` : "";
+              useVoiceTask.getState().queue({ kind: "cart", prompt: `les courses de la semaine${who}${likes}` });
               router.push("/list");
             }}
             className="btn-primary py-3"
