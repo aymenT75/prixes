@@ -46,6 +46,11 @@ const MAX_STYLES = 4;
 
 export const DEFAULT_PREFERENCES: MealPreferences = {
   servings: 2,
+  children: 0,
+  days: 7,
+  dislikes: [],
+  max_minutes: null,
+  level: null,
   meals_per_day: 1,
   budget_eur: null,
   goal: null,
@@ -57,9 +62,13 @@ export const DEFAULT_PREFERENCES: MealPreferences = {
 export function describePreferences(p: MealPreferences): string {
   const label = <T extends string>(list: Choice<T>[], v: T) =>
     list.find((c) => c.value === v)?.label.toLowerCase() ?? v;
+  const kids = p.children ? ` + ${p.children} enfant${p.children > 1 ? "s" : ""}` : "";
+  const days = p.days ?? 7;
   return [
-    `${p.servings} pers.`,
-    p.meals_per_day === 2 ? "midi et soir" : "dîners",
+    `${p.servings} adulte${p.servings > 1 ? "s" : ""}${kids}`,
+    `${days} ${p.meals_per_day === 2 ? "jours, midi et soir" : "dîners"}`,
+    p.max_minutes ? `${p.max_minutes} min max` : null,
+    p.dislikes?.length ? `sans ${p.dislikes.join(", ").toLowerCase()}` : null,
     p.budget_eur ? `${String(p.budget_eur).replace(".", ",")} € max` : null,
     p.equipment.map((e) => label(EQUIPMENT, e)).join(", ") || null,
     p.styles.map((s) => label(STYLES, s)).join(", ") || null,
@@ -70,14 +79,34 @@ export function describePreferences(p: MealPreferences): string {
 
 // Budget first (who you are, what you spend, where you shop), then the food:
 // everything after is held to that budget at that chain's prices.
-const STEPS = ["servings", "budget", "store", "goal", "meals", "equipment", "styles"] as const;
+const STEPS = ["servings", "meals", "budget", "store", "goal", "dislikes", "time", "equipment", "styles"] as const;
+
+/** What people most often refuse to eat; "Rien de tout ça" clears it. */
+const DISLIKES = [
+  "Coriandre", "Champignons", "Olives", "Épicé", "Poisson", "Fruits de mer", "Aubergine",
+  "Courgette", "Brocoli", "Épinards", "Fromages forts", "Abats", "Agneau", "Tofu",
+];
+const TIMES: { value: 20 | 30 | 45 | null; label: string }[] = [
+  { value: 20, label: "20 min" },
+  { value: 30, label: "30 min" },
+  { value: 45, label: "45 min" },
+  { value: null, label: "Peu importe" },
+];
+const LEVELS: { value: "debutant" | "a-l-aise" | "passionne"; label: string; hint: string; icon: string }[] = [
+  { value: "debutant", label: "Débutant", hint: "Simple et inratable", icon: "egg" },
+  { value: "a-l-aise", label: "À l'aise", hint: "Je me débrouille", icon: "skillet" },
+  { value: "passionne", label: "Passionné", hint: "Rien ne me fait peur", icon: "local_fire_department" },
+];
 
 /** The chains people name; "Peu importe" lets Prixes pick the cheapest nearby. */
 const CHAINS = ["Lidl", "Aldi", "E.Leclerc", "Carrefour", "Intermarché", "Auchan", "Super U", "Monoprix", "Franprix", "Netto"];
 
 /** About 3 € per person and per meal: the week's suggested budget. */
-export function suggestedBudget(p: Pick<MealPreferences, "servings" | "meals_per_day">): number {
-  return Math.round(3 * p.servings * 7 * p.meals_per_day);
+export function suggestedBudget(
+  p: Pick<MealPreferences, "servings" | "meals_per_day" | "children" | "days">,
+): number {
+  const portions = p.servings + (p.children ?? 0) / 2;
+  return Math.round(3 * portions * (p.days ?? 7) * p.meals_per_day);
 }
 
 export function MealQuestionnaire({
@@ -181,9 +210,13 @@ export function MealQuestionnaire({
         {current === "servings" && (
           <>
             <Title>Vous êtes combien à table ?</Title>
-            <div className="mt-6 flex items-center justify-center gap-6">
+            <p className="mt-1 text-body-md text-on-surface-variant">
+              Un enfant compte pour une demi-portion. Un ado qui mange comme un adulte compte en adulte.
+            </p>
+            <p className="mt-5 text-center text-label-lg text-on-surface">Adultes</p>
+            <div className="mt-1 flex items-center justify-center gap-6">
               <Stepper
-                label="Une personne de moins"
+                label="Un adulte de moins"
                 icon="remove"
                 disabled={prefs.servings <= 1}
                 onClick={() => set({ servings: prefs.servings - 1 })}
@@ -193,14 +226,35 @@ export function MealQuestionnaire({
                   {prefs.servings}
                 </span>
                 <span className="text-body-md text-on-surface-variant">
-                  personne{prefs.servings > 1 ? "s" : ""}
+                  adulte{prefs.servings > 1 ? "s" : ""}
                 </span>
               </p>
               <Stepper
-                label="Une personne de plus"
+                label="Un adulte de plus"
                 icon="add"
                 disabled={prefs.servings >= 12}
                 onClick={() => set({ servings: prefs.servings + 1 })}
+              />
+            </div>
+            <p className="mt-4 text-center text-label-lg text-on-surface">Enfants</p>
+            <div className="mt-1 flex items-center justify-center gap-6">
+              <Stepper
+                label="Un enfant de moins"
+                icon="remove"
+                disabled={(prefs.children ?? 0) <= 0}
+                onClick={() => set({ children: (prefs.children ?? 0) - 1 })}
+              />
+              <p className="w-24 text-center" aria-live="polite">
+                <span className="block text-[44px] font-bold leading-none text-on-surface">{prefs.children ?? 0}</span>
+                <span className="text-body-md text-on-surface-variant">
+                  enfant{(prefs.children ?? 0) > 1 ? "s" : ""}
+                </span>
+              </p>
+              <Stepper
+                label="Un enfant de plus"
+                icon="add"
+                disabled={(prefs.children ?? 0) >= 8}
+                onClick={() => set({ children: (prefs.children ?? 0) + 1 })}
               />
             </div>
           </>
@@ -226,6 +280,24 @@ export function MealQuestionnaire({
                 label="Midi et soir"
                 hint="14 repas"
               />
+            </div>
+            <p className="mt-5 text-label-lg text-on-surface">Combien de jours vous cuisinez ?</p>
+            <div className="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Jours de cuisine">
+              {[3, 4, 5, 6, 7].map((d) => (
+                <button
+                  key={d}
+                  role="radio"
+                  aria-checked={(prefs.days ?? 7) === d}
+                  onClick={() => set({ days: d })}
+                  className={`grid h-12 w-12 place-items-center rounded-full border-2 text-label-lg ${
+                    (prefs.days ?? 7) === d
+                      ? "border-primary-container bg-primary-container text-on-primary-container"
+                      : "border-outline-variant bg-surface-container-lowest text-on-surface"
+                  }`}
+                >
+                  {d}
+                </button>
+              ))}
             </div>
           </>
         )}
@@ -287,6 +359,78 @@ export function MealQuestionnaire({
                   onClick={() => set({ equipment: toggle(prefs.equipment, e.value) })}
                   icon={e.icon}
                   label={e.label}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {current === "dislikes" && (
+          <>
+            <Title>Des aliments que vous n&apos;aimez pas ?</Title>
+            <p className="mt-1 text-body-md text-on-surface-variant">Promis, je ne vous en proposerai jamais.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {DISLIKES.map((d) => {
+                const on = (prefs.dislikes ?? []).includes(d);
+                return (
+                  <button
+                    key={d}
+                    aria-pressed={on}
+                    onClick={() => set({ dislikes: toggle(prefs.dislikes ?? [], d) })}
+                    className={`min-h-11 rounded-full border-2 px-4 text-label-lg ${
+                      on
+                        ? "border-primary-container bg-primary-container text-on-primary-container"
+                        : "border-outline-variant bg-surface-container-lowest text-on-surface"
+                    }`}
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+            <button
+              onClick={() => {
+                set({ dislikes: [] });
+                setStep(step + 1);
+              }}
+              className="mt-3 w-full rounded-xl py-2 text-label-md text-primary"
+            >
+              Rien de tout ça
+            </button>
+          </>
+        )}
+
+        {current === "time" && (
+          <>
+            <Title>Combien de temps en cuisine, un soir de semaine ?</Title>
+            <div className="mt-4 flex flex-wrap gap-2" role="radiogroup" aria-labelledby="q-title">
+              {TIMES.map((t) => (
+                <button
+                  key={t.label}
+                  role="radio"
+                  aria-checked={(prefs.max_minutes ?? null) === t.value}
+                  onClick={() => set({ max_minutes: t.value })}
+                  className={`min-h-11 rounded-full border-2 px-4 text-label-lg ${
+                    (prefs.max_minutes ?? null) === t.value
+                      ? "border-primary-container bg-primary-container text-on-primary-container"
+                      : "border-outline-variant bg-surface-container-lowest text-on-surface"
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <p className="mt-5 text-label-lg text-on-surface">Votre niveau en cuisine ?</p>
+            <div className="mt-2 grid grid-cols-1 gap-2" role="radiogroup" aria-label="Niveau en cuisine">
+              {LEVELS.map((l) => (
+                <Option
+                  key={l.value}
+                  role="radio"
+                  selected={prefs.level === l.value}
+                  onClick={() => set({ level: prefs.level === l.value ? null : l.value })}
+                  icon={l.icon}
+                  label={l.label}
+                  hint={l.hint}
                 />
               ))}
             </div>

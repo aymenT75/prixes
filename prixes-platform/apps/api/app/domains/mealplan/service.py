@@ -30,6 +30,7 @@ from app.domains.mealplan.schemas import (
     MealPlanIn,
     MealPlanOut,
     Slot,
+    portions,
 )
 from app.domains.shopping import service as shopping_service
 from app.domains.shopping.schemas import OptimizeResult, SplitResult
@@ -79,6 +80,13 @@ _STYLE = {
 }
 
 
+_LEVEL = {
+    "debutant": "Cuisinier débutant : recettes simples et inratables, peu d'étapes.",
+    "a-l-aise": "Cuisinier à l'aise : recettes du quotidien, techniques courantes.",
+    "passionne": "Cuisinier passionné : recettes plus élaborées bienvenues.",
+}
+
+
 def _kitchen_lines(data: MealPlanIn) -> list[str]:
     """The questionnaire, as sentences. Shared by the week and the single-meal redo,
     so swapping a dinner cannot bring back the oven you said you don't have."""
@@ -93,15 +101,27 @@ def _kitchen_lines(data: MealPlanIn) -> list[str]:
         )
     if data.styles:
         lines.append("Style de repas souhaité : " + ", ".join(_STYLE[s] for s in data.styles) + ".")
+    if data.max_minutes:
+        lines.append(
+            f"Temps maximum en cuisine, préparation et cuisson comprises : {data.max_minutes} min."
+        )
+    if data.level:
+        lines.append(_LEVEL[data.level])
     return lines
 
 
 def _user_prompt(data: MealPlanIn, avoid_titles: list[str] | None = None) -> str:
-    meals = 7 * data.meals_per_day
+    meals = data.days * data.meals_per_day
+    kids = (
+        f" et {data.children} enfant(s) (un enfant mange une demi-portion)"
+        if data.children
+        else ""
+    )
     lines = [
-        f"Compose {meals} repas pour la semaine "
+        f"Compose {meals} repas sur {data.days} jours, du lundi au "
+        f"{DAYS[data.days - 1]} "
         + ("(déjeuner et dîner)." if data.meals_per_day == 2 else "(dîner uniquement)."),
-        f"Foyer de {data.servings} personne(s).",
+        f"Foyer de {data.servings} adulte(s){kids}. Quantités pour {portions(data)} portions.",
     ]
     if data.budget_eur:
         lines.append(
@@ -207,6 +227,8 @@ def _document(
         "user_id": str(user_id),
         "week_start": week_start.isoformat(),
         "servings": data.servings,
+        "children": data.children,
+        "days": data.days,
         "meals_per_day": data.meals_per_day,
         "budget_eur": str(data.budget_eur) if data.budget_eur else None,
         "constraints": {
@@ -217,6 +239,8 @@ def _document(
             "equipment": data.equipment,
             "styles": data.styles,
             "store": data.store,
+            "max_minutes": data.max_minutes,
+            "level": data.level,
         },
         "meals": [meal.model_dump(mode="json") for meal in meals],
         "updated_at": datetime.now(UTC),
@@ -256,6 +280,8 @@ def _restore_input(doc: dict[str, Any]) -> MealPlanIn:
     constraints = doc.get("constraints", {})
     return MealPlanIn(
         servings=doc.get("servings", 2),
+        children=doc.get("children", 0),
+        days=doc.get("days", 7),
         meals_per_day=doc.get("meals_per_day", 1),
         budget_eur=Decimal(doc["budget_eur"]) if doc.get("budget_eur") else None,
         avoid_allergens=constraints.get("avoid_allergens", []),
@@ -266,6 +292,8 @@ def _restore_input(doc: dict[str, Any]) -> MealPlanIn:
         equipment=constraints.get("equipment", []),
         styles=constraints.get("styles", []),
         store=constraints.get("store"),
+        max_minutes=constraints.get("max_minutes"),
+        level=constraints.get("level"),
         week_start=date.fromisoformat(doc["week_start"]),
     )
 

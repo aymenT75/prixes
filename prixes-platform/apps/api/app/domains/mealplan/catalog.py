@@ -16,7 +16,7 @@ from functools import cache
 from typing import cast
 
 from app.domains.mealplan.catalog_data import RECIPES
-from app.domains.mealplan.schemas import DAYS, AiMeal, MealPlanIn, Slot
+from app.domains.mealplan.schemas import DAYS, AiMeal, MealPlanIn, Slot, portions
 from app.domains.smartcart.schemas import AiLine, Category, Unit
 
 _CATEGORY = {
@@ -104,6 +104,24 @@ def _fold(text: str) -> str:
     return "".join(c for c in text if not unicodedata.combining(c))
 
 
+# A dislike names a family; the recipe names what is in it ("Poisson" -> saumon).
+_FAMILIES = {
+    "poisson": ("poisson", "saumon", "cabillaud", "thon", "colin", "merlu", "lieu",
+                "sardine", "maquereau", "truite", "dorade", "bar ", "hareng", "anchois"),
+    "fruits de mer": ("fruits de mer", "crevette", "moule", "calamar", "encornet",
+                      "saint-jacques", "noix de st", "langoustine", "surimi"),
+    "epice": ("epice", "piment", "harissa", "chorizo", "cajun", "chili", "tabasco", "sriracha"),
+    "fromages forts": ("roquefort", "bleu d", "gorgonzola", "munster", "maroilles", "livarot"),
+    "abats": ("abats", "foie", "rognon", "gesier", "tripes", "coeur de"),
+}
+
+
+def _dislike_words(dislike: str) -> tuple[str, ...]:
+    word = _fold(dislike).strip()
+    # "Champignons" must catch "champignon de Paris".
+    return _FAMILIES.get(word, (word[:-1] if word.endswith("s") else word,))
+
+
 def allowed(recipe: Recipe, data: MealPlanIn) -> bool:
     """The hard filters: allergens, diets, kitchen, dislikes. Never relaxed."""
     avoid = {_fold(a) for a in data.avoid_allergens}
@@ -130,7 +148,9 @@ def allowed(recipe: Recipe, data: MealPlanIn) -> bool:
         return False
     if data.dislikes:
         haystack = _fold(recipe.title + " " + " ".join(i[0] for i in recipe.ingredients))
-        if any(_fold(d) in haystack for d in data.dislikes if d.strip()):
+        if any(
+            w in haystack for d in data.dislikes if d.strip() for w in _dislike_words(d)
+        ):
             return False
     return True
 
@@ -141,7 +161,7 @@ def _max_cost(data: MealPlanIn, cheaper: bool) -> int:
         return 1
     if not data.budget_eur:
         return 3
-    per_meal = float(data.budget_eur) / (data.servings * 7 * data.meals_per_day)
+    per_meal = float(data.budget_eur) / (portions(data) * data.days * data.meals_per_day)
     return 1 if per_meal < 2.2 else 2 if per_meal < 3.5 else 3
 
 
@@ -152,6 +172,12 @@ def _score(recipe: Recipe, data: MealPlanIn, rng: random.Random) -> float:
         score += 1.5
     if data.goal == "budget":
         score += 3 - recipe.cost
+    # Little time or little practice: the quick, simple recipes first.
+    if (data.max_minutes and data.max_minutes <= 20) or data.level == "debutant":
+        if "rapide" in recipe.styles:
+            score += 2.0
+        if "one-pot" in recipe.styles:
+            score += 1.0
     # The jitter is what makes "Refaire toute la semaine" give another week.
     return score + rng.random() * 1.5
 
@@ -187,7 +213,9 @@ def compose(
     ranked = sorted(affordable, key=lambda r: _score(r, data, rng), reverse=True)
 
     day_slots: tuple[Slot, ...] = ("déjeuner", "dîner") if data.meals_per_day == 2 else ("dîner",)
-    slots: list[tuple[int, Slot]] = [(day, slot) for day in range(7) for slot in day_slots]
+    slots: list[tuple[int, Slot]] = [
+        (day, slot) for day in range(data.days) for slot in day_slots
+    ]
     # Anti-gaspillage: among the best matches, prefer a recipe that finishes
     # what the week has already opened (the cream of Monday on Wednesday) or
     # what the cupboard holds. A short pool (strict diet + small kitchen)
@@ -209,7 +237,7 @@ def compose(
         chosen.append(pick)
         opened |= _ingredient_names(pick)
     return [
-        AiMeal(day=day, slot=slot, title=recipe.title, ingredients=recipe.lines(data.servings))
+        AiMeal(day=day, slot=slot, title=recipe.title, ingredients=recipe.lines(portions(data)))
         for (day, slot), recipe in zip(slots, chosen, strict=True)
     ]
 

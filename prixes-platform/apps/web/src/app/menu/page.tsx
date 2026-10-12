@@ -112,6 +112,11 @@ export default function MenuPage() {
             equipment: p.equipment,
             styles: p.styles,
             store: p.store ?? null,
+            children: p.children ?? 0,
+            days: p.days ?? 7,
+            dislikes: p.dislikes ?? [],
+            max_minutes: p.max_minutes ?? null,
+            level: p.level ?? null,
           },
           controller.signal,
         );

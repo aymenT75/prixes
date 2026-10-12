@@ -43,6 +43,7 @@ download
 eco
 edit
 edit_note
+egg
 email
 error
 euro

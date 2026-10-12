@@ -79,11 +79,16 @@ async def compose_sunday_menus(
         prefs = MealPreferences.model_validate(user.meal_preferences)
         data = MealPlanIn(
             servings=prefs.servings,
+            children=prefs.children,
+            days=prefs.days,
             meals_per_day=prefs.meals_per_day,
             budget_eur=prefs.budget_eur,
             goal=prefs.goal,
             equipment=prefs.equipment,
             styles=prefs.styles,
+            dislikes=prefs.dislikes,
+            max_minutes=prefs.max_minutes,
+            level=prefs.level,
             store=prefs.store,
             pantry=await pantry.names(db, await list_owner(db, user.id)),
             avoid_allergens=prefs.avoid_allergens,

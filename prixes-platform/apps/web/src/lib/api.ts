@@ -423,6 +423,10 @@ export const api = {
       equipment?: MealEquipment[];
       styles?: MealStyle[];
       store?: string | null;
+      children?: number;
+      days?: number;
+      max_minutes?: 20 | 30 | 45 | null;
+      level?: "debutant" | "a-l-aise" | "passionne" | null;
     },
     signal?: AbortSignal,
   ) => request<MealPlan>("/meal-plan", { method: "POST", body: JSON.stringify(body), signal }),

@@ -293,6 +293,14 @@ export type MealStyle =
 /** The questionnaire's answers, kept on the account. */
 export interface MealPreferences {
   servings: number;
+  /** Children eat half an adult portion. */
+  children?: number;
+  /** Days the household cooks, 3 to 7. */
+  days?: number;
+  /** Foods never to be proposed ("coriandre", "champignons"…). */
+  dislikes?: string[];
+  max_minutes?: 20 | 30 | 45 | null;
+  level?: "debutant" | "a-l-aise" | "passionne" | null;
   meals_per_day: 1 | 2;
   budget_eur: number | null;
   goal: MealGoal | null;

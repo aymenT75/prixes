@@ -22,6 +22,8 @@ Slot = Literal["déjeuner", "dîner"]
 Goal = Literal["budget", "temps", "sante", "idees"]
 Equipment = Literal["four", "plaques", "micro-ondes", "airfryer", "robot", "autocuiseur"]
 Style = Literal["rapide", "healthy", "classique", "economique", "reconfort", "one-pot", "monde"]
+Level = Literal["debutant", "a-l-aise", "passionne"]
+MaxMinutes = Literal[20, 30, 45]
 
 DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
 
@@ -42,6 +44,10 @@ class AiMealPlan(BaseModel):
 # ── What the API exchanges ───────────────────────────────────────────────────
 class MealPlanIn(BaseModel):
     servings: int = Field(default=2, ge=1, le=12)
+    # Children eat half an adult portion; they change quantities, not the menu.
+    children: int = Field(default=0, ge=0, le=8)
+    # How many days the household cooks (3 to 7): the rest is eaten out or left over.
+    days: int = Field(default=7, ge=3, le=7)
     # One meal a day (dinner only) or two. Most households plan dinners.
     meals_per_day: Literal[1, 2] = 1
     budget_eur: Decimal | None = Field(default=None, gt=0, le=1000)
@@ -54,6 +60,8 @@ class MealPlanIn(BaseModel):
     goal: Goal | None = None
     equipment: list[Equipment] = Field(default_factory=list, max_length=6)
     styles: list[Style] = Field(default_factory=list, max_length=4)
+    max_minutes: MaxMinutes | None = None
+    level: Level | None = None
     # The chain where the household shops: the budget is held at its prices.
     store: str | None = Field(default=None, max_length=60)
     # What the household already has (the cupboard), filled in by the server:
@@ -100,9 +108,14 @@ class MealPreferences(BaseModel):
     """
 
     servings: int = Field(default=2, ge=1, le=12)
+    children: int = Field(default=0, ge=0, le=8)
+    days: int = Field(default=7, ge=3, le=7)
     meals_per_day: Literal[1, 2] = 1
     budget_eur: Decimal | None = Field(default=None, gt=0, le=1000)
     goal: Goal | None = None
+    dislikes: list[str] = Field(default_factory=list, max_length=20)
+    max_minutes: MaxMinutes | None = None
+    level: Level | None = None
     equipment: list[Equipment] = Field(default_factory=list, max_length=6)
     styles: list[Style] = Field(default_factory=list, max_length=4)
     # The chain where the household shops (asked first, with the budget).
@@ -117,3 +130,8 @@ class RegenerateIn(BaseModel):
     """Redo a single meal — the button people actually press."""
 
     note: str | None = Field(default=None, max_length=200)
+
+
+def portions(data: MealPlanIn) -> int:
+    """Adult portions to cook for: a child eats half (rounded up for the pot)."""
+    return data.servings + (data.children + 1) // 2
