@@ -11,7 +11,7 @@ from app.core.deps import CurrentUser, DbSession
 from app.core.redis import redis_client
 from app.domains.mealplan.auto import ready_key
 from app.domains.products.models import PricePoint, Product
-from app.domains.shopping import budget, service, share
+from app.domains.shopping import budget, pantry, service, share
 from app.domains.shopping.models import ShoppingItem
 from app.domains.shopping.schemas import (
     BudgetIn,
@@ -21,6 +21,8 @@ from app.domains.shopping.schemas import (
     DropOut,
     JoinIn,
     NewsOut,
+    PantryIn,
+    PantryOut,
     ShareOut,
     ShoppingItemIn,
     ShoppingItemOut,
@@ -37,6 +39,8 @@ router = APIRouter(prefix="/shopping", tags=["shopping"])
 share_router = APIRouter(prefix="/shopping/share", tags=["shopping"])
 # The month's spending against the budget, per list (a family shares it).
 budget_router = APIRouter(prefix="/shopping/budget", tags=["shopping"])
+# The cupboard ("Je l'ai déjà"), per list.
+pantry_router = APIRouter(prefix="/shopping/pantry", tags=["shopping"])
 
 
 async def _enrich(
@@ -113,9 +117,11 @@ async def add(data: ShoppingItemIn, db: DbSession, user: CurrentUser) -> Shoppin
 async def bulk_add(data: BulkAddIn, db: DbSession, user: CurrentUser) -> BulkAddOut:
     """Add a whole basket in one call — the assistant and the meal planner."""
     owner = await share.list_owner(db, user.id)
-    items, created, merged = await service.bulk_add(db, owner, data.items, user.id)
+    items, created, merged, skipped = await service.bulk_add(db, owner, data.items, user.id)
     await share.tell_others(db, owner, user.id, [i.label for i in items])
-    return BulkAddOut(added=created, merged=merged, items=await _enrich(db, items, user.id))
+    return BulkAddOut(
+        added=created, merged=merged, items=await _enrich(db, items, user.id), skipped=skipped
+    )
 
 
 @router.patch("/{item_id}", response_model=ShoppingItemOut)
@@ -208,3 +214,28 @@ async def add_trip(body: TripIn, db: DbSession, user: CurrentUser) -> BudgetOut:
     owner = await share.list_owner(db, user.id)
     await budget.record_trip(db, owner, user.id, body)
     return await budget.summary(db, owner)
+
+
+# ── Placard ─────────────────────────────────────────────────────────────────
+@pantry_router.get("", response_model=list[PantryOut])
+async def get_pantry(db: DbSession, user: CurrentUser) -> list[PantryOut]:
+    """What the household has at home (said in the last two weeks)."""
+    owner = await share.list_owner(db, user.id)
+    return [PantryOut.model_validate(i) for i in await pantry.active(db, owner)]
+
+
+@pantry_router.post("", response_model=PantryOut, status_code=201)
+async def add_to_pantry(body: PantryIn, db: DbSession, user: CurrentUser) -> PantryOut:
+    """"Je l'ai déjà": kept out of the next lists for two weeks."""
+    owner = await share.list_owner(db, user.id)
+    item = await pantry.add(db, owner, body)
+    await db.commit()
+    await db.refresh(item)
+    return PantryOut.model_validate(item)
+
+
+@pantry_router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_from_pantry(item_id: uuid.UUID, db: DbSession, user: CurrentUser) -> None:
+    owner = await share.list_owner(db, user.id)
+    await pantry.remove(db, owner, item_id)
+    await db.commit()

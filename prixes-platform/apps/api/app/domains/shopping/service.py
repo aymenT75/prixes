@@ -109,12 +109,16 @@ async def bulk_add(
     user_id: uuid.UUID,
     lines: list[ShoppingItemIn],
     actor: uuid.UUID | None = None,
-) -> tuple[list[ShoppingItem], int, int]:
-    """Add a whole basket. Returns (items, created, merged).
+) -> tuple[list[ShoppingItem], int, int, list[str]]:
+    """Add a whole basket. Returns (items, created, merged, skipped).
 
     Merging rather than duplicating matters here: a week of meals routinely asks
-    for onions three times, and the user wants one line, not three.
+    for onions three times, and the user wants one line, not three. What the
+    household said it already has ("Je l'ai déjà") is left out: `skipped`.
     """
+    from app.domains.shopping import pantry  # local: pantry imports schemas only
+
+    lines, skipped = await pantry.skip_what_we_have(db, user_id, lines)
     created = merged = 0
     items: list[ShoppingItem] = []
     for line in lines:
@@ -125,7 +129,7 @@ async def bulk_add(
         else:
             merged += 1
         items.append(item)
-    return items, created, merged
+    return items, created, merged, skipped
 
 
 async def update_item(

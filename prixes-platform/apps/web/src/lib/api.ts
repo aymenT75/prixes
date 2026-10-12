@@ -31,6 +31,7 @@ import type {
   ImportedRecipe,
   BillingStatus,
   BudgetSummary,
+  PantryItem,
   MealEquipment,
   MealGoal,
   MealPlan,
@@ -338,6 +339,11 @@ export const api = {
   clearChecked: () => request<{ removed: number }>("/shopping/clear-checked", { method: "POST" }),
 
   // ── Liste partagée ──
+  // ── Placard (« Je l'ai déjà ») ──
+  getPantry: () => request<PantryItem[]>("/shopping/pantry"),
+  addToPantry: (item: { barcode?: string | null; name: string; avoided?: number | null }) =>
+    request<PantryItem>("/shopping/pantry", { method: "POST", body: JSON.stringify(item) }),
+  removeFromPantry: (id: string) => request<void>(`/shopping/pantry/${id}`, { method: "DELETE" }),
   // ── Budget du mois ──
   getBudget: () => request<BudgetSummary>("/shopping/budget"),
   setBudget: (monthly: number | null) =>
@@ -386,7 +392,7 @@ export const api = {
       unit?: string | null;
     }[],
   ) =>
-    request<{ added: number; merged: number }>(`/smart-cart/${draftId}/commit`, {
+    request<{ added: number; merged: number; skipped?: string[] }>(`/smart-cart/${draftId}/commit`, {
       method: "POST",
       body: JSON.stringify({ lines }),
     }),
@@ -414,6 +420,7 @@ export const api = {
       goal?: MealGoal | null;
       equipment?: MealEquipment[];
       styles?: MealStyle[];
+      store?: string | null;
     },
     signal?: AbortSignal,
   ) => request<MealPlan>("/meal-plan", { method: "POST", body: JSON.stringify(body), signal }),
@@ -459,7 +466,7 @@ export const api = {
       source?: string;
     }[],
   ) =>
-    request<{ added: number; merged: number }>("/shopping/bulk", {
+    request<{ added: number; merged: number; skipped?: string[] }>("/shopping/bulk", {
       method: "POST",
       body: JSON.stringify({ items }),
     }),

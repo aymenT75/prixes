@@ -72,6 +72,8 @@ class BulkAddOut(BaseModel):
     added: int
     merged: int
     items: list[ShoppingItemOut]
+    # Left out because the household already has them (the cupboard).
+    skipped: list[str] = Field(default_factory=list)
 
 
 # ── Basket optimizer ──
@@ -212,3 +214,27 @@ class BudgetOut(BaseModel):
     left: Decimal | None
     # Spent 80 % or more of the budget.
     warning: bool
+    # This week (from Monday): saved by comparing shops, and by the cupboard.
+    week_saved: Decimal = Decimal(0)
+    week_pantry: Decimal = Decimal(0)
+    week_spent: Decimal = Decimal(0)
+
+
+# ── Placard ──
+class PantryIn(BaseModel):
+    """"Je l'ai déjà"."""
+
+    barcode: str | None = Field(default=None, max_length=32)
+    name: str = Field(min_length=1, max_length=200)
+    # Price × quantity of what is not bought, when known.
+    avoided: Decimal | None = Field(default=None, ge=0, le=10000)
+
+
+class PantryOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    barcode: str | None
+    name: str
+    avoided: Decimal | None
+    created_at: datetime

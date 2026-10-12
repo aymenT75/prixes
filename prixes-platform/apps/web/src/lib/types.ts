@@ -298,6 +298,8 @@ export interface MealPreferences {
   goal: MealGoal | null;
   equipment: MealEquipment[];
   styles: MealStyle[];
+  /** The chain where the household shops: the budget is held at its prices. */
+  store?: string | null;
   /** The Sunday menu: next week composed on Sunday evening, then a notification. */
   auto_week?: boolean;
   /** Copy of the phone's allergy profile — what the Sunday menu is composed with. */
@@ -374,6 +376,19 @@ export interface BudgetSummary {
   left: number | string | null;
   /** 80 % of the budget or more is spent. */
   warning: boolean;
+  /** This week (from Monday): saved by comparing shops, by the cupboard, and spent. */
+  week_saved?: number | string;
+  week_pantry?: number | string;
+  week_spent?: number | string;
+}
+
+/** « Je l'ai déjà »: kept off the lists for two weeks. */
+export interface PantryItem {
+  id: string;
+  barcode: string | null;
+  name: string;
+  avoided: number | string | null;
+  created_at: string;
 }
 
 export interface StoreBasketDetail {

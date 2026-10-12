@@ -215,7 +215,7 @@ async def commit(
         )
         for line in lines
     ]
-    _, created, merged = await shopping_service.bulk_add(
+    _, created, merged, skipped = await shopping_service.bulk_add(
         db, await list_owner(db, user_id), payload, user_id
     )
 
@@ -230,4 +230,4 @@ async def commit(
         except PyMongoError as exc:
             logger.warning(f"Smart cart draft not marked committed: {exc}")
 
-    return CommitOut(added=created, merged=merged)
+    return CommitOut(added=created, merged=merged, skipped=skipped)

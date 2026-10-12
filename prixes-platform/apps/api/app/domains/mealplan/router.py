@@ -14,6 +14,7 @@ from app.core.rate_limit import RateLimit
 from app.domains.billing import service as billing
 from app.domains.mealplan import images, service
 from app.domains.mealplan.schemas import MealPlanIn, MealPlanOut, MealPreferences, RegenerateIn
+from app.domains.shopping import pantry
 from app.domains.shopping import service as shopping_service
 from app.domains.shopping.router import _enrich
 from app.domains.shopping.schemas import BulkAddOut, ShoppingItemIn
@@ -95,6 +96,10 @@ async def generate(
 ) -> MealPlanOut:
     """Premium: a week invented by the model. Everyone else: a week drawn from the
     recipe catalogue — free, unlimited, priced and compared the same way."""
+    # The cupboard is the server's to say, not the phone's.
+    data = data.model_copy(
+        update={"pantry": await pantry.names(db, await list_owner(db, user.id))}
+    )
     return await service.generate(db, mongo, user.id, data, use_ai=billing.is_premium(user))
 
 
@@ -140,10 +145,12 @@ async def to_shopping_list(
         for line in plan.basket
         if not line.optional
     ]
-    items, created, merged = await shopping_service.bulk_add(
+    items, created, merged, skipped = await shopping_service.bulk_add(
         db, await list_owner(db, user.id), payload, user.id
     )
-    return BulkAddOut(added=created, merged=merged, items=await _enrich(db, items))
+    return BulkAddOut(
+        added=created, merged=merged, items=await _enrich(db, items), skipped=skipped
+    )
 
 
 @router.delete("/{week_start}", status_code=status.HTTP_204_NO_CONTENT)

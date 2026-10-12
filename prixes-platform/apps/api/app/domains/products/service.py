@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import logging
+import re
+import unicodedata
 import uuid
 from collections import defaultdict
 from dataclasses import dataclass
@@ -185,7 +187,7 @@ class RankedProduct:
 
 
 async def rank_by_price(
-    db: AsyncSession, products: list[Product], nearby_stores: list[str]
+    db: AsyncSession, products: list[Product], nearby_stores: list[str], query: str | None = None
 ) -> list[RankedProduct]:
     """Order search hits the way a shopper reads them: cheapest first, and
     cheapest *where they can actually go* before cheapest anywhere.
@@ -229,18 +231,37 @@ async def rank_by_price(
         else:
             ranked.append(RankedProduct(product, None, None, False))
 
-    return order_hits(ranked)
+    return order_hits(ranked, query)
 
 
-def order_hits(ranked: list[RankedProduct]) -> list[RankedProduct]:
-    """Nearby-and-priced, then priced anywhere, then unpriced.
+def _fold(text: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", text.lower())
+    plain = "".join(c for c in decomposed if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]+", " ", plain).strip()
 
-    Within the first two tiers the cheapest wins; the last tier keeps the
-    relevance order it arrived in, because an unknown price must never be sorted
-    as if it were zero.
+
+def name_match(name: str | None, query: str) -> int:
+    """How well a product's name answers the query: 0 it is the thing ("lait
+    demi-écrémé" for "lait"), 1 a variant of it ("lait de coco"), 2 the word is
+    only inside another word ("laitue")."""
+    words = [w for w in _fold(query).split() if len(w) > 1]
+    text = f" {_fold(name or '')} "
+    if not words or not all(re.search(rf" {re.escape(w)}s? ", text) for w in words):
+        return 2
+    qualified = any(re.search(rf" {re.escape(w)}s? (de|d|a|au|aux) ", text) for w in words)
+    return 1 if qualified and " de " not in f" {_fold(query)} " else 0
+
+
+def order_hits(ranked: list[RankedProduct], query: str | None = None) -> list[RankedProduct]:
+    """What was asked for first ("lait" before "lait de coco" before "laitue"),
+    then nearby-and-priced, then priced anywhere, then unpriced.
+
+    Within the price tiers the cheapest wins; the last tier keeps the relevance
+    order it arrived in, because an unknown price must never be sorted as if it
+    were zero.
     """
 
-    def key(item: tuple[int, RankedProduct]) -> tuple[int, Decimal, int]:
+    def key(item: tuple[int, RankedProduct]) -> tuple[int, int, Decimal, int]:
         index, hit = item
         if hit.best_price is None:
             tier = 2
@@ -248,7 +269,8 @@ def order_hits(ranked: list[RankedProduct]) -> list[RankedProduct]:
             tier = 0
         else:
             tier = 1
-        return (tier, hit.best_price or Decimal(0), index)
+        match = name_match(hit.product.name, query) if query else 0
+        return (match, tier, hit.best_price or Decimal(0), index)
 
     return [hit for _, hit in sorted(enumerate(ranked), key=key)]
 

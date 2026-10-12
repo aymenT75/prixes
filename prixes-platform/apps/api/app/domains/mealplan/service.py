@@ -108,6 +108,18 @@ def _user_prompt(data: MealPlanIn, avoid_titles: list[str] | None = None) -> str
             f"Budget courses visé pour la semaine : {data.budget_eur} €. "
             "Choisis des plats qui tiennent dans ce budget."
         )
+    if data.store:
+        lines.append(f"Les courses se font chez {data.store} : vise ses prix.")
+    if data.pantry:
+        lines.append(
+            "Le foyer a déjà à la maison (à utiliser en priorité, sans le racheter) : "
+            + ", ".join(data.pantry[:20])
+            + "."
+        )
+    lines.append(
+        "Anti-gaspillage : quand un repas entame un paquet (crème, lardons, fromage râpé, "
+        "herbes fraîches, poivrons…), réutilise-le dans un autre repas de la semaine pour le finir."
+    )
     if data.avoid_allergens:
         lines.append(
             "INTERDIT (allergies) — aucun repas ne doit en contenir : "
@@ -204,6 +216,7 @@ def _document(
             "goal": data.goal,
             "equipment": data.equipment,
             "styles": data.styles,
+            "store": data.store,
         },
         "meals": [meal.model_dump(mode="json") for meal in meals],
         "updated_at": datetime.now(UTC),
@@ -223,7 +236,7 @@ def _assemble(
     total, unpriced = _totals(basket)
     # Judge the budget on what the shop will actually cost — the cheapest plan —
     # not on the sum of best-prices-anywhere, which no single trip achieves.
-    payable = split.options[-1].total if split and split.options else total
+    payable = _payable(split, total, data.store)
     return MealPlanOut(
         id=doc_id,
         week_start=week_start,
@@ -252,6 +265,7 @@ def _restore_input(doc: dict[str, Any]) -> MealPlanIn:
         goal=constraints.get("goal"),
         equipment=constraints.get("equipment", []),
         styles=constraints.get("styles", []),
+        store=constraints.get("store"),
         week_start=date.fromisoformat(doc["week_start"]),
     )
 
@@ -273,13 +287,21 @@ def _over_budget_note(spent: Decimal, budget: Decimal) -> str:
     )
 
 
-def _payable(split: SplitResult | None, fallback: Decimal | None) -> Decimal | None:
+def _payable(
+    split: SplitResult | None, fallback: Decimal | None, store: str | None = None
+) -> Decimal | None:
     """What the shop really costs: the best complete plan, not the best prices.
 
     `estimated_total` sums each item's cheapest price anywhere, which would need
     a trip to six chains. Holding a budget against that number would reject menus
-    that are perfectly affordable in two stores.
+    that are perfectly affordable in two stores. When the household said where it
+    shops, it is that chain's trolley.
     """
+    if store and split and split.by_store:
+        wanted = store.lower()
+        mine = next((b for b in split.by_store if wanted in b.store.lower()), None)
+        if mine is not None:
+            return mine.subtotal
     if split and split.options:
         return split.options[-1].total
     return fallback
@@ -328,7 +350,7 @@ async def generate(
     while (
         data.budget_eur
         and attempts < _MAX_BUDGET_ATTEMPTS
-        and (over := _payable(split, _totals(basket)[0]))
+        and (over := _payable(split, _totals(basket)[0], data.store))
         and over > data.budget_eur
     ):
         logger.info(f"Meal plan over budget ({over} > {data.budget_eur}), retrying")
@@ -351,7 +373,7 @@ async def generate(
         )
         # Keep the retry only if it actually costs less — a "cheaper" menu that
         # is dearer is worse than the one we already had.
-        if (_payable(c_split, _totals(c_basket)[0]) or over) < over:
+        if (_payable(c_split, _totals(c_basket)[0], data.store) or over) < over:
             meals, out_meals, basket, stores, split = (
                 cheaper, c_meals, c_basket, c_stores, c_split,
             )

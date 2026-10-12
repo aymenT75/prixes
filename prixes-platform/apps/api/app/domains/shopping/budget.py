@@ -12,6 +12,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.domains.shopping import pantry
 from app.domains.shopping.models import ShoppingBudget, ShoppingTrip
 from app.domains.shopping.schemas import BudgetOut, TripIn
 from app.domains.shopping.watch import _last_sunday
@@ -35,9 +36,33 @@ def month_start(now: datetime) -> datetime:
     return first - offset
 
 
+def week_start(now: datetime) -> datetime:
+    """Monday 00:00 in France, as a naive UTC instant (like created_at)."""
+    now = now.astimezone(UTC)
+    start = _last_sunday(now.year, 3).replace(hour=1)
+    end = _last_sunday(now.year, 10).replace(hour=1)
+    offset = timedelta(hours=2 if start <= now < end else 1)
+    local = now + offset
+    monday = (local - timedelta(days=local.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    return (monday - offset).replace(tzinfo=None)
+
+
 async def summary(db: AsyncSession, owner_id: uuid.UUID, now: datetime | None = None) -> BudgetOut:
+    now = now or datetime.now(UTC)
     # created_at is mapped without a time zone (TimestampMixin): compare in naive UTC.
-    since = month_start(now or datetime.now(UTC)).replace(tzinfo=None)
+    since = month_start(now).replace(tzinfo=None)
+    monday = week_start(now)
+    week_spent, week_saved = (
+        await db.execute(
+            select(
+                func.coalesce(func.sum(ShoppingTrip.total), 0),
+                func.coalesce(func.sum(ShoppingTrip.saving), 0),
+            ).where(ShoppingTrip.owner_id == owner_id, ShoppingTrip.created_at >= monday)
+        )
+    ).one()
+    week_pantry = await pantry.avoided_since(db, owner_id, monday)
     spent, saved, trips = (
         await db.execute(
             select(
@@ -57,6 +82,9 @@ async def summary(db: AsyncSession, owner_id: uuid.UUID, now: datetime | None = 
         trips=int(trips),
         left=(monthly - spent).quantize(Decimal("0.01")) if monthly is not None else None,
         warning=monthly is not None and spent >= monthly * WARN_AT,
+        week_saved=Decimal(week_saved).quantize(Decimal("0.01")),
+        week_pantry=week_pantry.quantize(Decimal("0.01")),
+        week_spent=Decimal(week_spent).quantize(Decimal("0.01")),
     )
 
 

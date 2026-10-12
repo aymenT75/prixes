@@ -66,6 +66,7 @@ input
 ios
 ios_share
 join
+kitchen
 light
 light_mode
 lightbulb
@@ -111,6 +112,7 @@ radar
 radio
 radio_button_unchecked
 record_voice_over
+recycling
 refresh
 remove
 resize

@@ -26,6 +26,8 @@ from app.domains.devices import service as device_service
 from app.domains.mealplan import service
 from app.domains.mealplan.schemas import MealPlanIn, MealPlanOut, MealPreferences
 from app.domains.notifications import push
+from app.domains.shopping import pantry
+from app.domains.shopping.share import list_owner
 from app.domains.users.models import User
 
 logger = logging.getLogger(__name__)
@@ -82,6 +84,8 @@ async def compose_sunday_menus(
             goal=prefs.goal,
             equipment=prefs.equipment,
             styles=prefs.styles,
+            store=prefs.store,
+            pantry=await pantry.names(db, await list_owner(db, user.id)),
             avoid_allergens=prefs.avoid_allergens,
             diets=prefs.diets,
             week_start=week,

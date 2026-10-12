@@ -63,3 +63,14 @@ def test_unpriced_products_keep_the_relevance_order_they_arrived_in() -> None:
 
 def test_an_empty_result_stays_empty() -> None:
     assert order_hits([]) == []
+
+
+def test_what_was_asked_for_comes_before_cheaper_lookalikes() -> None:
+    hits = [
+        hit("Laitue iceberg", "0.90"),
+        hit("Lait de coco", "1.08"),
+        hit("Lait demi-écrémé", "1.19"),
+    ]
+    assert names(order_hits(hits, "lait")) == ["Lait demi-écrémé", "Lait de coco", "Laitue iceberg"]
+    # Asking for the variant finds it first.
+    assert names(order_hits(hits, "lait de coco"))[0] == "Lait de coco"

@@ -98,7 +98,7 @@ async def search(
     """
     nearby = [s for s in (stores or "").split(",") if s.strip()][:_MAX_NEARBY_STORES]
     products = await service.search_products(db, q, page)
-    ranked = await service.rank_by_price(db, products, nearby)
+    ranked = await service.rank_by_price(db, products, nearby, q)
     items = []
     for hit in ranked:
         item = ProductSearchItem.model_validate(hit.product)

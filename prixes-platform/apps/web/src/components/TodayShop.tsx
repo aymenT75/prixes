@@ -206,11 +206,20 @@ export function TodayShop() {
     return (
       <Panel who="Où faire vos courses">
         <p className="text-[17px] font-semibold leading-snug">
-          Activez la localisation : je trouverai le magasin le moins cher pour vos {listCount} articles.
+          Je n&apos;arrive pas à vous localiser. Vérifiez que la localisation est activée : je trouverai le
+          magasin le moins cher pour vos {listCount} articles.
         </p>
-        <button onClick={() => setAttempt((n) => n + 1)} className="btn-primary py-3">
-          <Icon name="my_location" className="text-[20px]" /> Activer la localisation
-        </button>
+        <div className="grid grid-cols-[1.3fr_1fr] gap-2">
+          <button onClick={() => setAttempt((n) => n + 1)} className="btn-primary py-3">
+            <Icon name="my_location" className="text-[20px]" /> Réessayer
+          </button>
+          <button
+            onClick={() => router.push("/list?etape=2")}
+            className="min-h-11 rounded-full bg-surface/15 py-3 text-label-lg font-bold dark:bg-on-surface/10"
+          >
+            Comparer quand même
+          </button>
+        </div>
       </Panel>
     );
   }

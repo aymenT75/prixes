@@ -119,3 +119,5 @@ class CommitIn(BaseModel):
 class CommitOut(BaseModel):
     added: int
     merged: int
+    # Left out because the household already has them (the cupboard).
+    skipped: list[str] = Field(default_factory=list)

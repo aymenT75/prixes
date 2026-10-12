@@ -119,3 +119,19 @@ class ShoppingBudget(Base, TimestampMixin):
 
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), primary_key=True)
     monthly: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+
+
+class PantryItem(Base, TimestampMixin):
+    """"Je l'ai déjà": something the household has at home, so it is not
+    bought again. Kept per list (a family shares its cupboard), for two weeks:
+    after that it may well be finished, and it comes back on lists."""
+
+    __tablename__ = "pantry_items"
+
+    id: Mapped[uuid.UUID] = uuid_pk()
+    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), index=True)
+    # What it matches on: the barcode when there is one, else the plain name.
+    barcode: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    name: Mapped[str] = mapped_column(String(200))
+    # What not buying it saved, when its price was known (the week's savings).
+    avoided: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)

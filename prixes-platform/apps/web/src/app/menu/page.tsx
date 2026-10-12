@@ -111,6 +111,7 @@ export default function MenuPage() {
             goal: p.goal,
             equipment: p.equipment,
             styles: p.styles,
+            store: p.store ?? null,
           },
           controller.signal,
         );
@@ -237,9 +238,11 @@ export default function MenuPage() {
       ),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["shopping"] });
+      const skipped = res.skipped?.length ?? 0;
       setAdded(
         `${res.added} article${res.added > 1 ? "s" : ""} ajouté${res.added > 1 ? "s" : ""}` +
-          (res.merged ? `, ${res.merged} regroupé${res.merged > 1 ? "s" : ""}` : ""),
+          (res.merged ? `, ${res.merged} regroupé${res.merged > 1 ? "s" : ""}` : "") +
+          (skipped ? `, ${skipped} déjà dans votre placard` : ""),
       );
     },
     onError: (e) => setError(messageFor(e)),
@@ -421,6 +424,8 @@ function PlanSummary({
         </div>
       )}
 
+      <WeekFacts plan={plan} />
+
       {plan.over_budget && (
         <p className="mt-3 rounded-xl bg-warning-soft p-3 text-body-md text-accent-warm">
           <Icon name="info" className="mr-1 align-[-4px] text-[18px]" />
@@ -442,5 +447,53 @@ function PlanSummary({
         {adding ? "Ajout…" : `Ajouter les ${plan.basket.length} articles à ma liste`}
       </button>
     </section>
+  );
+}
+
+/** Everyday basics every recipe shares: sharing them finishes nothing. */
+const BASICS = /^(sel|poivre|huile|beurre|ail|oignon|eau|sucre|farine)\b/i;
+
+/**
+ * Two facts that make a week worth it: what a meal costs per person, and what
+ * the week finishes instead of throwing away (an ingredient opened on one day
+ * and used again on another).
+ */
+function WeekFacts({ plan }: { plan: MealPlan }) {
+  const total = Number(plan.split?.options[plan.split.options.length - 1]?.total ?? plan.estimated_total ?? 0);
+  const perMeal = plan.meals.length && plan.servings ? total / (plan.meals.length * plan.servings) : 0;
+  const days = new Map<string, Set<string>>();
+  for (const m of plan.meals) {
+    for (const ing of m.ingredients) {
+      const name = ing.product_name.trim();
+      if (!name || BASICS.test(name)) continue;
+      const key = name.toLowerCase();
+      if (!days.has(key)) days.set(key, new Set());
+      days.get(key)!.add(m.day_label.slice(0, 3).toLowerCase());
+    }
+  }
+  const shared = [...days.entries()].filter(([, d]) => d.size > 1).slice(0, 4);
+  if (!perMeal && !shared.length) return null;
+  return (
+    <div className="mt-3 space-y-2">
+      {perMeal > 0 && (
+        <p className="rounded-xl bg-primary-container/25 p-3 text-body-md text-on-surface">
+          <Icon name="euro" className="mr-1 align-[-4px] text-[18px]" />
+          Environ <b>{eur(perMeal)}</b> par personne et par repas.
+        </p>
+      )}
+      {shared.length > 0 && (
+        <p className="rounded-xl bg-tertiary-container/60 p-3 text-body-md text-on-tertiary-container">
+          <Icon name="recycling" className="mr-1 align-[-4px] text-[18px]" />
+          Rien ne se perd :{" "}
+          {shared.map(([name, d], i) => (
+            <span key={name}>
+              {i > 0 ? ", " : ""}
+              {name} ({[...d].join(", ")})
+            </span>
+          ))}
+          .
+        </p>
+      )}
+    </div>
   );
 }

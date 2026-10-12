@@ -9,6 +9,7 @@ import { NewsCard } from "@/components/NewsCard";
 import { PageHeader } from "@/components/PageHeader";
 import { TodayPromos } from "@/components/TodayPromos";
 import { TodayShop } from "@/components/TodayShop";
+import { WeekSavings } from "@/components/WeekSavings";
 import { WhatsNew } from "@/components/WhatsNew";
 import { useApp } from "@/lib/store";
 
@@ -39,6 +40,7 @@ export default function HomePage() {
 
       <GetToKnow />
       <TodayShop />
+      <WeekSavings />
       <NewsCard />
       <TodayPromos />
 

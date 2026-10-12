@@ -54,6 +54,11 @@ class MealPlanIn(BaseModel):
     goal: Goal | None = None
     equipment: list[Equipment] = Field(default_factory=list, max_length=6)
     styles: list[Style] = Field(default_factory=list, max_length=4)
+    # The chain where the household shops: the budget is held at its prices.
+    store: str | None = Field(default=None, max_length=60)
+    # What the household already has (the cupboard), filled in by the server:
+    # used first, not bought again.
+    pantry: list[str] = Field(default_factory=list, max_length=40)
     # Monday of the week being planned. Defaults to the coming Monday.
     week_start: date | None = None
 
@@ -100,6 +105,8 @@ class MealPreferences(BaseModel):
     goal: Goal | None = None
     equipment: list[Equipment] = Field(default_factory=list, max_length=6)
     styles: list[Style] = Field(default_factory=list, max_length=4)
+    # The chain where the household shops (asked first, with the budget).
+    store: str | None = Field(default=None, max_length=60)
     # The Sunday menu: next week composed on Sunday evening, then one notification.
     auto_week: bool = False
     avoid_allergens: list[str] = Field(default_factory=list, max_length=20)

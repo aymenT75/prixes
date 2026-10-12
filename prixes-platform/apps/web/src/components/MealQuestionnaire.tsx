@@ -68,7 +68,17 @@ export function describePreferences(p: MealPreferences): string {
     .join(" · ");
 }
 
-const STEPS = ["goal", "servings", "meals", "budget", "equipment", "styles"] as const;
+// Budget first (who you are, what you spend, where you shop), then the food:
+// everything after is held to that budget at that chain's prices.
+const STEPS = ["servings", "budget", "store", "goal", "meals", "equipment", "styles"] as const;
+
+/** The chains people name; "Peu importe" lets Prixes pick the cheapest nearby. */
+const CHAINS = ["Lidl", "Aldi", "E.Leclerc", "Carrefour", "Intermarché", "Auchan", "Super U", "Monoprix", "Franprix", "Netto"];
+
+/** About 3 € per person and per meal: the week's suggested budget. */
+export function suggestedBudget(p: Pick<MealPreferences, "servings" | "meals_per_day">): number {
+  return Math.round(3 * p.servings * 7 * p.meals_per_day);
+}
 
 export function MealQuestionnaire({
   initial,
@@ -222,10 +232,19 @@ export function MealQuestionnaire({
 
         {current === "budget" && (
           <>
-            <Title>Un budget pour la semaine ?</Title>
+            <Title>Votre budget pour la semaine ?</Title>
             <p className="mt-1 text-body-md text-on-surface-variant">
-              Facultatif. Si le menu dépasse, il est refait moins cher.
+              Les repas et la liste tiendront dedans. Comptez environ 3 € par personne et par repas.
             </p>
+            <button
+              onClick={() => setBudgetText(String(suggestedBudget(prefs)))}
+              className="mt-4 flex min-h-11 w-full items-center justify-between rounded-2xl bg-primary-container/30 px-4 py-3 text-left text-body-md text-on-surface"
+            >
+              <span>
+                {prefs.servings} pers. × 7 {prefs.meals_per_day === 2 ? "jours, midi et soir" : "dîners"} × 3 €
+              </span>
+              <b className="tabular-nums">{suggestedBudget(prefs)} €</b>
+            </button>
             <label className="mt-5 flex items-center gap-2 rounded-2xl border border-outline-variant bg-surface-container-lowest px-4 py-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary">
               <span className="sr-only">Budget en euros</span>
               <input
@@ -270,6 +289,35 @@ export function MealQuestionnaire({
                   label={e.label}
                 />
               ))}
+            </div>
+          </>
+        )}
+
+        {current === "store" && (
+          <>
+            <Title>Où faites-vous vos courses ?</Title>
+            <p className="mt-1 text-body-md text-on-surface-variant">
+              Le budget sera tenu aux prix de ce magasin.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {[...CHAINS, "Peu importe"].map((c) => {
+                const value = c === "Peu importe" ? null : c;
+                const on = (prefs.store ?? null) === value;
+                return (
+                  <button
+                    key={c}
+                    onClick={() => set({ store: value })}
+                    aria-pressed={on}
+                    className={`min-h-11 rounded-full border-2 px-4 text-label-lg ${
+                      on
+                        ? "border-primary-container bg-primary-container text-on-primary-container"
+                        : "border-outline-variant bg-surface-container-lowest text-on-surface"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                );
+              })}
             </div>
           </>
         )}

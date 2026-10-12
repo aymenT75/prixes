@@ -31,9 +31,28 @@ export async function getCurrentPosition(): Promise<GeoCoords> {
       reject(new Error("unsupported"));
       return;
     }
+    // Without a timeout a browser that never answers (seen on a desktop Chrome,
+    // 12/10) left the home page on « Je compare… » for good. A position from the
+    // last 10 minutes is good enough to find the shops around.
+    let done = false;
+    const guard = setTimeout(() => {
+      if (!done) reject(new Error("timeout"));
+      done = true;
+    }, 15_000);
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
-      () => reject(new Error("denied")),
+      (pos) => {
+        if (done) return;
+        done = true;
+        clearTimeout(guard);
+        resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude });
+      },
+      (err) => {
+        if (done) return;
+        done = true;
+        clearTimeout(guard);
+        reject(new Error(err.code === err.PERMISSION_DENIED ? "denied" : "timeout"));
+      },
+      { enableHighAccuracy: false, timeout: 12_000, maximumAge: 10 * 60_000 },
     );
   });
 }

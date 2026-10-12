@@ -193,9 +193,15 @@ export function SmartAssistant({ start = false }: {
           const res = await api.commitSmartCart(result.draft_id, lines);
           qc.invalidateQueries({ queryKey: ["shopping"] });
           setDraft(null);
-          setAdded(`${res.added} article${res.added > 1 ? "s" : ""} ajouté${res.added > 1 ? "s" : ""}`);
+          const had = res.skipped?.length ?? 0;
+          const cupboard = had ? `, ${had} déjà dans votre placard` : "";
+          setAdded(`${res.added} article${res.added > 1 ? "s" : ""} ajouté${res.added > 1 ? "s" : ""}${cupboard}`);
           const count = res.added + res.merged;
-          finish(`${head} C'est fait : ${count} article${count > 1 ? "s" : ""} dans votre liste.`, "plein");
+          finish(
+            `${head} C'est fait : ${count} article${count > 1 ? "s" : ""} dans votre liste.` +
+              (had ? ` ${had} que vous avez déjà, je ne les ai pas ajoutés.` : ""),
+            "plein",
+          );
         } catch {
           finish(`${head} Je n'ai pas pu les mettre dans votre liste. Touchez « Ajouter à ma liste ».`, "plein", false);
         }

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { ProductThumb } from "@/components/ProductThumb";
 import { Icon } from "@/components/Icon";
 import { InStoreGuide } from "@/components/InStoreGuide";
+import { Pantry } from "@/components/Pantry";
 import { NearbyStoreChoice, type NearbyPick } from "@/components/NearbyStoreChoice";
 import { PageHeader } from "@/components/PageHeader";
 import { JoinInvite, SHARE_KEY, ShareListSheet } from "@/components/ShareListSheet";
@@ -138,6 +139,22 @@ export default function ListPage() {
   const remove = useMutation({
     mutationFn: (id: string) => api.removeListItem(id),
     onSuccess: invalidate,
+  });
+  // « Je l'ai déjà »: into the cupboard (with what not buying it saves), off the list.
+  const have = useMutation({
+    mutationFn: async (it: ShoppingItem) => {
+      await api.addToPantry({
+        barcode: it.barcode,
+        name: it.name ?? it.free_text ?? it.barcode ?? "Produit",
+        avoided: it.best_price != null ? Math.round(it.best_price * it.quantity * 100) / 100 : null,
+      });
+      await api.removeListItem(it.id);
+    },
+    onSuccess: () => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ["pantry"] });
+      qc.invalidateQueries({ queryKey: ["budget"] });
+    },
   });
   const clearChecked = useMutation({
     mutationFn: () => api.clearChecked(),
@@ -403,9 +420,11 @@ export default function ListPage() {
                     onToggle={() => update.mutate({ id: it.id, body: { checked: !it.checked } })}
                     onQty={(q) => update.mutate({ id: it.id, body: { quantity: q } })}
                     onRemove={() => remove.mutate(it.id)}
+                    onHave={() => have.mutate(it)}
                   />
                 ))}
               </div>
+              <Pantry />
 
               <div className="card mt-4 flex flex-wrap items-center justify-between gap-3 p-4">
                 <div>
@@ -931,6 +950,7 @@ function ListRow({
   onToggle,
   onQty,
   onRemove,
+  onHave,
 }: {
   item: ShoppingItem;
   /** Position in the list: rows arrive one after the other, 60 ms apart. */
@@ -938,6 +958,8 @@ function ListRow({
   onToggle: () => void;
   onQty: (q: number) => void;
   onRemove: () => void;
+  /** « Je l'ai déjà »: off the list, and off the next lists for two weeks. */
+  onHave?: () => void;
 }) {
   const label = item.name ?? item.free_text ?? item.barcode ?? "Article";
   // At the largest text size a name squeezed between the tick, the picture and
@@ -1065,6 +1087,18 @@ function ListRow({
         </div>
       </div>
 
+      {onHave && !item.checked && (
+        <button
+          onClick={onHave}
+          aria-label={`Je l'ai déjà : ${label}`}
+          title="Je l'ai déjà"
+          className={`grid h-11 w-11 flex-shrink-0 place-items-center rounded-full text-on-surface-variant hover:text-on-surface ${
+            big ? "" : "self-start"
+          }`}
+        >
+          <Icon name="kitchen" className="text-[20px]" />
+        </button>
+      )}
       <button
         onClick={onRemove}
         aria-label={`Supprimer ${label} de la liste`}

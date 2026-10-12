@@ -156,6 +156,20 @@ def _score(recipe: Recipe, data: MealPlanIn, rng: random.Random) -> float:
     return score + rng.random() * 1.5
 
 
+# How far down the ranking a recipe may be pulled up for using what is open.
+_WINDOW = 6
+# One shared ingredient is worth this many places in the ranking.
+_SHARE_BONUS = 1.5
+# Everyday basics shared by everything: sharing them finishes nothing.
+_BASICS = {
+    "sel", "poivre", "huile d'olive", "huile", "beurre", "ail", "oignon", "eau", "sucre", "farine",
+}
+
+
+def _ingredient_names(recipe: Recipe) -> set[str]:
+    return {_fold(name) for name, *_ in recipe.ingredients} - {_fold(b) for b in _BASICS}
+
+
 def compose(
     data: MealPlanIn,
     avoid_titles: list[str] | None = None,
@@ -174,14 +188,26 @@ def compose(
 
     day_slots: tuple[Slot, ...] = ("déjeuner", "dîner") if data.meals_per_day == 2 else ("dîner",)
     slots: list[tuple[int, Slot]] = [(day, slot) for day in range(7) for slot in day_slots]
-    # A short pool (strict diet + small kitchen) repeats rather than leaving
-    # empty days, but never the same dish twice in a row.
+    # Anti-gaspillage: among the best matches, prefer a recipe that finishes
+    # what the week has already opened (the cream of Monday on Wednesday) or
+    # what the cupboard holds. A short pool (strict diet + small kitchen)
+    # repeats rather than leaving empty days, but never the same dish twice in
+    # a row, and never one already chosen while others are left.
+    opened: set[str] = {_fold(n) for n in data.pantry}
     chosen: list[Recipe] = []
-    for i in range(len(slots)):
-        pick = ranked[i % len(ranked)]
-        if chosen and pick is chosen[-1] and len(ranked) > 1:
-            pick = ranked[(i + 1) % len(ranked)]
+    for _ in range(len(slots)):
+        fresh = [r for r in ranked if r not in chosen] or ranked
+        window = fresh[:_WINDOW]
+        if chosen and len(window) > 1:
+            window = [r for r in window if r is not chosen[-1]] or window
+
+        scores = [
+            _SHARE_BONUS * min(len(_ingredient_names(r) & opened), 3) - rank
+            for rank, r in enumerate(window)
+        ]
+        pick = window[scores.index(max(scores))]
         chosen.append(pick)
+        opened |= _ingredient_names(pick)
     return [
         AiMeal(day=day, slot=slot, title=recipe.title, ingredients=recipe.lines(data.servings))
         for (day, slot), recipe in zip(slots, chosen, strict=True)

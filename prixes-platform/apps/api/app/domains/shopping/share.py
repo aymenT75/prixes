@@ -18,7 +18,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domains.devices import service as device_service
 from app.domains.notifications import push
-from app.domains.shopping.models import ListInvite, ListMember, ShoppingBudget, ShoppingTrip
+from app.domains.shopping.models import (
+    ListInvite,
+    ListMember,
+    PantryItem,
+    ShoppingBudget,
+    ShoppingTrip,
+)
 from app.domains.users.models import User
 
 log = logging.getLogger(__name__)
@@ -179,6 +185,7 @@ async def forget_user(db: AsyncSession, user_id: uuid.UUID) -> None:
     await leave(db, user_id)
     await db.execute(delete(ShoppingTrip).where(ShoppingTrip.owner_id == user_id))
     await db.execute(delete(ShoppingBudget).where(ShoppingBudget.owner_id == user_id))
+    await db.execute(delete(PantryItem).where(PantryItem.owner_id == user_id))
 
 
 def added_text(actor: str, labels: list[str]) -> tuple[str, str]:

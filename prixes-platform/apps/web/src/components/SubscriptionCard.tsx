@@ -77,7 +77,10 @@ export function SubscriptionCard() {
           </h2>
           <p className="text-body-md text-on-surface-variant">
             {status.premium
-              ? until && `Actif, renouvelé le ${until}`
+              ? // An access granted by hand (far-future date) is not a subscription.
+                status.premium_until && new Date(status.premium_until).getFullYear() >= 2099
+                ? "Actif, accès à vie"
+                : until && `Actif, renouvelé le ${until}`
               : "Menus avec nos recettes, comparateur, magasins et liste inclus"}
           </p>
         </div>
