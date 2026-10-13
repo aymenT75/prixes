@@ -7,6 +7,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useState } from "react";
 
 import { Icon } from "@/components/Icon";
 import { api } from "@/lib/api";
@@ -18,6 +19,8 @@ const SHOWN = 5;
 export function TodayPromos() {
   const { user, openLogin } = useApp();
   const qc = useQueryClient();
+  // One line on the home page; the list opens on demand (13/10: "trop d'info").
+  const [open, setOpen] = useState(false);
   const { data } = useQuery({ queryKey: ["products", "bargains"], queryFn: () => api.bargains(20) });
   const { data: list } = useQuery({
     queryKey: ["shopping"],
@@ -38,13 +41,29 @@ export function TodayPromos() {
     .sort((a, b) => Number(onList.has(b.barcode)) - Number(onList.has(a.barcode)) || b.drop_pct - a.drop_pct)
     .slice(0, SHOWN);
   if (!items.length) return null;
+  const mineCount = items.filter((b) => onList.has(b.barcode)).length;
 
   return (
     <section aria-labelledby="t-promos" className="card mb-5 p-4">
-      <h2 id="t-promos" className="flex items-center gap-2 text-label-lg text-on-surface">
-        <Icon name="local_offer" className="text-[20px]" /> Les promos du jour près de chez vous
+      <h2 id="t-promos" className="text-label-lg text-on-surface">
+        <button
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          aria-controls="promos-list"
+          className="flex min-h-11 w-full items-center gap-2 text-left"
+        >
+          <Icon name="local_offer" className="text-[20px]" />
+          <span className="flex-1">
+            {items.length} promo{items.length > 1 ? "s" : ""} près de chez vous
+            {mineCount > 0 && (
+              <span className="text-on-surface-variant">, dont {mineCount} sur votre liste</span>
+            )}
+          </span>
+          <span className="text-label-md text-primary">{open ? "Masquer" : "Voir"}</span>
+        </button>
       </h2>
-      <ul className="mt-2">
+      {open && (
+      <ul id="promos-list" className="mt-2">
         {items.map((b) => {
           const mine = onList.has(b.barcode);
           const pct = Math.round(b.drop_pct * 100);
@@ -84,6 +103,7 @@ export function TodayPromos() {
           );
         })}
       </ul>
+      )}
     </section>
   );
 }

@@ -39,10 +39,10 @@ export const TOUR_STEPS: TourStep[] = [
     body: "À chaque ouverture, Prixes a déjà comparé les magasins autour de vous pour votre liste. Touchez « On y va ».",
   },
   {
-    id: "stores",
-    target: '[data-tour="nav-stores"]',
-    title: "Les magasins autour de vous",
-    body: "Prixes trouve les enseignes proches et vous dit ce que coûte votre liste dans chacune.",
+    id: "menu",
+    target: '[data-tour="nav-menu"]',
+    title: "Vos menus de la semaine",
+    body: "Prixes compose vos repas selon votre foyer et votre budget, et les ajoute à votre liste.",
   },
   {
     id: "fuel",

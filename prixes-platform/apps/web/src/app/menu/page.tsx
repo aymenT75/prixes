@@ -256,7 +256,7 @@ export default function MenuPage() {
   if (!user) {
     return (
       <div>
-        <PageHeader title="Ma semaine" />
+        <PageHeader title="Ma semaine" back={false} />
         <div className="card flex flex-col items-center gap-3 p-10 text-center">
           <Icon name="calendar_month" className="text-[48px] text-outline-variant" />
           <p className="text-on-surface-variant">
@@ -272,7 +272,7 @@ export default function MenuPage() {
 
   return (
     <div>
-      <PageHeader title="Ma semaine" />
+      <PageHeader title="Ma semaine" back={false} />
 
       {editing || (prefsLoaded && savedPrefs === null && !plan && !isLoading) ? (
         <MealQuestionnaire

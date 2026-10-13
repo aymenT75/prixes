@@ -3,14 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { GetToKnow } from "@/components/GetToKnow";
 import { Icon } from "@/components/Icon";
-import { NewsCard } from "@/components/NewsCard";
 import { PageHeader } from "@/components/PageHeader";
 import { TodayPromos } from "@/components/TodayPromos";
 import { TodayShop } from "@/components/TodayShop";
-import { WeekSavings } from "@/components/WeekSavings";
-import { WhatsNew } from "@/components/WhatsNew";
 import { useApp } from "@/lib/store";
 
 /**
@@ -38,11 +34,8 @@ export default function HomePage() {
         Bonjour{user ? ` ${user.username}` : ""}, où fait-on nos courses aujourd&apos;hui&nbsp;?
       </h2>
 
-      <GetToKnow />
+      {/* Three things only (13/10): today's shop, the search, the promos in one line. */}
       <TodayShop />
-      <WeekSavings />
-      <NewsCard />
-      <TodayPromos />
 
       <form
         onSubmit={onSearch}
@@ -60,7 +53,7 @@ export default function HomePage() {
         />
       </form>
 
-      <WhatsNew />
+      <TodayPromos />
     </div>
   );
 }
