@@ -5,50 +5,33 @@ import "./globals.css";
 import { A11yLayer } from "@/components/A11yLayer";
 import { BootScreen } from "@/components/BootScreen";
 import { OfflineBanner } from "@/components/OfflineBanner";
-import { BottomNav } from "@/components/BottomNav";
 import { AuthModal } from "@/components/AuthModal";
-import { PremiumModal } from "@/components/PremiumModal";
 import { NativeSetup } from "@/components/NativeSetup";
-import { ProductTour } from "@/components/ProductTour";
+import { LiveRegion } from "@/components/LiveRegion";
 import { Providers } from "@/components/Providers";
 
-// "Vibrant Glass" design system typography: Hanken Grotesk for body text,
-// Sora for headlines, JetBrains Mono for small technical/data labels.
-//
-// The three files are committed rather than fetched from Google at build time:
-// `next/font/google` downloads them during `next build`, so a network hiccup on a
-// CI runner fails the whole build (it broke the iOS workflow on 2026-09-23 with
-// "An error occurred in `next/font`"). These are the latin-subset variable fonts,
-// the exact files Google was serving; `next/font/local` reads them from disk.
-const hanken = localFont({
-  src: "./fonts/HankenGrotesk-Variable.woff2",
-  weight: "400 800",
-  variable: "--font-hanken",
-  display: "swap",
-});
-const sora = localFont({
-  src: "./fonts/Sora-Variable.woff2",
-  weight: "700 800",
-  variable: "--font-sora",
-  display: "swap",
-});
-const jetbrainsMono = localFont({
-  src: "./fonts/JetBrainsMono-Variable.woff2",
-  weight: "500 600",
-  variable: "--font-jetbrains-mono",
+// Atkinson Hyperlegible, drawn for low-vision readers. Committed rather than
+// fetched at build time: `next/font/google` downloads during `next build`, and a
+// network hiccup on a CI runner then fails the whole iOS build (2026-09-23).
+const atkinson = localFont({
+  src: [
+    { path: "./fonts/AtkinsonHyperlegible-Regular.woff2", weight: "400" },
+    { path: "./fonts/AtkinsonHyperlegible-Bold.woff2", weight: "700" },
+  ],
+  variable: "--font-atkinson",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Prixes — Comparez & Partagez",
+  title: "Prixes — vos courses à la voix",
   description:
-    "Comparez les prix des courses, partagez les meilleures offres. Accessible à tous.",
+    "L'application de courses pour les personnes malvoyantes ou handicapées : votre liste à la voix, le bon magasin, et un guidage dans les rayons.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Prixes" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0284C7",
+  themeColor: "#14213D",
   width: "device-width",
   initialScale: 1,
   // Allow pinch-zoom up to 5x — required for low-vision accessibility (WCAG 1.4.4).
@@ -108,8 +91,8 @@ html.dark #prixes-boot .prixes-boot-line{background:#D4AF37}
 #prixes-boot[data-go="true"] .prixes-boot-body{animation:none}
 #prixes-boot[data-go="true"] .prixes-boot-line{animation:prixes-boot-streak .52s ease-out forwards}
 #prixes-boot[data-go="true"] .prixes-boot-puff{animation:prixes-boot-burst .4s ease-out forwards}
-#prixes-boot .prixes-boot-label{margin:0;font:600 14px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;
-letter-spacing:.02em;color:#4A5266}
+#prixes-boot .prixes-boot-label{margin:0;font:700 18px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;
+letter-spacing:.02em;color:#3D465C}
 html.dark #prixes-boot .prixes-boot-label{color:#B0B8CC}
 #prixes-boot[data-go="true"] .prixes-boot-label{opacity:0;transition:opacity .15s}
 @keyframes prixes-boot-rev{0%,100%{transform:none}25%{transform:translate(-1px,-2px) rotate(-.7deg)}
@@ -131,7 +114,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="fr"
-      className={`${hanken.variable} ${sora.variable} ${jetbrainsMono.variable}`}
+      className={atkinson.variable}
       suppressHydrationWarning
     >
       <head>
@@ -168,18 +151,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <main
             id="contenu"
-            className="mx-auto w-full max-w-2xl px-margin-mobile pb-[110px] pt-[calc(env(safe-area-inset-top)+1.5rem)]"
+            className="mx-auto w-full max-w-2xl px-margin-mobile pb-[calc(env(safe-area-inset-bottom)+24px)] pt-[calc(env(safe-area-inset-top)+1.5rem)]"
           >
             {children}
           </main>
-          <BottomNav />
           <OfflineBanner />
           <AuthModal />
-          <PremiumModal />
           <A11yLayer />
           <BootScreen />
           <NativeSetup />
-          <ProductTour />
+          <LiveRegion />
         </Providers>
       </body>
     </html>

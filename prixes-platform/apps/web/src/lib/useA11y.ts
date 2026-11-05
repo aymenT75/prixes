@@ -22,17 +22,6 @@ export const ALL_ALLERGENS = [
   "lupin",
 ] as const;
 
-// Dietary regimes the app can match against OpenFoodFacts data.
-export const ALL_DIETS = [
-  "végétarien",
-  "végan",
-  "sans gluten",
-  "sans lactose",
-  "bio",
-  "halal",
-  "casher",
-] as const;
-
 const SCALE_ZOOM: Record<FontScale, string> = {
   normal: "1",
   large: "1.18",
@@ -67,8 +56,8 @@ interface A11yState {
   highContrast: boolean;
   dark: boolean;
   allergens: string[];
-  diets: string[];
-  autoRead: boolean;
+  /** Each screen says what it shows on opening (silent under VoiceOver). */
+  speakScreens: boolean;
   naturalVoice: boolean;
   /** After each answer the mic reopens by itself, until silence or "merci". */
   conversation: boolean;
@@ -77,8 +66,6 @@ interface A11yState {
   ready: boolean;
   voiceOpen: boolean;
   setVoiceOpen: (v: boolean) => void;
-  a11yOpen: boolean;
-  setA11yOpen: (v: boolean) => void;
   init: () => void;
   setFontScale: (s: FontScale) => void;
   biggerText: () => void;
@@ -87,8 +74,7 @@ interface A11yState {
   setDark: (v: boolean) => void;
   toggleDark: () => void;
   toggleAllergen: (a: string) => void;
-  toggleDiet: (d: string) => void;
-  setAutoRead: (v: boolean) => void;
+  setSpeakScreens: (v: boolean) => void;
   setNaturalVoice: (v: boolean) => void;
   setConversation: (v: boolean) => void;
   setListenOnOpen: (v: boolean) => void;
@@ -121,8 +107,7 @@ function persist(get: () => A11yState) {
         highContrast: s.highContrast,
         dark: s.dark,
         allergens: s.allergens,
-        diets: s.diets,
-        autoRead: s.autoRead,
+        speakScreens: s.speakScreens,
         naturalVoice: s.naturalVoice,
         conversation: s.conversation,
         listenOnOpen: s.listenOnOpen,
@@ -138,16 +123,13 @@ export const useA11y = create<A11yState>((set, get) => ({
   highContrast: false,
   dark: false,
   allergens: [],
-  diets: [],
-  autoRead: false,
+  speakScreens: true,
   naturalVoice: false,
   conversation: true,
   listenOnOpen: false,
   ready: false,
   voiceOpen: false,
   setVoiceOpen: (voiceOpen) => set({ voiceOpen }),
-  a11yOpen: false,
-  setA11yOpen: (a11yOpen) => set({ a11yOpen }),
 
   init() {
     if (typeof window === "undefined") return;
@@ -174,8 +156,7 @@ export const useA11y = create<A11yState>((set, get) => ({
     set({
       ...next,
       allergens: Array.isArray(saved.allergens) ? saved.allergens : [],
-      diets: Array.isArray(saved.diets) ? saved.diets : [],
-      autoRead: !!saved.autoRead,
+      speakScreens: saved.speakScreens !== false,
       naturalVoice: !!saved.naturalVoice,
       // On unless turned off: talking should not need a tap per sentence.
       conversation: saved.conversation !== false,
@@ -215,13 +196,8 @@ export const useA11y = create<A11yState>((set, get) => ({
     set({ allergens: has ? get().allergens.filter((x) => x !== a) : [...get().allergens, a] });
     persist(get);
   },
-  toggleDiet(d) {
-    const has = get().diets.includes(d);
-    set({ diets: has ? get().diets.filter((x) => x !== d) : [...get().diets, d] });
-    persist(get);
-  },
-  setAutoRead(autoRead) {
-    set({ autoRead });
+  setSpeakScreens(speakScreens) {
+    set({ speakScreens });
     persist(get);
   },
   setNaturalVoice(naturalVoice) {

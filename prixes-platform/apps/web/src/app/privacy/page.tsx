@@ -49,27 +49,13 @@ export default function PrivacyPage() {
             pouvez aussi taper une adresse au lieu d&apos;activer la géolocalisation.
           </li>
           <li>
-            <strong className="text-on-surface">Liste de courses et alertes de prix</strong> —
-            les produits que vous ajoutez, pour vous les représenter et vous notifier des
-            baisses de prix.
-          </li>
-          <li>
-            <strong className="text-on-surface">Liste partagée</strong> — si vous partagez votre
-            liste ou en rejoignez une, les personnes de cette liste voient votre nom
-            d&apos;utilisateur, les produits et qui les a ajoutés ou achetés. Rien
-            d&apos;autre de votre compte ne leur est montré. Vous pouvez quitter la liste à
-            tout moment.
+            <strong className="text-on-surface">Liste de courses</strong> — les produits que
+            vous ajoutez, pour vous les représenter.
           </li>
           <li>
             <strong className="text-on-surface">Avis</strong> — le message que vous
             envoyez via le formulaire, et votre email si vous le renseignez (facultatif,
             uniquement pour vous répondre).
-          </li>
-          <li>
-            <strong className="text-on-surface">Photo scannée</strong> — quand vous
-            identifiez un produit par photo, l&apos;image est envoyée à un service
-            d&apos;intelligence artificielle pour reconnaissance puis{" "}
-            <strong>immédiatement jetée</strong>. Prixes ne stocke aucune photo, jamais.
           </li>
           <li>
             <strong className="text-on-surface">Usage de l&apos;app</strong> — des
@@ -95,9 +81,8 @@ export default function PrivacyPage() {
         <ul className="ml-4 list-disc space-y-1.5">
           <li>Firebase (Google) — pour la connexion à votre compte</li>
           <li>OpenFoodFacts, Open Prices, OpenStreetMap — données produits, prix et magasins</li>
-          <li>Un service d&apos;IA (reconnaissance photo, voix naturelle en option)</li>
+          <li>Un service d&apos;IA (voix naturelle en option)</li>
           <li>Sentry — pour détecter les bugs techniques (pas de données personnelles dans les rapports)</li>
-          <li>Stripe — pour le paiement de l&apos;abonnement Premium (Prixes ne voit jamais votre numéro de carte)</li>
         </ul>
         <p>
           Chacun a sa propre politique de confidentialité pour les données qui lui sont
@@ -109,9 +94,7 @@ export default function PrivacyPage() {
         <p>
           Prixes est une application <strong className="text-on-surface">indépendante</strong> :
           elle n&apos;est ni affiliée, ni approuvée, ni gérée par une entité
-          gouvernementale ou une enseigne de distribution. Les prix des carburants
-          proviennent des données ouvertes publiées par l&apos;État français, reprises
-          sans modification.
+          gouvernementale ou une enseigne de distribution.
         </p>
         <p>
           Le détail de chaque source, avec un lien vers le site d&apos;origine, est sur la

@@ -1,14 +1,14 @@
 {
-  "name": "Prixes — Comparez & Partagez",
+  "name": "Prixes — vos courses à la voix",
   "short_name": "Prixes",
-  "description": "Comparez les prix des courses et carburants, partagez les meilleures offres.",
+  "description": "L'application de courses pour les personnes malvoyantes ou handicapées : votre liste à la voix, le bon magasin, et un guidage dans les rayons.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#faf8ff",
-  "theme_color": "#0284C7",
+  "background_color": "#F7F3EA",
+  "theme_color": "#14213D",
   "lang": "fr",
   "orientation": "portrait-primary",
-  "categories": ["shopping", "finance", "utilities"],
+  "categories": ["shopping", "utilities"],
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
@@ -16,7 +16,6 @@
   ],
   "shortcuts": [
     { "name": "Parler à Prixes", "short_name": "Parler", "url": "/?voice=1" },
-    { "name": "Courses", "url": "/courses" },
-    { "name": "Carburants", "url": "/fuel" }
+    { "name": "Ma liste", "url": "/list" }
   ]
 }

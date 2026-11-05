@@ -1,85 +1,31 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { Icon } from "@/components/Icon";
-import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
+import { announce } from "@/lib/say";
 import { useApp } from "@/lib/store";
-import { useA11y } from "@/lib/useA11y";
+import { ALL_ALLERGENS, useA11y, type FontScale } from "@/lib/useA11y";
 
-export default function AccountPage() {
-  const { user, openLogin, logout, setUser } = useApp();
-  const { dark: isDark, toggleDark: toggle } = useA11y();
+const SIZES: { key: FontScale; label: string }[] = [
+  { key: "normal", label: "Grand" },
+  { key: "large", label: "Très grand" },
+  { key: "xl", label: "Maximum" },
+];
+
+/** Réglages: the theme, the voice and the allergies. The account comes after. */
+export default function SettingsPage() {
+  const { user, openLogin, logout } = useApp();
+  const a11y = useA11y();
+  const { data: meta } = useQuery({ queryKey: ["meta"], queryFn: () => api.meta() });
   const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState(false);
-  const [draftName, setDraftName] = useState("");
-  const [saveError, setSaveError] = useState<string | null>(null);
+  // The static export knows no stored setting while it renders.
   const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!user) {
-    return (
-      <div>
-        <PageHeader title="Profil" />
-        <div className="card flex flex-col items-center gap-3 p-10 text-center">
-          <Icon name="account_circle" className="text-[48px] text-outline-variant" />
-          <p className="text-on-surface-variant">Connectez-vous pour gérer votre compte.</p>
-          <button onClick={() => openLogin(true)} className="btn-primary">
-            Se connecter
-          </button>
-        </div>
-
-        {/* Reachable without an account: the data-source disclosure and the
-            privacy policy must not sit behind a login. */}
-        <section className="card mt-4 p-2">
-          <Link href="/sources" className="block w-full">
-            <Row icon="database" title="Sources des données" subtitle="D&apos;où viennent les prix affichés">
-              <Icon name="chevron_right" className="text-outline-variant" />
-            </Row>
-          </Link>
-          <Hr />
-          <Link href="/privacy" className="block w-full">
-            <Row icon="privacy_tip" title="Confidentialité" subtitle="Vos données, vos droits">
-              <Icon name="chevron_right" className="text-outline-variant" />
-            </Row>
-          </Link>
-          <Hr />
-          <Link href="/conditions" className="block w-full">
-            <Row icon="list_alt" title="Conditions" subtitle="Utilisation et abonnement Premium">
-              <Icon name="chevron_right" className="text-outline-variant" />
-            </Row>
-          </Link>
-          <Hr />
-          <Link href="/mentions-legales" className="block w-full">
-            <Row icon="badge" title="Mentions légales" subtitle="Qui édite Prixes">
-              <Icon name="chevron_right" className="text-outline-variant" />
-            </Row>
-          </Link>
-        </section>
-      </div>
-    );
-  }
-
-  async function saveUsername() {
-    if (!draftName.trim()) return;
-    setBusy(true);
-    setSaveError(null);
-    try {
-      const updated = await api.updateMe({ username: draftName.trim() });
-      setUser(updated);
-      setEditing(false);
-    } catch (e) {
-      setSaveError(e instanceof Error ? e.message : "Erreur");
-    } finally {
-      setBusy(false);
-    }
-  }
+  useEffect(() => setMounted(true), []);
 
   async function exportData() {
     setBusy(true);
@@ -108,197 +54,186 @@ export default function AccountPage() {
     }
   }
 
-  const stats = [
-    { icon: "favorite", label: "Votes reçus", value: user.votes_received, box: "bg-secondary/10 text-secondary" },
-    { icon: "analytics", label: "Contributions", value: user.reputation, box: "bg-tertiary/10 text-tertiary" },
-  ];
-
   return (
-    <div>
-      <PageHeader title="Profil" />
+    <div className="flex flex-col gap-3">
+      <PageHeader title="Réglages" />
 
-      {/* Profile header */}
-      <section className="card mb-6 flex flex-col items-center p-6 text-center">
-        <div className="relative">
-          <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-primary/10 bg-primary text-headline-xl text-on-primary shadow-lg">
-            {user.initials}
-          </div>
-          {user.is_verified && (
-            <span className="absolute bottom-0 right-0 grid place-items-center rounded-full border-2 border-white bg-primary p-1 text-on-primary">
-              <Icon name="verified" fill className="text-[16px]" />
-            </span>
-          )}
-        </div>
-        {editing ? (
-          <div className="mt-3 flex flex-col items-center gap-2">
-            <input
-              autoFocus
-              value={draftName}
-              onChange={(e) => setDraftName(e.target.value)}
-              maxLength={64}
-              aria-label="Nouveau pseudo"
-              className="rounded-lg border border-outline bg-surface px-3 py-1 text-center text-body-lg text-on-surface focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-            {saveError && (
-              <p role="alert" className="text-label-sm text-error">
-                {saveError}
-              </p>
-            )}
-            <div className="flex gap-2">
-              <button onClick={saveUsername} disabled={busy} className="btn-primary px-4 py-1 text-label-md">
-                Enregistrer
-              </button>
+      {mounted && (
+        <>
+          <Toggle
+            icon="dark_mode"
+            title="Thème Nuit"
+            on={a11y.dark}
+            onChange={() => {
+              a11y.toggleDark();
+              announce(a11y.dark ? "Thème Jour." : "Thème Nuit.");
+            }}
+          />
+
+          <h2 className="mt-3 text-[26px] font-bold text-on-surface">Taille du texte</h2>
+          <div role="radiogroup" aria-label="Taille du texte" className="flex flex-col gap-2">
+            {SIZES.map((s) => (
               <button
-                onClick={() => { setEditing(false); setSaveError(null); }}
-                className="btn-outline px-4 py-1 text-label-md"
+                key={s.key}
+                role="radio"
+                aria-checked={a11y.fontScale === s.key}
+                onClick={() => {
+                  a11y.setFontScale(s.key);
+                  announce(`Taille ${s.label}.`);
+                }}
+                className={`flex min-h-[72px] items-center gap-3 rounded-[18px] border-[3px] border-[rgb(var(--color-btn-line))] p-3 text-left text-[26px] font-bold ${
+                  a11y.fontScale === s.key ? "big-btn-main" : "text-on-surface"
+                }`}
               >
-                Annuler
+                <Icon
+                  name={a11y.fontScale === s.key ? "radio_button_checked" : "radio_button_unchecked"}
+                  className="text-[36px]"
+                />
+                {s.label}
               </button>
-            </div>
+            ))}
           </div>
-        ) : (
-          <div className="mt-3 flex items-center gap-2">
-            <h2 className="text-headline-lg text-on-surface">{user.username}</h2>
-            <button
-              onClick={() => { setDraftName(user.username); setEditing(true); }}
-              aria-label="Modifier le pseudo"
-            >
-              <Icon name="edit" className="text-[18px] text-outline-variant hover:text-primary" />
-            </button>
+
+          <h2 className="mt-3 text-[26px] font-bold text-on-surface">La voix</h2>
+          <Toggle
+            icon="record_voice_over"
+            title="Lire les écrans à voix haute"
+            hint="Se tait quand VoiceOver est actif"
+            on={a11y.speakScreens}
+            onChange={() => a11y.setSpeakScreens(!a11y.speakScreens)}
+          />
+          <Toggle
+            icon="forum"
+            title="Le micro se rouvre tout seul"
+            hint="Dites « merci » pour finir"
+            on={a11y.conversation}
+            onChange={() => a11y.setConversation(!a11y.conversation)}
+          />
+          <Toggle
+            icon="mic"
+            title="Écouter dès l'ouverture"
+            on={a11y.listenOnOpen}
+            onChange={() => a11y.setListenOnOpen(!a11y.listenOnOpen)}
+          />
+          {meta?.tts_enabled && (
+            <Toggle
+              icon="graphic_eq"
+              title="Voix naturelle"
+              hint="Nécessite une connexion"
+              on={a11y.naturalVoice}
+              onChange={() => a11y.setNaturalVoice(!a11y.naturalVoice)}
+            />
+          )}
+
+          <h2 className="mt-3 text-[26px] font-bold text-on-surface">Mes allergies</h2>
+          <p className="text-[20px] leading-snug text-on-surface">
+            Je vous préviens, à l&apos;écran et à voix haute, quand un produit en contient.
+          </p>
+          <div className="grid grid-cols-1 gap-2">
+            {ALL_ALLERGENS.map((a) => {
+              const on = a11y.allergens.includes(a);
+              return (
+                <button
+                  key={a}
+                  role="checkbox"
+                  aria-checked={on}
+                  onClick={() => a11y.toggleAllergen(a)}
+                  className="flex min-h-[64px] items-center gap-3 rounded-[18px] border-2 border-[rgb(var(--color-btn-line))] p-3 text-left text-[24px] text-on-surface"
+                >
+                  <Icon name={on ? "check_box" : "check_box_outline_blank"} fill={on} className="text-[36px]" />
+                  <span className={on ? "font-bold" : ""}>{a}</span>
+                </button>
+              );
+            })}
           </div>
-        )}
-        <div className="mt-1 flex items-center gap-2 rounded-full bg-primary/5 px-3 py-1 text-primary">
-          <Icon name="workspace_premium" fill className="text-[18px]" />
-          <span className="text-label-lg">{user.reputation} points de réputation</span>
-        </div>
-      </section>
-
-      <SubscriptionCard />
-
-      {/* Stats */}
-      <section className="mb-6 grid grid-cols-3 gap-gutter">
-        {stats.map((s) => (
-          <div key={s.label} className="card flex flex-col items-center gap-2 p-4 text-center">
-            <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${s.box}`}>
-              <Icon name={s.icon} fill className="text-[20px]" />
-            </span>
-            <p className="text-headline-md text-on-surface">{s.value}</p>
-            <p className="text-micro uppercase tracking-wider text-on-surface-variant">{s.label}</p>
-          </div>
-        ))}
-      </section>
-
-      {/* Admin — feedback & usage stats (moderators/admins only) */}
-      {(user.role === "admin" || user.role === "moderator") && (
-        <section className="card mb-6 p-2">
-          <Link href="/admin/feedback" className="block w-full">
-            <Row icon="reviews" title="Avis reçus" subtitle="Retours des utilisateurs">
-              <Icon name="chevron_right" className="text-outline-variant" />
-            </Row>
-          </Link>
-          <Hr />
-          <Link href="/admin/analytics" className="block w-full">
-            <Row icon="bar_chart" title="Statistiques d'usage" subtitle="Écrans vus, actions">
-              <Icon name="chevron_right" className="text-outline-variant" />
-            </Row>
-          </Link>
-        </section>
+        </>
       )}
 
-      {/* Settings */}
-      <section className="card p-2">
-        <Row icon="dark_mode" title="Thème Nuit" subtitle="Noir et jaune, contre l'éblouissement">
-          {mounted && (
-            <label className="relative inline-flex cursor-pointer items-center">
-              <input type="checkbox" className="peer sr-only" aria-label="Thème Nuit" checked={isDark} onChange={toggle} />
-              <div className="h-6 w-11 rounded-full bg-surface-variant after:absolute after:start-[2px] after:top-[2px] after:h-5 after:w-5 after:rounded-full after:bg-on-surface after:transition-all after:content-[''] peer-checked:bg-primary peer-checked:after:translate-x-full" />
-            </label>
+      <h2 className="mt-3 text-[26px] font-bold text-on-surface">Mon compte</h2>
+      {user ? (
+        <>
+          <p className="break-words text-[22px] text-on-surface">{user.username}</p>
+          {(user.role === "admin" || user.role === "moderator") && (
+            <>
+              <Row href="/admin/feedback" icon="reviews" title="Avis reçus" />
+              <Row href="/admin/analytics" icon="bar_chart" title="Statistiques d'usage" />
+            </>
           )}
-        </Row>
-        <Hr />
-        <button onClick={exportData} disabled={busy} className="w-full">
-          <Row icon="download" title="Exporter mes données" subtitle="RGPD — portabilité">
-            <Icon name="chevron_right" className="text-outline-variant" />
-          </Row>
+          <Row onClick={logout} icon="logout" title="Se déconnecter" />
+          <Row onClick={exportData} disabled={busy} icon="download" title="Exporter mes données" />
+          <Row onClick={deleteAccount} disabled={busy} icon="delete" title="Supprimer mon compte" />
+        </>
+      ) : (
+        <button onClick={() => openLogin(true)} className="big-btn big-btn-main">
+          <Icon name="login" className="text-[44px]" /> Se connecter
         </button>
-        <Hr />
-        <Link href="/sources" className="block w-full">
-          <Row icon="database" title="Sources des données" subtitle="D'où viennent les prix affichés">
-            <Icon name="chevron_right" className="text-outline-variant" />
-          </Row>
-        </Link>
-        <Hr />
-        <Link href="/privacy" className="block w-full">
-          <Row icon="privacy_tip" title="Confidentialité" subtitle="Vos données, vos droits">
-            <Icon name="chevron_right" className="text-outline-variant" />
-          </Row>
-        </Link>
-        <Hr />
-        <Link href="/conditions" className="block w-full">
-          <Row icon="list_alt" title="Conditions" subtitle="Utilisation et abonnement Premium">
-            <Icon name="chevron_right" className="text-outline-variant" />
-          </Row>
-        </Link>
-        <Hr />
-        <Link href="/mentions-legales" className="block w-full">
-          <Row icon="badge" title="Mentions légales" subtitle="Qui édite Prixes">
-            <Icon name="chevron_right" className="text-outline-variant" />
-          </Row>
-        </Link>
-        <Hr />
-        <button onClick={logout} className="w-full">
-          <Row icon="logout" title="Se déconnecter" subtitle="">
-            <Icon name="chevron_right" className="text-outline-variant" />
-          </Row>
-        </button>
-        <Hr />
-        <button onClick={deleteAccount} disabled={busy} className="w-full">
-          <Row icon="delete" title="Supprimer mon compte" subtitle="Action irréversible" danger>
-            <Icon name="chevron_right" className="text-error/60" />
-          </Row>
-        </button>
-      </section>
+      )}
 
-      <p className="mt-6 text-center text-micro uppercase tracking-[0.2em] text-on-surface-variant">
-        Prixes · v2.0
-      </p>
+      <h2 className="mt-3 text-[26px] font-bold text-on-surface">Informations</h2>
+      <Row href="/feedback" icon="chat" title="Donner mon avis" />
+      <Row href="/sources" icon="database" title="D'où viennent les prix" />
+      <Row href="/privacy" icon="privacy_tip" title="Confidentialité" />
+      <Row href="/conditions" icon="list_alt" title="Conditions" />
+      <Row href="/mentions-legales" icon="badge" title="Mentions légales" />
     </div>
   );
 }
+
+const ROW =
+  "flex min-h-[72px] w-full items-center gap-3 rounded-[18px] border-2 border-[rgb(var(--color-btn-line))] p-3 text-left text-[24px] font-bold text-on-surface disabled:opacity-60";
 
 function Row({
   icon,
   title,
-  subtitle,
-  danger = false,
-  children,
+  href,
+  onClick,
+  disabled,
 }: {
   icon: string;
   title: string;
-  subtitle: string;
-  danger?: boolean;
-  children: React.ReactNode;
+  href?: string;
+  onClick?: () => void;
+  disabled?: boolean;
 }) {
-  return (
-    <div className="flex items-center justify-between p-3">
-      <div className="flex items-center gap-3">
-        <span
-          className={`flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/30 ${
-            danger ? "text-error" : "bg-surface text-primary"
-          }`}
-        >
-          <Icon name={icon} className="text-[20px]" />
-        </span>
-        <div className="text-left">
-          <p className={`text-label-lg ${danger ? "text-error" : "text-on-surface"}`}>{title}</p>
-          {subtitle && <p className="text-micro text-on-surface-variant">{subtitle}</p>}
-        </div>
-      </div>
-      {children}
-    </div>
+  const inner = (
+    <>
+      <Icon name={icon} className="text-[36px]" />
+      <span className="min-w-0 flex-1 break-words">{title}</span>
+    </>
+  );
+  return href ? (
+    <Link href={href} className={ROW}>
+      {inner}
+    </Link>
+  ) : (
+    <button onClick={onClick} disabled={disabled} className={ROW}>
+      {inner}
+    </button>
   );
 }
 
-function Hr() {
-  return <hr className="border-outline-variant/20" />;
+function Toggle({
+  icon,
+  title,
+  hint,
+  on,
+  onChange,
+}: {
+  icon: string;
+  title: string;
+  hint?: string;
+  on: boolean;
+  onChange: () => void;
+}) {
+  return (
+    <button role="switch" aria-checked={on} onClick={onChange} className={ROW}>
+      <Icon name={icon} className="text-[36px]" />
+      <span className="min-w-0 flex-1 break-words">
+        {title}
+        {hint && <span className="block text-[20px] font-normal">{hint}</span>}
+      </span>
+      {/* In words, not only in colour. */}
+      <span className="flex-shrink-0 text-[24px]">{on ? "Oui" : "Non"}</span>
+    </button>
+  );
 }

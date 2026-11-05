@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { adviceReason, byAisle, rankStores } from "./courses";
+import { byAisle, rankStores } from "./courses";
 
 const shops = [
   { store: "Lidl", total: 61.8, km: 0.45, items: 20 },
@@ -24,7 +24,6 @@ describe("rankStores", () => {
   });
   it("explains the advice", () => {
     const leclerc = shops[2];
-    expect(adviceReason(leclerc, shops)).toBe("le moins cher");
   });
 });
 

@@ -56,8 +56,7 @@ export default function MentionsLegalesPage() {
 
       <LegalSection icon="info" title="Données affichées">
         <p>
-          Les prix des carburants viennent des données publiques de l&apos;État, les prix des
-          produits de la base collaborative Open Prices, et les fiches produits
+          Les prix des produits viennent de la base collaborative Open Prices, et les fiches produits
           d&apos;Open Food Facts. Le détail est sur la page{" "}
           <Link href="/sources" className={link}>
             Sources des données
@@ -70,8 +69,7 @@ export default function MentionsLegalesPage() {
         <p>
           Le nom Prixes, son logo, ses textes et son code appartiennent à leur éditeur. Les
           données ouvertes réutilisées restent soumises à leur licence : Open Database
-          License (ODbL) pour Open Food Facts et Open Prices, Licence Ouverte d&apos;Etalab
-          pour les prix des carburants.
+          License (ODbL) pour Open Food Facts et Open Prices.
         </p>
       </LegalSection>
 

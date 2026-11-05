@@ -4,10 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { openWithGreeting } from "@/components/VoiceAssistant";
-import { loadNews } from "@/lib/news";
 import { isNativeApp, nativePlatform } from "@/lib/platform";
-import { initPushNotifications } from "@/lib/push";
-import { useApp } from "@/lib/store";
 
 // Native-shell wiring that has no effect on the web build: styles the status bar and
 // maps the Android hardware back button to in-app navigation (exiting the app only at
@@ -16,22 +13,6 @@ import { useApp } from "@/lib/store";
 // to the in-app boot overlay only once the UI has actually settled.
 export function NativeSetup() {
   const router = useRouter();
-  const user = useApp((s) => s.user);
-
-  // Register for push notifications once the user is authenticated (registering a
-  // device token requires a Bearer token). Tapping a price-alert push deep-links to
-  // the product.
-  useEffect(() => {
-    if (!isNativeApp() || !user) return;
-    void initPushNotifications(
-      (barcode) => router.push(`/courses/detail?barcode=${barcode}`),
-      (type) => {
-        if (type === "menu_ready") router.push("/menu");
-        // The news is fetched fresh, then said by the assistant's greeting.
-        void Promise.race([loadNews(true), new Promise((r) => setTimeout(r, 2500))]).finally(openWithGreeting);
-      },
-    );
-  }, [user, router]);
 
   useEffect(() => {
     if (!isNativeApp()) return;

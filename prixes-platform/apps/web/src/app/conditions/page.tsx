@@ -10,18 +10,15 @@ const link = "text-primary underline underline-offset-2";
 const strong = "text-on-surface";
 
 /**
- * Conditions générales d'utilisation (everyone) and de vente (Premium), on one
- * page: the app is free, and the only thing sold is the Premium subscription.
+ * Conditions générales d'utilisation. The app is free and nothing is sold in it.
  */
 export default function ConditionsPage() {
-  const seller = LEGAL.company ?? `${LEGAL.brand} (société ${PENDING})`;
   return (
     <div>
       <PageHeader title="Conditions" back />
 
       <p className="mb-5 text-body-md text-on-surface-variant">
-        Conditions d&apos;utilisation de Prixes et conditions de vente de l&apos;abonnement
-        Premium. L&apos;éditeur est indiqué dans les{" "}
+        Conditions d&apos;utilisation de Prixes. L&apos;éditeur est indiqué dans les{" "}
         <Link href="/mentions-legales" className={link}>
           mentions légales
         </Link>
@@ -30,14 +27,13 @@ export default function ConditionsPage() {
 
       <LegalSection icon="info" title="Le service">
         <p>
-          Prixes compare les prix des courses et des carburants, prépare des listes de
-          courses et des menus, et se pilote à la voix. L&apos;application est gratuite. Un
-          abonnement Premium, facultatif, ajoute des fonctions d&apos;intelligence
-          artificielle.
+          Prixes aide les personnes malvoyantes ou handicapées à faire leurs courses : une
+          liste à la voix, le magasin le moins cher ou le plus proche, et un guidage dans les
+          rayons. L&apos;application est gratuite.
         </p>
         <p>
           Utiliser Prixes vaut acceptation de ces conditions. Un compte est nécessaire pour
-          garder une liste, des alertes ou des menus ; vous êtes responsable de son accès.
+          garder une liste ; vous êtes responsable de son accès.
         </p>
       </LegalSection>
 
@@ -48,42 +44,10 @@ export default function ConditionsPage() {
           affiché par le magasin.
         </p>
         <p>
-          <strong className={strong}>Allergies et régimes</strong> : les alertes s&apos;appuient
+          <strong className={strong}>Allergies</strong> : les alertes s&apos;appuient
           sur les informations déclarées dans Open Food Facts, qui peuvent être incomplètes.
           Lisez toujours l&apos;étiquette du produit avant de le consommer.
         </p>
-      </LegalSection>
-
-      <LegalSection icon="workspace_premium" title="L'abonnement Premium">
-        <ul className="ml-4 list-disc space-y-1.5">
-          <li>
-            <strong className={strong}>Prix</strong> : {LEGAL.premium.monthly} par mois ou{" "}
-            {LEGAL.premium.yearly} par an, toutes taxes comprises.
-          </li>
-          <li>
-            <strong className={strong}>Vendeur</strong> : {seller}. Le paiement est traité par
-            Stripe ; Prixes ne voit ni ne conserve votre numéro de carte.
-          </li>
-          <li>
-            <strong className={strong}>Renouvellement</strong> : l&apos;abonnement se renouvelle
-            automatiquement à la fin de chaque mois ou de chaque année.
-          </li>
-          <li>
-            <strong className={strong}>Résiliation</strong> : à tout moment, depuis votre compte
-            ou en écrivant à <span className="select-all">{LEGAL.email}</span>. Le Premium reste
-            actif jusqu&apos;à la fin de la période déjà payée.
-          </li>
-          <li>
-            <strong className={strong}>Remboursement</strong> : dans les 14 jours qui suivent
-            votre premier paiement, écrivez-nous et nous vous remboursons entièrement, sans
-            justification.
-          </li>
-          <li>
-            <strong className={strong}>Toujours gratuit</strong> : la voix, le comparateur, le
-            carburant, la liste, les alertes de prix, les menus de nos recettes et toutes les
-            options d&apos;accessibilité. Elles ne passeront jamais en Premium.
-          </li>
-        </ul>
       </LegalSection>
 
       <LegalSection icon="shield" title="Responsabilité">

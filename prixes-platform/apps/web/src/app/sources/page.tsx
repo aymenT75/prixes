@@ -30,7 +30,7 @@ function Source({
             href={l.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 rounded-lg border border-outline-variant/40 bg-surface-container px-3 py-2 text-label-md text-primary transition-colors hover:bg-surface-container-high"
+            className="flex min-h-11 items-center gap-2 break-all rounded-lg border border-outline-variant/40 bg-surface-container px-3 py-2 text-label-md text-primary transition-colors hover:bg-surface-container-high"
           >
             <Icon name="open_in_new" className="flex-shrink-0 text-[18px]" />
             <span className="min-w-0">{l.label}</span>
@@ -56,9 +56,7 @@ export default function SourcesPage() {
         <p className="text-body-md text-on-surface-variant">
           Prixes est une application <strong>indépendante</strong>. Elle n&apos;est ni
           affiliée, ni approuvée, ni gérée par une entité gouvernementale, une
-          administration publique ou une enseigne de distribution. Les prix des carburants
-          affichés proviennent des données ouvertes publiées par l&apos;État français,
-          reprises telles quelles et accessibles ci-dessous à leur source d&apos;origine.
+          administration publique ou une enseigne de distribution.
         </p>
       </div>
 
@@ -66,30 +64,6 @@ export default function SourcesPage() {
         Prixes n&apos;invente aucun chiffre. Chaque information affichée vient d&apos;une
         source publique que vous pouvez consulter vous-même :
       </p>
-
-      <Source
-        icon="local_gas_station"
-        title="Prix des carburants"
-        links={[
-          { label: "prix-carburants.gouv.fr — site officiel", href: "https://www.prix-carburants.gouv.fr/" },
-          {
-            label: "data.gouv.fr — jeu de données « Prix des carburants, flux instantané »",
-            href: "https://www.data.gouv.fr/datasets/prix-des-carburants-en-france-flux-instantane-v2-amelioree",
-          },
-          { label: "donnees.roulez-eco.fr — flux brut utilisé par l'appli", href: "https://donnees.roulez-eco.fr/opendata/instantane" },
-        ]}
-      >
-        <p>
-          Données ouvertes officielles publiées par le Ministère de l&apos;Économie et des
-          Finances (dispositif <em>prix-carburants.gouv.fr</em>), déclarées par les
-          stations-service elles-mêmes. Prixes se contente de les rapatrier et de les
-          trier par distance : aucun prix n&apos;est modifié.
-        </p>
-        <p>
-          Prixes n&apos;est pas le producteur de ces données et ne représente pas
-          l&apos;État français. En cas d&apos;écart, la source officielle fait foi.
-        </p>
-      </Source>
 
       <Source
         icon="nutrition"

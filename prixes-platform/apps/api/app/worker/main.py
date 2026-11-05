@@ -11,13 +11,9 @@ from arq.connections import RedisSettings
 
 from app.core.config import settings
 from app.worker.tasks import (
-    evaluate_price_alerts,
-    ingest_fuel,
     prune_analytics,
     refresh_fresh_prices,
     refresh_prices,
-    sunday_menus,
-    watch_list_prices,
 )
 
 
@@ -28,13 +24,9 @@ async def healthcheck(_: dict[str, Any]) -> str:
 class WorkerSettings:
     functions = [
         healthcheck,
-        evaluate_price_alerts,
         refresh_prices,
         refresh_fresh_prices,
         prune_analytics,
-        ingest_fuel,
-        watch_list_prices,
-        sunday_menus,
     ]
     redis_settings = RedisSettings.from_dsn(str(settings.redis_url))
     # The price crawl + OFF enrichment can take a couple of minutes; give jobs
@@ -49,17 +41,6 @@ class WorkerSettings:
         # community-contributed and moves slowly, and run_at_startup means a
         # fresh deploy has produce priced before anyone opens the app.
         cron(refresh_fresh_prices, hour=5, minute=40, run_at_startup=True),  # type: ignore[arg-type]
-        # Re-check price alerts every 15 minutes (picks up new lows shortly after
-        # each refresh).
-        cron(evaluate_price_alerts, minute={0, 15, 30, 45}),  # type: ignore[arg-type]
         # GDPR data minimisation — prune old anonymous analytics events daily.
         cron(prune_analytics, hour=4, minute=10),  # type: ignore[arg-type]
-        # French fuel feed refreshes a few times a day; ingest hourly at :07.
-        # run_at_startup so a fresh deploy repopulates prices immediately rather
-        # than serving whatever was last cached.
-        cron(ingest_fuel, minute=7, run_at_startup=True),  # type: ignore[arg-type]
-        # Everyone's list, half an hour after each price refresh.
-        cron(watch_list_prices, hour={0, 3, 6, 9, 12, 15, 18, 21}, minute=45),  # type: ignore[arg-type]
-        # The Sunday menu: 16:00 UTC is 17:00-18:00 in France, before the week's shopping.
-        cron(sunday_menus, weekday=6, hour=16, minute=0),  # type: ignore[arg-type]
     ]

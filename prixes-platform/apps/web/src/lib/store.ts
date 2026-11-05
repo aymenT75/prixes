@@ -15,20 +15,16 @@ interface AppState {
   user: User | null;
   loading: boolean;
   loginModalOpen: boolean;
-  /** The Premium offer, opened by a paid feature answering 402 or by the account page. */
-  premiumOpen: boolean;
   loadMe: () => Promise<void>;
   setUser: (u: User | null) => void;
   logout: () => Promise<void>;
   openLogin: (open: boolean) => void;
-  openPremium: (open: boolean) => void;
 }
 
 export const useApp = create<AppState>((set) => ({
   user: null,
   loading: true,
   loginModalOpen: false,
-  premiumOpen: false,
   async loadMe() {
     if (!tokenStore.access) {
       set({ loading: false });
@@ -68,5 +64,4 @@ export const useApp = create<AppState>((set) => ({
     }
   },
   openLogin: (loginModalOpen) => set({ loginModalOpen }),
-  openPremium: (premiumOpen) => set({ premiumOpen }),
 }));

@@ -31,10 +31,6 @@ export const LEGAL = {
     where: "serveurs situés à Francfort, Allemagne",
     url: "https://www.digitalocean.com",
   },
-  premium: {
-    monthly: "2,99 €",
-    yearly: "24,99 €",
-  },
   updated: "octobre 2026",
 };
 

@@ -131,6 +131,7 @@ export interface ShoppingItem {
   image_url: string | null;
   best_price: number | null;
   nutriscore: string | null;
+  allergens?: string | null;
   /** What the price is the price *of* — "500 g", "2 L". Null for a free-text line. */
   pack: string | null;
   /** On a shared list, someone else who added or bought this line. */

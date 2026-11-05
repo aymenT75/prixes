@@ -5,7 +5,6 @@
 
 // Web Speech API types are declared in web-speech-api.d.ts
 import { isNativeApp } from "./platform";
-import type { FuelId, VoiceTask } from "./voiceTasks";
 
 export type Intent =
   | { type: "navigate"; path: string; say: string }
@@ -13,17 +12,15 @@ export type Intent =
   | { type: "setting"; action: "dark" | "light" | "bigger" | "smaller" | "contrast"; say: string }
   | { type: "read"; say: string }
   | { type: "help"; say: string }
-  // A job a page does on arrival (fuel search, nearby stores, best store…).
-  | { type: "task"; task: VoiceTask; path: string; say: string }
+  /** "Guide-moi": the in-store guide, hands free. */
+  | { type: "guide"; say: string }
   | { type: "list-add"; query: string; say: string }
+  | { type: "list-remove"; query: string; say: string }
   | { type: "list-read"; say: string }
-  | { type: "alert-add"; query: string; say: string }
-  | { type: "premium"; say: string }
   // Answers to the assistant's own question ("Je l'ajoute à votre liste ?").
   | { type: "confirm"; say: string }
   | { type: "cancel"; say: string }
   | { type: "bye"; say: string }
-  | { type: "news"; say: string }
   | { type: "unknown"; say: string };
 
 export function speechSupported(): boolean {
@@ -428,47 +425,22 @@ function strip(s: string): string {
     .trim();
 }
 
-// Order matters: NAV returns the first keyword hit, so the specific pages (list,
-// alerts) sit BEFORE the broad "/courses" — otherwise "liste de courses" would
-// match "course" and open Courses instead of the shopping list. Stores, fuel and
-// the scanner are not here: they are tasks (see parseIntent), not just pages.
+// Order matters: NAV returns the first keyword hit.
 const NAV = [
-  { path: "/", say: "J'ouvre l'accueil.", words: ["accueil", "maison", "page d'accueil", "menu principal"] },
-  { path: "/menu", say: "J'ouvre votre menu de la semaine.", words: ["menu de la semaine", "mes menus", "mon menu", "menu", "repas de la semaine"] },
-  { path: "/list", say: "J'ouvre votre liste.", words: ["ma liste", "liste de course", "liste de courses", "panier", "ma course", "liste"] },
-  { path: "/alerts", say: "J'ouvre vos alertes.", words: ["alerte", "alertes", "baisse de prix", "notification"] },
-  { path: "/feedback", say: "J'ouvre la page pour donner votre avis.", words: ["avis", "signaler", "probleme", "suggestion"] },
-  { path: "/account", say: "J'ouvre votre compte.", words: ["compte", "profil", "mon compte", "parametre", "reglage"] },
-  { path: "/courses", say: "J'ouvre les courses.", words: ["course", "produit", "epicerie", "aliment"] },
+  { path: "/", words: ["accueil", "maison", "menu principal"] },
+  { path: "/list", words: ["ma liste", "liste de course", "liste de courses", "panier", "liste"] },
+  { path: "/ou-aller", words: ["ou aller", "magasin", "supermarche", "ou faire", "moins cher"] },
+  { path: "/account", words: ["reglage", "parametre", "compte", "profil", "allergie"] },
+  { path: "/feedback", words: ["donner mon avis", "signaler", "probleme", "suggestion"] },
 ];
 
-const DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
-
-const FUEL_LABEL: Record<FuelId, string> = {
-  gazole: "gazole",
-  sp95: "SP95",
-  sp98: "SP98",
-  e85: "E85",
-  gplc: "GPL",
-};
-
-/** The fuel a phrase names, or null when it does not talk about fuel at all. */
-export function fuelIn(t: string): FuelId | null {
-  if (/\b(e ?85|ethanol|superethanol|bioethanol)\b/.test(t)) return "e85";
-  if (/\b(gpl|gplc)\b/.test(t)) return "gplc";
-  if (/\b(sp ?98|98)\b/.test(t)) return "sp98";
-  if (/\b(sp ?95|95|sans plomb|sans-plomb|e10)\b/.test(t)) return "sp95";
-  if (/\b(gazole|gasoil|gas-oil|diesel)\b/.test(t)) return "gazole";
-  if (/\b(essence)\b/.test(t)) return "sp95";
-  if (/\b(carburant|station|stations|plein|pompe)\b/.test(t)) return "gazole";
-  return null;
-}
-
 const HELP_TEXT =
-  "Je peux tout faire à la voix. Par exemple : une raclette pour 6, ajoute du lait à ma liste, " +
-  "lis ma liste, où faire mes courses, essence la moins chère, magasins proches, " +
-  "compose mon menu, change le repas de mardi, scanne un produit, alerte sur le café. " +
-  "Je peux aussi agrandir le texte, activer le mode sombre et lire la page.";
+  "Vous pouvez dire : ajoute du lait, enlève le lait, lis ma liste, où aller, guide-moi. " +
+  "Ou dites le nom d'un produit pour connaître son prix. Dites merci pour finir.";
+
+/** What the app no longer does: said plainly rather than searched as a product. */
+const GONE =
+  /\b(carburant|essence|gazole|gasoil|diesel|station|menu de la semaine|compose|recette|repas|scanne|scanner|code[- ]barres?|alerte|promo|promotion|premium|abonnement)\b/;
 
 /** Drop the article in front of a product name: "du lait" → "lait". */
 function bare(q: string): string {
@@ -486,20 +458,16 @@ export function parseIntent(raw: string): Intent {
 
   // In the shop: the guide reads the list aisle by aisle, hands free.
   if (/\b(guide[- ]?moi|guidez[- ]moi|guide moi|je suis (au|en|dans le) magasin|lance le guid|commence les courses)\b/.test(t)) {
-    return { type: "task", task: { kind: "guide" }, path: "/list", say: "Je vous guide dans le magasin." };
+    return { type: "guide", say: "Je vous guide dans le magasin." };
   }
 
-  // A yes / no to the assistant's last question — and "ajoute-le", which means
-  // "the product you just told me about". Before list-add, which would read
-  // "ajoute-le" as a product called "le".
-  // What changed: the list's price drops, a Sunday menu waiting.
-  if (/\b(quoi de neuf|des nouvelles|qu'?est[- ]ce qui a (baisse|change)|ce qui a baisse|les baisses|qu'?est[- ]ce qui est moins cher)\b/.test(t)) {
-    return { type: "news", say: "" };
-  }
   // Ends a conversation: the mic stops reopening.
   if (/^(merci|merci beaucoup|merci bien|c'est tout|ce sera tout|ca ira|au revoir|a bientot|bonne journee|bonne soiree|c'est bon merci|fini|termine|j'ai fini)\b/.test(t)) {
     return { type: "bye", say: "Avec plaisir. À bientôt." };
   }
+  // A yes / no to the assistant's last question — and "ajoute-le", which means
+  // "the product you just told me about". Before list-add, which would read
+  // "ajoute-le" as a product called "le".
   if (/^(oui|ouais|d'accord|ok|okay|vas-y|vas y|allez|volontiers|je veux bien|bien sur|c'est ca|parfait|oui merci)\b/.test(t) ||
       /\b(ajoute-le|ajoute le|ajoute-la|ajoute la|ajoute-les|ajoute les|mets-le|mets le|mets-les|garde-le|garde les)\s*$/.test(t)) {
     return { type: "confirm", say: "" };
@@ -511,6 +479,13 @@ export function parseIntent(raw: string): Intent {
   // Shopping list — before "read", which would otherwise take "lis ma liste".
   if (/\b(lis|lire|dis-moi|dis moi|qu'y a-t-il|que contient|qu'est-ce qu'il y a|rappelle)\b.*\bliste\b/.test(t)) {
     return { type: "list-read", say: "" };
+  }
+  const remove =
+    t.match(/\b(?:enleve|enlever|retire|retirer|supprime|supprimer|efface|effacer)\s+(.+?)\s+(?:de|sur|dans)\s+(?:ma|la|mes)\s+(?:liste|courses)\b/) ??
+    t.match(/\b(?:enleve|enlever|retire|retirer|supprime|supprimer|efface|effacer)\s+(.+)$/);
+  if (remove && bare(remove[1]).length > 1) {
+    const q = bare(remove[1]);
+    return { type: "list-remove", query: q, say: `Je retire ${q} de votre liste.` };
   }
   // "ajoute-le à ma liste": the product just talked about — the assistant knows it.
   const pron = t.match(/\b(?:ajoute|rajoute|mets|met)[-\s]+(le|la|les|ca|cela)(?:\s+(?:a|dans|sur)\s+(?:ma|la|mes)\s+(?:liste|courses))?\s*$/);
@@ -525,104 +500,29 @@ export function parseIntent(raw: string): Intent {
 
   // Settings
   if (/\b(mode sombre|sombre|nuit)\b/.test(t)) return { type: "setting", action: "dark", say: "Thème Nuit activé." };
-  if (/\b(mode clair|clair)\b/.test(t)) return { type: "setting", action: "light", say: "Thème Jour activé." };
-  // \b(agrandi)\b alone would miss "agrandis" ("tu" imperative, e.g. the
-  // "Agrandis le texte" example command) — \b requires a boundary right after
-  // "agrandi", but the following "s" is a word char, so no boundary there.
-  // List the inflected forms explicitly instead of relying on the stem alone.
+  if (/\b(mode clair|clair|jour)\b/.test(t)) return { type: "setting", action: "light", say: "Thème Jour activé." };
+  // \b(agrandi)\b alone would miss "agrandis" ("tu" imperative): \b requires a
+  // boundary right after "agrandi". List the inflected forms explicitly.
   if (/\b(agrandi|agrandis|agrandir|plus grand|grossir|grand texte|grosse ecriture|augmente)\b/.test(t))
     return { type: "setting", action: "bigger", say: "J'agrandis le texte." };
   if (/\b(reduire|reduis|reduit|plus petit|diminue|petit texte)\b/.test(t))
     return { type: "setting", action: "smaller", say: "Je réduis le texte." };
   if (/\b(contraste)\b/.test(t)) return { type: "setting", action: "contrast", say: "Je change le contraste." };
 
-  // Read the page aloud — also covers allergen questions on a product page.
-  if (
-    /\b(lis|lire|lit|lecture|qu'y a|qu'est-ce qu'il y a|raconte|allergen|allergie|contient|gluten|arachide|lactose)\b/.test(
-      t,
-    )
-  )
-    return { type: "read", say: "" };
+  // Read the page aloud.
+  if (/\b(lis|lire|lit|lecture|qu'y a|qu'est-ce qu'il y a|raconte)\b/.test(t)) return { type: "read", say: "" };
 
-  if (/\b(premium|abonnement|abonner|m'abonner)\b/.test(t)) {
-    return { type: "premium", say: "Voici l'offre Premium." };
-  }
-
-  // A price alert on a product: "alerte sur le café", "préviens-moi si le beurre baisse".
-  const alert =
-    t.match(/\balertes?\s+(?:sur|pour|quand|si)\s+(.+)/) ??
-    t.match(/\bpreviens?-?\s?moi\s+(?:quand|si)\s+(.+?)\s+(?:baisse|est moins cher|diminue)/);
-  if (alert && bare(alert[1]).length > 1) {
-    const q = bare(alert[1]);
-    return { type: "alert-add", query: q, say: `Je crée une alerte sur ${q}.` };
-  }
-
-  // Where to shop the list — before "stores", which also talks about shops.
-  if (
-    /\b(ou (faire|acheter) (mes|les|ma|mon) (courses|liste|panier)|magasin le (moins cher|plus economique)|meilleur magasin|moins cher pour (ma|la|mes) (liste|courses)|organise (mes|les|ma) (courses|liste)|ou aller faire)\b/.test(
-      t,
-    )
-  ) {
-    return { type: "task", task: { kind: "split" }, path: "/list", say: "Je compare les magasins pour votre liste." };
-  }
-
-  // Weekly menu: swap one meal, or compose the week.
-  const dayIndex = DAYS.findIndex((d) => t.includes(d));
-  if (/\b(change|changer|remplace|remplacer|autre)\b/.test(t) && /\b(repas|plat|diner|dejeuner|menu)\b/.test(t) && dayIndex >= 0) {
+  if (GONE.test(t)) {
     return {
-      type: "task",
-      task: { kind: "menu-swap", day: dayIndex },
-      path: "/menu",
-      say: `Je change le repas de ${DAYS[dayIndex]}.`,
-    };
-  }
-  if (
-    /\b(compose|composer|prepare|preparer|fais|faire|refais|refaire|genere|cree|planifie|propose)\b.*\b(menu|menus|repas|semaine)\b/.test(t) ||
-    /\b(idees? de repas|quoi manger|qu'est-ce qu'on mange|on mange quoi)\b/.test(t)
-  ) {
-    return { type: "task", task: { kind: "menu-compose" }, path: "/menu", say: "Je compose votre semaine." };
-  }
-
-  // A dish or a recipe: the assistant turns it into a costed list.
-  if (
-    /\b(ingredients?|recette)\b/.test(t) ||
-    /\b(pour (faire|preparer|cuisiner)|je (fais|prepare|cuisine|veux faire|voudrais faire))\b/.test(t) ||
-    /\b(un|une|des|du)\s+[a-z' -]{3,40}\s+pour\s+\d{1,2}\b/.test(t)
-  ) {
-    return { type: "task", task: { kind: "cart", prompt: raw.trim() }, path: "/list", say: "Je prépare la liste." };
-  }
-
-  // Fuel: open the fuel page on the right fuel, find the cheapest around.
-  const fuel = fuelIn(t);
-  if (fuel) {
-    return {
-      type: "task",
-      task: { kind: "fuel", fuel },
-      path: "/fuel",
-      say: `Je cherche le ${FUEL_LABEL[fuel]} le moins cher près de vous.`,
+      type: "unknown",
+      say: "Je ne fais plus cela. Je m'occupe de votre liste, du magasin et du guidage. Dites aide pour savoir quoi dire.",
     };
   }
 
-  // Nearby shops.
-  if (/\b(magasins?|supermarches?|superettes?|boutiques?|hypermarches?|epiceries? proche)\b/.test(t)) {
-    return { type: "task", task: { kind: "stores" }, path: "/stores", say: "Je cherche les magasins autour de vous." };
-  }
-
-  // The barcode scanner is gone: say so and point to what replaces it.
-  if (/\b(scanne|scanner|scan|code barre|code-barre|code-barres|codes barres)\b/.test(t)) {
-    return {
-      type: "task",
-      task: { kind: "stores" },
-      path: "/stores",
-      say: "Le scanner n'existe plus : dites-moi plutôt le produit. Voici les magasins autour de vous.",
-    };
-  }
-
-  // Navigation by keyword — checked before the generic search phrase below so
-  // that "mon menu" routes to /menu instead of becoming a literal search.
+  // Navigation by keyword — before the generic search below.
   for (const n of NAV) {
     if (n.words.some((w) => t.includes(w))) {
-      return { type: "navigate", path: n.path, say: n.say };
+      return { type: "navigate", path: n.path, say: "" };
     }
   }
 
@@ -633,9 +533,9 @@ export function parseIntent(raw: string): Intent {
     if (q.length > 1) return { type: "search", query: q, say: `Je cherche ${q}.` };
   }
 
-  // Fallback: treat the whole phrase as a product search.
-  if (t.length > 2) return { type: "search", query: t, say: `Je cherche ${t}.` };
-  return { type: "unknown", say: "Je n'ai pas compris. Dites « aide » pour les commandes." };
+  // Fallback: treat the whole phrase as a product.
+  if (t.length > 2) return { type: "search", query: bare(t), say: `Je cherche ${t}.` };
+  return { type: "unknown", say: "Je n'ai pas compris. Dites aide pour savoir quoi dire." };
 }
 
 /** Read the visible main content aloud (headings + meaningful text). */

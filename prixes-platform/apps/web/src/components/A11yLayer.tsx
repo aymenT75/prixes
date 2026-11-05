@@ -4,14 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
-import { AccessibilityFab } from "@/components/AccessibilityFab";
 import { VoiceAssistant } from "@/components/VoiceAssistant";
 import { track } from "@/lib/analytics";
 import { api } from "@/lib/api";
+import { watchScreenReader } from "@/lib/say";
 import { useA11y } from "@/lib/useA11y";
 import { setNaturalTts, warmUpVoice } from "@/lib/voice";
 
-/** Initialises accessibility settings on load and mounts the floating controls. */
+/** Initialises accessibility settings on load and mounts the voice assistant. */
 export function A11yLayer() {
   const init = useA11y((s) => s.init);
   const naturalVoice = useA11y((s) => s.naturalVoice);
@@ -20,6 +20,7 @@ export function A11yLayer() {
     init();
     // Preload the French TTS voice so the first spoken response is instant.
     warmUpVoice();
+    void watchScreenReader();
   }, [init]);
 
   // Anonymous page-view analytics — reveals which screens are used and where
@@ -35,10 +36,5 @@ export function A11yLayer() {
     setNaturalTts(!!meta?.tts_enabled && naturalVoice);
   }, [meta?.tts_enabled, naturalVoice]);
 
-  return (
-    <>
-      <AccessibilityFab />
-      <VoiceAssistant />
-    </>
-  );
+  return <VoiceAssistant />;
 }

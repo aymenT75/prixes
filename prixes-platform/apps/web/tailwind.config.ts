@@ -83,36 +83,33 @@ export default {
         md: "24px",
       },
       fontFamily: {
-        sans: ["var(--font-hanken)", "Hanken Grotesk", "system-ui", "sans-serif"],
-        display: ["var(--font-sora)", "Sora", "system-ui", "sans-serif"],
-        mono: ["var(--font-jetbrains-mono)", "JetBrains Mono", "monospace"],
+        // Atkinson Hyperlegible, drawn for low vision. One face for everything.
+        sans: ["var(--font-atkinson)", "Verdana", "Arial", "sans-serif"],
+        display: ["var(--font-atkinson)", "Verdana", "Arial", "sans-serif"],
+        mono: ["var(--font-atkinson)", "Verdana", "Arial", "sans-serif"],
       },
+      // Nothing under 16 px: the smallest text is the one that shuts people out.
       fontSize: {
-        "display-lg": ["48px", { lineHeight: "1.1", letterSpacing: "-0.04em", fontWeight: "800" }],
-        "headline-xl": ["30px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "800" }],
-        "headline-xl-mobile": ["26px", { lineHeight: "32px", fontWeight: "800" }],
-        "headline-lg": ["22px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "800" }],
-        "headline-md": ["18px", { lineHeight: "24px", fontWeight: "700" }],
-        "headline-sm": ["0.875rem", { lineHeight: "1.25rem", fontWeight: "600" }],
-        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
-        "body-md": ["14px", { lineHeight: "20px", fontWeight: "500" }],
-        "body-sm": ["0.75rem", { lineHeight: "1rem" }],
-        "label-lg": ["14px", { lineHeight: "16px", fontWeight: "700" }],
-        "label-md": ["12px", { lineHeight: "14px", fontWeight: "700" }],
-        "label-sm": ["0.6875rem", { lineHeight: "1rem", fontWeight: "500" }],
-        // 12px, not 10px: this is the smallest text in the app (store names, timestamps,
-        // badge labels) and 10px sat below Material's floor for
-        // supporting text. It matters most for someone running a large system font
-        // scale — the WebView zoom is capped, so the smallest sizes are exactly the ones
-        // that stayed unreadable for the people who needed the setting in the first place.
-        micro: ["12px", { lineHeight: "15px", fontWeight: "700" }],
+        "display-lg": ["48px", { lineHeight: "1.1", fontWeight: "700" }],
+        "headline-xl": ["36px", { lineHeight: "42px", fontWeight: "700" }],
+        "headline-xl-mobile": ["32px", { lineHeight: "38px", fontWeight: "700" }],
+        "headline-lg": ["28px", { lineHeight: "34px", fontWeight: "700" }],
+        "headline-md": ["24px", { lineHeight: "30px", fontWeight: "700" }],
+        "headline-sm": ["20px", { lineHeight: "26px", fontWeight: "700" }],
+        "body-lg": ["20px", { lineHeight: "28px", fontWeight: "400" }],
+        "body-md": ["18px", { lineHeight: "26px", fontWeight: "400" }],
+        "body-sm": ["16px", { lineHeight: "22px" }],
+        "label-lg": ["18px", { lineHeight: "24px", fontWeight: "700" }],
+        "label-md": ["17px", { lineHeight: "22px", fontWeight: "700" }],
+        "label-sm": ["16px", { lineHeight: "22px", fontWeight: "700" }],
+        micro: ["16px", { lineHeight: "22px", fontWeight: "700" }],
       },
       boxShadow: {
         card: "0px 4px 12px rgba(0, 0, 0, 0.05)",
         float: "0px 8px 24px rgba(0, 0, 0, 0.12)",
         nav: "0px -4px 12px rgba(0, 0, 0, 0.05)",
-        // Soft yellow halo under the main actions (Jour et Nuit).
-        glow: "0px 8px 28px rgba(255, 214, 10, 0.35)",
+        // Soft gold halo under the main actions (Jour et Nuit).
+        glow: "0px 8px 28px rgba(201, 162, 39, 0.3)",
       },
     },
   },

@@ -39,7 +39,7 @@ export function OfflineBanner() {
       aria-live="polite"
       // Just above the tab bar (and clear of the mic that rises out of it): at the
       // top it covered the logo and the account button.
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(118px+env(safe-area-inset-bottom))] z-[45] mx-auto flex w-fit max-w-[calc(100%-2rem)] items-center gap-2 rounded-full bg-on-surface px-4 py-2 text-label-md font-semibold text-surface shadow-float"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(16px+env(safe-area-inset-bottom))] z-[45] mx-auto flex w-fit max-w-[calc(100%-2rem)] items-center gap-2 rounded-full bg-on-surface px-4 py-2 text-label-md font-semibold text-surface shadow-float"
     >
       <Icon name={offline ? "cloud_off" : "cloud_upload"} className="flex-shrink-0" />
       <span>

@@ -25,9 +25,9 @@
   --color-surface-dim: 216 208 190;
   --color-on-surface: 20 33 61;
   --color-on-background: 20 33 61;
-  --color-on-surface-variant: 74 82 102;
-  --color-outline: 118 122 135;
-  --color-outline-variant: 222 214 195;
+  --color-on-surface-variant: 61 70 92;
+  --color-outline: 74 82 102;
+  --color-outline-variant: 122 116 100;
   --color-primary: 20 33 61;
   --color-on-primary: 247 243 234;
   --color-surface-tint: 20 33 61;
@@ -66,6 +66,9 @@
   --color-success-light: 211 238 217;
   --color-inverse-surface: 20 33 61;
   --color-inverse-on-surface: 243 235 216;
+  --color-btn: 20 33 61;
+  --color-on-btn: 247 243 234;
+  --color-btn-line: 20 33 61;
 }
 
 /* ── Thème « Nuit » (au choix, menu Accessibilité) ──────────────────────────
@@ -85,9 +88,9 @@ html.dark {
   --color-surface-dim: 14 26 51;
   --color-on-surface: 243 235 216;
   --color-on-background: 243 235 216;
-  --color-on-surface-variant: 176 184 204;
-  --color-outline: 128 138 162;
-  --color-outline-variant: 44 62 98;
+  --color-on-surface-variant: 203 210 226;
+  --color-outline: 176 184 204;
+  --color-outline-variant: 128 138 162;
   --color-primary: 212 175 55;
   --color-on-primary: 14 26 51;
   --color-surface-tint: 212 175 55;
@@ -126,6 +129,9 @@ html.dark {
   --color-success-light: 16 54 26;
   --color-inverse-surface: 243 235 216;
   --color-inverse-on-surface: 14 26 51;
+  --color-btn: 31 50 88;
+  --color-on-btn: 255 255 255;
+  --color-btn-line: 212 175 55;
 }
 
 /* High contrast (stacks on top of light or dark). */
@@ -196,13 +202,16 @@ body {
   font-style: normal;
   font-weight: 100 700;
   font-display: block;
-  src: url("/fonts/material-symbols-outlined.woff2?v=8ab14c40dc") format("woff2");
+  src: url("/fonts/material-symbols-outlined.woff2?v=28e3236166") format("woff2");
+}
+/* Zero specificity, so a text-[44px] on an icon wins. */
+:where(.material-symbols-outlined) {
+  font-size: 24px;
 }
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
   font-weight: normal;
   font-style: normal;
-  font-size: 24px;
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
@@ -286,6 +295,24 @@ summary,
   .card {
     @apply bg-surface-container-lowest rounded-xl shadow-card border border-outline-variant/10;
   }
+  /* The app's buttons: very large, an icon and a word, whole width. No gesture
+     is ever needed, so a shaky finger or a head pointer lands on them. */
+  .big-btn {
+    @apply flex w-full items-center gap-4 rounded-[22px] border-[3px] px-5 py-3 text-left font-bold transition-transform active:scale-[0.98];
+    min-height: 96px;
+    font-size: 30px;
+    line-height: 1.1;
+    border-color: rgb(var(--color-btn-line));
+    background: rgb(var(--color-btn));
+    color: rgb(var(--color-on-btn));
+  }
+  .big-btn small { display: block; margin-top: 3px; font-size: 21px; font-weight: 400; }
+  .big-btn-main {
+    border-color: rgb(var(--color-primary-container));
+    background: rgb(var(--color-primary-container));
+    color: rgb(var(--color-on-primary-container));
+  }
+  .big-btn:disabled { opacity: 0.6; }
   .btn-primary {
     /* Jour et Nuit : le jaune plein, texte noir (13:1 et plus). Le dégradé
        citron-cyan d'avant passait sous 4,5:1 par endroits et vibrait pour les

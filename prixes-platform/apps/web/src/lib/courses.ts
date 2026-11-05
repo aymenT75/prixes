@@ -1,46 +1,18 @@
 /**
- * The shopping assistant's choices: the budget, how much the distance weighs
- * against the price, which shop it advises, and the order of the aisles.
- *
- * Pure functions plus two remembered settings, so the ranking can be tested
- * without a page.
+ * The shopping assistant's choices: which shop it advises, and the order of the
+ * aisles. Pure functions plus one remembered setting, so the ranking can be
+ * tested without a page.
  */
 
 import { create } from "zustand";
 
 import type { BasketItem } from "./types";
 
-// ── The advice on screen, for the voice assistant ──
-// The shop choice publishes what it advises; the assistant says it and a
-// spoken "oui" calls `accept`, exactly like touching "Oui, X".
-interface StoreAdvice {
-  store: string | null;
-  /** The question as shown on screen. */
-  question: string | null;
-  /** The same question for the ear (prices and distances in words). */
-  spoken: string | null;
-  accept: (() => void) | null;
-  /** No shop near enough: the comparison by chain is shown instead. */
-  none: boolean;
-}
-/**
- * "Où faire mes courses ?" said to the assistant: the list page opens on the
- * shop choice. Kept outside the page because the page can re-mount while the
- * assistant is talking, which lost a step held in its own state.
- */
-export const useCoursesRequest = create<{ compare: boolean }>(() => ({ compare: false }));
-
-export const useStoreAdvice = create<StoreAdvice>(() => ({
-  store: null,
-  question: null,
-  spoken: null,
-  accept: null,
-  none: false,
-}));
+/** "Guide-moi" said to the assistant: the Où aller page starts the guide. */
+export const useGuideRequest = create<{ asked: boolean }>(() => ({ asked: false }));
 
 // ── Remembered settings (this phone only) ──
 const STORE_KEY = "prixes.courses.store";
-const PRIORITY_KEY = "prixes.courses.priority";
 
 /** The shop chosen last time, so "guide-moi" knows where you are. */
 export function rememberedStore(): string | null {
@@ -56,25 +28,6 @@ export function rememberStore(store: string): void {
     localStorage.setItem(STORE_KEY, store);
   } catch {
     /* storage blocked */
-  }
-}
-
-/** 0 = only the price counts, 100 = only the distance counts. Default leans on price. */
-export function readPriority(): number {
-  try {
-    const raw = localStorage.getItem(PRIORITY_KEY);
-    const v = raw == null ? NaN : Number(raw);
-    return Number.isFinite(v) ? Math.min(100, Math.max(0, v)) : 25;
-  } catch {
-    return 25;
-  }
-}
-
-export function savePriority(value: number): void {
-  try {
-    localStorage.setItem(PRIORITY_KEY, String(Math.round(value)));
-  } catch {
-    /* ignore */
   }
 }
 
@@ -114,17 +67,6 @@ export function rankStores<T extends Candidate>(shops: T[], priority: number, bu
     (most > 0 ? (3 * (most - s.items)) / most : 0) +
     (budget != null && s.total > budget ? 10 : 0);
   return [...shops].sort((a, b) => score(a) - score(b) || a.total - b.total);
-}
-
-/** Why the first shop is advised, in the words the assistant says. */
-export function adviceReason<T extends Candidate>(best: T, shops: T[]): string {
-  const full = shops.filter((s) => s.items === Math.max(...shops.map((x) => x.items)));
-  const cheapest = full.reduce((a, b) => (b.total < a.total ? b : a), full[0]);
-  const nearest = shops.reduce((a, b) => (b.km < a.km ? b : a), shops[0]);
-  if (best === cheapest && best === nearest) return "le moins cher et le plus proche";
-  if (best === cheapest) return "le moins cher";
-  if (best === nearest) return "le plus proche";
-  return "le meilleur compromis entre prix et distance";
 }
 
 // ── Aisles, in the order one walks a French supermarket (same as the API) ──
