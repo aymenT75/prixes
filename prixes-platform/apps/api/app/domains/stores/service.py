@@ -34,7 +34,7 @@ from app.domains.stores.schemas import GeocodeHit, StoreOut
 # mirrors, often down themselves, get a short one so the user is not kept waiting.
 OVERPASS_URLS = (
     ("https://overpass-api.de/api/interpreter", 22.0),
-    ("https://maps.mail.ru/osm/tools/overpass/api/interpreter", 8.0),
+    ("https://maps.mail.ru/osm/tools/overpass/api/interpreter", 22.0),
     ("https://overpass.private.coffee/api/interpreter", 8.0),
 )
 logger = logging.getLogger(__name__)
