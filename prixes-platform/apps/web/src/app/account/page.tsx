@@ -177,6 +177,7 @@ export default function SettingsPage() {
       <Row href="/privacy" icon="privacy_tip" title="Confidentialité" />
       <Row href="/conditions" icon="list_alt" title="Conditions" />
       <Row href="/mentions-legales" icon="badge" title="Mentions légales" />
+      <Row href="/accessibilite" icon="info" title="Accessibilité : non conforme" />
     </div>
   );
 }
