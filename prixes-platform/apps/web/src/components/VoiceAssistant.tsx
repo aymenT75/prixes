@@ -594,91 +594,80 @@ export function VoiceAssistant() {
       role="dialog"
       aria-modal="true"
       aria-label="Assistant vocal Prixes"
-      className="fixed inset-0 z-[70] flex flex-col overflow-y-auto bg-surface px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)] outline-none"
+      className="guide fixed inset-0 z-[70] flex flex-col overflow-y-auto bg-surface outline-none"
     >
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-4 [zoom:calc(1/var(--zoom-scale,1))]">
-        <header className="flex min-h-16 items-center justify-between gap-2">
-          <h2 className="text-[28px] font-bold leading-tight text-on-surface" aria-live="polite">
-            {title}
-          </h2>
-          <button
-            onClick={close}
-            aria-label="Fermer l'assistant"
-            className="grid h-16 w-16 flex-shrink-0 place-items-center rounded-full border-[3px] border-[rgb(var(--color-btn-line))] text-on-surface"
-          >
-            <Icon name="close" className="text-[36px]" />
-          </button>
-        </header>
-
-        {/* Listening shows in shape, not only in colour: the bars move and the
-            word changes, for anyone who cannot hear the "bip". */}
-        <div
-          aria-hidden
-          className="relative mx-auto mt-1 grid h-[150px] w-[150px] flex-shrink-0 place-items-center rounded-full bg-primary-container text-on-primary-container"
-        >
-          {listening && (
-            <>
-              <span className="prixes-ripple" />
-              <span className="prixes-ripple" />
-            </>
-          )}
-          <Icon name={listening ? "graphic_eq" : "mic"} fill className="relative text-[84px]" />
-        </div>
-
-        {!supported && (
-          <p role="alert" className="text-[22px] leading-snug text-on-surface">
-            Ce téléphone ne peut pas m&apos;écouter ici. Écrivez votre demande ci-dessous.
-          </p>
-        )}
-
-        <div className="flex flex-col gap-3" aria-live="polite">
-          {transcript && (
-            <p className="break-words rounded-[20px] border-2 border-[rgb(var(--color-btn-line))] bg-surface-container-lowest p-4 text-[25px] leading-tight text-on-surface">
-              <span className="mb-1 block text-[19px] font-bold">Vous</span>
-              {transcript}
-            </p>
-          )}
-          {response && (
-            <p className="break-words rounded-[20px] border-2 border-[rgb(var(--color-btn-line))] bg-surface-container-lowest p-4 text-[25px] leading-tight text-on-surface">
-              <span className="mb-1 block text-[19px] font-bold">Prixes</span>
-              {response}
-            </p>
-          )}
-        </div>
-
-        <div className="mt-auto flex flex-col gap-3">
-          <form onSubmit={submitTyped} className="flex flex-col gap-1">
-            <label htmlFor="voice-typed" className="text-[20px] font-bold text-on-surface">
-              Ou écrivez ici
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="voice-typed"
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                enterKeyHint="send"
-                autoComplete="off"
-                className="min-h-[64px] min-w-0 flex-1 rounded-[18px] border-[3px] border-[rgb(var(--color-btn-line))] bg-surface-container-lowest px-4 text-[22px] text-on-surface"
-              />
-              <button
-                type="submit"
-                aria-label="Envoyer"
-                className="grid h-16 w-16 flex-shrink-0 place-items-center rounded-[18px] border-[3px] border-[rgb(var(--color-btn-line))] text-on-surface"
-              >
-                <Icon name="send" className="text-[32px]" />
-              </button>
-            </div>
-          </form>
-          {supported && (
-            <button
-              onClick={listening ? stopListening : startListening}
-              className="big-btn big-btn-main justify-center"
-            >
-              <Icon name={listening ? "stop_circle" : "mic"} fill className="text-[44px]" />
-              {listening ? "Arrêter" : "Parler"}
+      <div className="flex min-h-full w-full flex-1 flex-col [zoom:calc(1/var(--zoom-scale,1))]">
+        <div className="screen-top flex-1 pt-[calc(env(safe-area-inset-top)+12px)]">
+          <header className="flex min-h-16 items-center justify-between gap-3">
+            <h2 className="text-[34px] font-bold leading-[1.05] text-on-surface" aria-live="polite">
+              {title}
+            </h2>
+            <button onClick={close} aria-label="Fermer l'assistant" className="round-btn">
+              <Icon name="close" className="text-[32px]" />
             </button>
+          </header>
+
+          {!supported && (
+            <p role="alert" className="mt-4 text-[22px] leading-snug text-on-surface">
+              Ce téléphone ne peut pas m&apos;écouter ici. Écrivez votre demande ci-dessous.
+            </p>
           )}
+
+          <div className="flex flex-col" aria-live="polite">
+            {transcript && (
+              <p key={transcript} className="prixes-rise mt-3.5 self-end break-words text-right text-[24px] leading-tight text-on-surface-variant">
+                <span className="block text-[19px] font-bold">Vous</span>
+                {transcript}
+              </p>
+            )}
+            {response && (
+              <p key={response} className="prixes-rise mt-[18px] break-words border-l-[3px] border-[rgb(var(--accent-text))] pl-3.5 text-[25px] leading-[1.28] text-on-surface">
+                <span className="mb-1 block text-[19px] font-bold text-on-surface-variant">Prixes</span>
+                {response}
+              </p>
+            )}
+          </div>
         </div>
+
+        <form onSubmit={submitTyped} className="sheet tone-n1 flex-col items-stretch gap-2 text-[22px] font-normal">
+          <label htmlFor="voice-typed" className="text-[21px] text-[rgb(var(--on-sheet-2))]">
+            Ou écrivez ici
+          </label>
+          <div className="flex gap-2.5">
+            <input
+              id="voice-typed"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              enterKeyHint="send"
+              autoComplete="off"
+              className="min-h-16 min-w-0 flex-1 rounded-[20px] border-[1.5px] border-[#E3BD45] bg-transparent px-4 text-[22px] text-[rgb(var(--on-sheet))] outline-none focus:border-[3px]"
+            />
+            <button
+              type="submit"
+              aria-label="Envoyer"
+              className="grid h-16 w-16 flex-shrink-0 place-items-center rounded-full border-[1.5px] border-[#E3BD45] text-[rgb(var(--sheet-icon))]"
+            >
+              <Icon name="send" className="text-[32px]" />
+            </button>
+          </div>
+        </form>
+        {supported && (
+          <button
+            onClick={listening ? stopListening : startListening}
+            className="sheet tone-gold justify-center gap-[18px] pt-[30px] text-[46px]"
+          >
+            <span className="mic-disc h-[92px] w-[92px]">
+              {listening && (
+                <>
+                  <span className="prixes-ripple" />
+                  <span className="prixes-ripple" />
+                </>
+              )}
+              <Icon name={listening ? "graphic_eq" : "mic"} fill className="relative text-[52px]" />
+            </span>
+            {listening ? "Arrêter" : "Parler"}
+          </button>
+        )}
       </div>
     </div>
   );

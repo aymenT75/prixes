@@ -56,6 +56,7 @@ r.style.zoom=z;
 r.style.setProperty("--zoom-scale",z);
 if(s.highContrast)r.classList.add("contrast");
 if(s.dark===true)r.classList.add("dark");
+var C=window.Capacitor;if(C&&C.isNativePlatform&&C.isNativePlatform())r.classList.add("native");
 }catch(e){}})();`;
 
 // The boot overlay (see src/components/BootScreen.tsx). Inlined rather than put in

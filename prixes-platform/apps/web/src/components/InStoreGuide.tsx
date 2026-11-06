@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Icon } from "@/components/Icon";
+import { Icon, Tick } from "@/components/Icon";
 import { byAisle } from "@/lib/courses";
 import { eur } from "@/lib/format";
 import { screenReaderOn, talk } from "@/lib/say";
@@ -174,82 +174,111 @@ export function InStoreGuide({
     r.start();
   }
 
+  const label = current ? current.item.label : "";
+  const big = label.length <= 8 ? "text-[88px]" : label.length <= 16 ? "text-[60px]" : "text-[44px]";
+
   return (
     <div
       ref={panel}
       role="dialog"
       aria-modal="true"
       aria-labelledby="guide-title"
-      className="fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-surface px-4 pb-[calc(env(safe-area-inset-bottom)+16px)] pt-[calc(env(safe-area-inset-top)+12px)]"
+      className="guide fixed inset-0 z-[60] flex flex-col overflow-y-auto bg-surface"
     >
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-3">
-        <header className="flex min-h-16 items-center justify-between gap-2">
-          <h2 id="guide-title" className="text-[24px] font-bold text-on-surface" aria-live="polite">
-            {finished ? basket.store : `Produit ${index + 1} sur ${steps.length}`}
-          </h2>
-          <button
-            onClick={onClose}
-            aria-label="Quitter le guidage"
-            className="grid h-16 w-16 flex-shrink-0 place-items-center rounded-full border-[3px] border-[rgb(var(--color-btn-line))] text-on-surface"
-          >
-            <Icon name="close" className="text-[36px]" />
+      <div className="screen-top flex-1 pt-[calc(env(safe-area-inset-top)+12px)]">
+        <header className="flex min-h-16 items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <h2 id="guide-title" className="text-[23px] font-bold text-on-surface" aria-live="polite">
+              {finished ? basket.store : `Produit ${index + 1} sur ${steps.length}`}
+            </h2>
+            {!finished && (
+              <div aria-hidden className={`mt-2 flex ${steps.length > 12 ? "gap-[3px]" : "gap-1.5"}`}>
+                {steps.map((_, n) => (
+                  <i
+                    key={n}
+                    className={`h-2 flex-1 rounded-full border-[1.5px] transition-colors duration-500 ${
+                      n <= index
+                        ? "border-[rgb(var(--tick))] bg-[rgb(var(--tick))]"
+                        : "border-[rgb(var(--hair))]"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} aria-label="Quitter le guidage" className="round-btn">
+            <Icon name="close" className="text-[32px]" />
           </button>
         </header>
 
-        {index === 0 && missing.length > 0 && !finished && (
-          <p className="text-[22px] leading-snug text-on-surface" role="note">
-            Pas vendu ici : {missing.join(", ")}.
-          </p>
-        )}
-
         {!finished && current && (
-          <div key={index} className="flex flex-col gap-1 text-on-surface" aria-live="assertive">
-            <p className="text-[24px]">Rayon {current.aisle}</p>
+          <div key={index} className="prixes-rise mt-6 flex flex-col text-on-surface" aria-live="assertive">
+            <p className="text-[27px] font-bold text-[rgb(var(--accent-text))]">Rayon {current.aisle}</p>
             {current.item.equivalent_of && (
-              <p className="text-[22px]">Pas de {current.item.equivalent_of} ici. L&apos;équivalent :</p>
+              <p className="mt-1 text-[22px]">Pas de {current.item.equivalent_of} ici. L&apos;équivalent :</p>
             )}
-            <p className="break-words text-[44px] font-bold leading-[1.05]">
+            <p className={`my-2 break-words font-bold leading-none tracking-[-0.015em] ${big}`}>
               {current.item.label}
               {current.item.quantity > 1 ? ` × ${current.item.quantity}` : ""}
             </p>
-            <p className="text-[24px] tabular-nums">{eur(current.item.unit_price)}</p>
+            <p className="text-[32px] tabular-nums">{eur(current.item.unit_price)}</p>
           </div>
         )}
 
+        {index === 0 && missing.length > 0 && !finished && (
+          <p className="mt-3.5 flex items-start gap-2 text-[21px] leading-snug text-on-surface" role="note">
+            <Icon name="info" className="mt-px text-[26px]" />
+            <span>
+              Pas vendu ici :{" "}
+              {missing.length <= 3
+                ? missing.join(", ")
+                : `${missing.slice(0, 2).join(", ")} et ${missing.length - 2} autres`}
+              .
+            </span>
+          </p>
+        )}
+
         {finished && (
-          <div className="flex flex-col gap-2 text-on-surface" role="status">
-            <p className="text-[40px] font-bold leading-tight">Courses terminées</p>
+          <div className="prixes-rise mt-6 flex flex-col gap-2 text-on-surface" role="status">
+            <p className="text-[48px] font-bold leading-tight">Courses terminées</p>
             <p className="text-[24px]">
               {count} produit{count > 1 ? "s" : ""} pris, environ {eur(Math.round(spent * 100) / 100)}.
             </p>
           </div>
         )}
 
-        <div className="mt-auto flex flex-col gap-3">
-          {!finished ? (
-            <>
-              {listening && (
-                <p className="text-[22px] text-on-surface" aria-hidden>
-                  J&apos;écoute : dites « je l&apos;ai »
-                </p>
-              )}
-              <button onClick={take} className="big-btn big-btn-main min-h-[150px] text-[38px]">
-                <Icon name="check_circle" fill className="text-[60px]" /> Je l&apos;ai
-              </button>
-              <button onClick={skip} className="big-btn">
-                <Icon name="search_off" className="text-[44px]" /> Pas trouvé
-              </button>
-              <button onClick={again} className="big-btn">
-                <Icon name="replay" className="text-[44px]" /> Répéter
-              </button>
-            </>
-          ) : (
-            <button onClick={onClose} className="big-btn big-btn-main">
-              <Icon name="done" className="text-[44px]" /> Terminer
-            </button>
-          )}
-        </div>
+        {!finished && listening && (
+          <p className="mt-auto pt-4 text-[22px] text-on-surface" aria-hidden>
+            J&apos;écoute : dites « je l&apos;ai »
+          </p>
+        )}
       </div>
+
+      {!finished ? (
+        <>
+          <button
+            onClick={take}
+            className="sheet tone-gold min-h-[200px] flex-1 justify-center gap-[22px] pb-[50px] text-[62px]"
+          >
+            <span key={index} className="mic-disc draw h-[104px] w-[104px]">
+              <Tick size={62} />
+            </span>
+            Je l&apos;ai
+          </button>
+          <div className="split">
+            <button onClick={skip} className="tone-n1">
+              <Icon name="search_off" className="text-[42px]" /> Pas trouvé
+            </button>
+            <button onClick={again} className="tone-n2">
+              <Icon name="replay" className="text-[42px]" /> Répéter
+            </button>
+          </div>
+        </>
+      ) : (
+        <button onClick={onClose} className="sheet tone-gold">
+          <Icon name="done" className="text-[46px]" /> Terminer
+        </button>
+      )}
     </div>
   );
 }

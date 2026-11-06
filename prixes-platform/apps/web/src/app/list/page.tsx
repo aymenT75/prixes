@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-import { Icon } from "@/components/Icon";
+import { Icon, Tick } from "@/components/Icon";
 import { PageHeader } from "@/components/PageHeader";
 import { allergensIn } from "@/lib/allergens";
 import { api } from "@/lib/api";
@@ -101,54 +101,59 @@ export default function ListPage() {
 
   if (!user) {
     return (
-      <div className="flex flex-col gap-4">
-        <PageHeader title="Ma liste" />
-        <p className="text-[24px] leading-snug text-on-surface">
-          Connectez-vous pour garder votre liste sur votre téléphone.
-        </p>
-        <button onClick={() => openLogin(true)} className="big-btn big-btn-main">
-          <Icon name="login" className="text-[44px]" /> Se connecter
+      <div className="screen">
+        <div className="screen-top flex-1">
+          <PageHeader title="Ma liste" />
+          <p className="text-[24px] leading-snug text-on-surface">
+            Connectez-vous pour garder votre liste sur votre téléphone.
+          </p>
+        </div>
+        <button onClick={() => openLogin(true)} className="sheet tone-gold">
+          <Icon name="login" className="text-[46px]" /> Se connecter
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <PageHeader
-        title="Ma liste"
-        action={
-          <span className="flex-shrink-0 text-[22px] font-bold text-on-surface">{products(left.length)}</span>
-        }
-      />
+    <div className="screen">
+      <div className="screen-top pb-1">
+        <PageHeader
+          title="Ma liste"
+          action={
+            <span className="flex-shrink-0 text-[22px] font-bold text-on-surface">{products(left.length)}</span>
+          }
+        />
+        {isLoading && (
+          <p role="status" className="text-[24px] text-on-surface">
+            Je charge votre liste…
+          </p>
+        )}
+        {!isLoading && !items.length && <p className="text-[24px] leading-snug text-on-surface">Votre liste est vide.</p>}
+      </div>
 
-      {isLoading && (
-        <p role="status" className="text-[24px] text-on-surface">
-          Je charge votre liste…
-        </p>
-      )}
-      {!isLoading && !items.length && <p className="text-[24px] leading-snug text-on-surface">Votre liste est vide.</p>}
-
-      <ul className="flex flex-col gap-3">
-        {items.map((i) => {
+      <ul className="flex-1 pb-[46px]">
+        {items.map((i, n) => {
           const danger = allergensIn(i.allergens, profile);
           return (
-            <li key={i.id}>
+            <li key={i.id} className="prixes-rise" style={{ animationDelay: `${Math.min(n, 12) * 35}ms` }}>
               <button
                 role="checkbox"
                 aria-checked={i.checked}
                 aria-label={spoken(i, profile)}
                 onClick={() => toggle.mutate(i)}
-                className="flex min-h-[80px] w-full items-center gap-3 rounded-[18px] border-2 border-[rgb(var(--color-btn-line))] bg-surface-container-lowest p-3 text-left text-[27px] leading-tight text-on-surface"
+                className={`hair-row ${danger.length ? "row-alert" : ""}`}
               >
-                <Icon name={i.checked ? "check_box" : "check_box_outline_blank"} fill={i.checked} className="text-[44px]" />
+                <span className="tick" data-on={i.checked}>
+                  <Tick />
+                </span>
                 <span className="min-w-0 flex-1 break-words">
-                  <span className={i.checked ? "font-normal line-through" : "font-bold"}>
+                  <span className={i.checked ? "font-normal line-through opacity-80" : ""}>
                     {nameOf(i)}
                     {i.quantity > 1 ? ` × ${i.quantity}` : ""}
                   </span>
                   {danger.length > 0 && (
-                    <span className="mt-1 flex items-center gap-1 rounded-lg bg-error-container px-2 py-1 text-[20px] font-bold text-on-error-container">
+                    <span className="mt-1 flex items-center gap-1.5 text-[21px] font-bold">
                       <Icon name="warning" fill className="text-[24px]" /> Contient : {danger.join(", ")}
                     </span>
                   )}
@@ -157,23 +162,33 @@ export default function ListPage() {
             </li>
           );
         })}
+        {anyChecked && (
+          <li>
+            <button
+              onClick={() => clear.mutate()}
+              disabled={clear.isPending}
+              className="hair-row min-h-16 justify-center gap-2.5 border-0 text-[23px]"
+            >
+              <Icon name="delete_sweep" className="text-[30px]" /> Retirer les cochés
+            </button>
+          </li>
+        )}
       </ul>
 
-      <div className="mt-2 flex flex-col gap-3">
-        {left.length > 0 && (
-          <button onClick={readAll} className="big-btn big-btn-main">
-            <Icon name="volume_up" className="text-[44px]" /> Lire ma liste
+      {left.length > 0 ? (
+        <div className="split">
+          <button onClick={readAll} aria-label="Lire ma liste" className="tone-gold">
+            <Icon name="volume_up" className="text-[42px]" /> Lire
           </button>
-        )}
-        <button onClick={() => setVoiceOpen(true)} className={`big-btn ${left.length ? "" : "big-btn-main"}`}>
-          <Icon name="mic" className="text-[44px]" /> Ajouter
+          <button onClick={() => setVoiceOpen(true)} className="tone-n2">
+            <Icon name="mic" className="text-[42px]" /> Ajouter
+          </button>
+        </div>
+      ) : (
+        <button onClick={() => setVoiceOpen(true)} className="sheet tone-gold">
+          <Icon name="mic" fill className="text-[46px]" /> Ajouter
         </button>
-        {anyChecked && (
-          <button onClick={() => clear.mutate()} disabled={clear.isPending} className="big-btn">
-            <Icon name="delete_sweep" className="text-[44px]" /> Retirer les cochés
-          </button>
-        )}
-      </div>
+      )}
     </div>
   );
 }

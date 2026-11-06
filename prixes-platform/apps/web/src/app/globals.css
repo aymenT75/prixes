@@ -523,3 +523,319 @@ summary,
 
 /* The step pill slides under the current step. */
 .prixes-pill { transition: transform .55s var(--ease-spring); }
+
+/* ── Pleine page (2026-11-05) ────────────────────────────────────────────────
+   Screens end in big panels stacked like Wallet cards, edge to edge, at thumb
+   level: the gold one is the main action, navy ones the others. Lists are rows
+   separated by a hairline, not boxes. Contrasts measured: text on the darkest
+   gold 6.0:1, hairlines 3.5:1 by day and 5.8:1 at night. */
+:root {
+  --gold-line: 110 85 16;
+  --sheet-1: 28 45 82;
+  --sheet-2: 20 33 61;
+  --on-sheet: 247 243 234;
+  --on-sheet-2: 228 225 216;
+  --sheet-icon: 227 189 69;
+  --tick: 20 33 61;
+  --on-tick: 227 189 69;
+  --alert: 154 31 24;
+  --on-alert: 255 255 255;
+  --hair: 122 130 150;
+  --accent-text: 110 85 16;
+  --gold-fill: linear-gradient(165deg, #ebcb63, #d4af37 55%, #c29a22);
+}
+html.dark {
+  --gold-line: 240 214 127;
+  --sheet-1: 35 58 103;
+  --sheet-2: 24 41 76;
+  --on-sheet: 255 255 255;
+  --on-sheet-2: 220 226 238;
+  --sheet-icon: 232 198 89;
+  --tick: 232 198 89;
+  --on-tick: 14 26 51;
+  --alert: 255 180 171;
+  --on-alert: 58 10 6;
+  --hair: 138 150 179;
+  --accent-text: 232 198 89;
+}
+html.contrast { --hair: 0 0 0; }
+html.contrast.dark { --hair: 255 255 255; }
+
+@layer components {
+  /* A whole screen: cancels the page margins so panels reach the edges and the
+     bottom of the phone. */
+  .screen {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh / var(--zoom-scale, 1) - env(safe-area-inset-top) - 1.5rem);
+    margin: 0 -16px calc(-1 * (env(safe-area-inset-bottom) + 24px));
+  }
+  .screen-top { display: flex; flex-direction: column; padding: 0 16px 46px; }
+
+  .sheet {
+    position: relative;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 18px;
+    margin-top: -30px;
+    min-height: 120px;
+    padding: 24px 22px 54px;
+    border-radius: 34px 34px 0 0;
+    text-align: left;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.05;
+    transition: filter 0.15s;
+  }
+  .sheet:last-child { padding-bottom: calc(env(safe-area-inset-bottom) + 36px); }
+  .sheet:active { filter: brightness(0.93); }
+  .sheet:focus-visible, .split > :focus-visible {
+    outline: 3px solid currentColor;
+    outline-offset: -10px;
+    border-radius: 34px 34px 0 0;
+  }
+  .sheet small { display: block; margin-top: 5px; font-size: 21px; font-weight: 400; color: rgb(var(--on-sheet-2)); }
+  .sheet .grow-text { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+
+  .tone-gold { background: var(--gold-fill); color: #14213d; }
+  .tone-gold small { color: #14213d; }
+  .tone-n1 { background: rgb(var(--sheet-1)); color: rgb(var(--on-sheet)); }
+  .tone-n2 { background: rgb(var(--sheet-2)); color: rgb(var(--on-sheet)); }
+  .tone-n1 > .material-symbols-outlined, .tone-n2 > .material-symbols-outlined,
+  .tone-n1 .arr, .tone-n2 .arr { color: rgb(var(--sheet-icon)); }
+  .sheet.tone-gold { box-shadow: 0 -2px 0 rgb(var(--gold-line)), inset 0 1.5px 0 rgb(255 255 255 / 0.45); }
+  .sheet.tone-n1, .sheet.tone-n2 { box-shadow: 0 -1.5px 0 #e3bd45; }
+
+  /* Two actions side by side at the very bottom. */
+  .split {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: -30px;
+    overflow: hidden;
+    border-radius: 34px 34px 0 0;
+    box-shadow: 0 -2px 0 rgb(var(--gold-line));
+  }
+  .split > * {
+    display: flex;
+    min-height: 136px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 22px 8px calc(env(safe-area-inset-bottom) + 30px);
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.05;
+  }
+  .split > *:active { filter: brightness(0.93); }
+
+  /* The microphone disc on the gold panel. */
+  .mic-disc {
+    position: relative;
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 124px;
+    height: 124px;
+    border-radius: 9999px;
+    background: #14213d;
+    color: #ebcb63;
+  }
+
+  /* A round button in the corner (back, close, settings). */
+  .round-btn {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 9999px;
+    border: 2px solid rgb(var(--hair));
+    color: rgb(var(--color-on-surface));
+  }
+  .round-btn:active { transform: scale(0.95); }
+
+  /* Edge-to-edge rows separated by a hairline. */
+  .hair-row {
+    display: flex;
+    width: 100%;
+    min-height: 72px;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    border-bottom: 1.5px solid rgb(var(--hair));
+    text-align: left;
+    font-size: 27px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: rgb(var(--color-on-surface));
+  }
+  html.contrast .hair-row { border-bottom-width: 3px; }
+  .hair-row:disabled { opacity: 0.6; }
+  .row-alert { background: rgb(var(--alert)); color: rgb(var(--on-alert)); border-bottom-color: transparent; }
+  .section-title { padding: 22px 20px 8px; font-size: 22px; font-weight: 700; color: rgb(var(--accent-text)); }
+
+  /* The round check of a list line: a tick that draws itself. */
+  .tick {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    border: 2.5px solid currentColor;
+    transition: background-color 0.25s, border-color 0.25s, transform 0.4s var(--ease-spring);
+  }
+  .tick path { stroke-dasharray: 22; stroke-dashoffset: 22; transition: stroke-dashoffset 0.35s var(--ease-out) 0.1s; }
+  .tick[data-on="true"] { background: rgb(var(--tick)); border-color: rgb(var(--tick)); color: rgb(var(--on-tick)); }
+  .tick[data-on="true"] path { stroke-dashoffset: 0; }
+  .row-alert .tick[data-on="true"] { background: rgb(var(--on-alert)); border-color: rgb(var(--on-alert)); color: rgb(var(--alert)); }
+
+  /* On/off switch, always with « Oui » / « Non » written next to it. */
+  .switch { position: relative; flex: none; width: 68px; height: 40px; border-radius: 40px; border: 2.5px solid currentColor; transition: background-color 0.2s; }
+  .switch::after { content: ""; position: absolute; top: 4.5px; left: 4.5px; width: 26px; height: 26px; border-radius: 9999px; background: currentColor; transition: left 0.25s var(--ease-spring); }
+  .switch[data-on="true"] { background: rgb(var(--tick)); border-color: rgb(var(--tick)); }
+  .switch[data-on="true"]::after { left: 32px; background: rgb(var(--on-tick)); }
+
+  .size-tile {
+    display: flex;
+    height: 112px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    padding-bottom: 10px;
+    border: 2px solid rgb(var(--hair));
+    border-radius: 20px;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: rgb(var(--color-on-surface));
+  }
+  .size-tile[aria-checked="true"] { background: var(--gold-fill); color: #14213d; border-color: rgb(var(--gold-line)); }
+
+  .pill-check {
+    display: inline-flex;
+    min-height: 64px;
+    align-items: center;
+    gap: 8px;
+    padding: 0 18px;
+    border: 2px solid rgb(var(--hair));
+    border-radius: 20px;
+    font-size: 24px;
+    font-weight: 700;
+    color: rgb(var(--color-on-surface));
+  }
+  .pill-check[aria-checked="true"] { background: rgb(var(--tick)); border-color: rgb(var(--tick)); color: rgb(var(--on-tick)); }
+}
+
+/* The old gold button keeps its role on the secondary pages (legal, feedback),
+   now with the same gold and a bronze edge that stands out from the ivory. */
+.big-btn-main {
+  background: var(--gold-fill);
+  border-color: rgb(var(--gold-line));
+  color: #14213d;
+}
+
+.tone-gold .prixes-ripple { border-color: #14213d; }
+
+/* ── Animations pleine page (2026-11-06) ─────────────────────────────────────
+   Short and soft, never something to wait for: the panels rise from the bottom
+   one after the other, the microphone breathes, list lines arrive in cascade,
+   a tick pops and draws itself, the price settles with a small bounce.
+   Everything stops with « Réduire les animations » (global rule above).
+   `backwards` and not `both`, so once finished the hover lift still works. */
+@keyframes sheet-up { from { transform: translateY(70px); opacity: 0; } }
+.sheet, .split { animation: sheet-up 0.65s var(--ease-out) backwards; }
+.sheet:nth-child(2) { animation-delay: 0.04s; }
+.sheet:nth-child(3), .split:nth-child(3) { animation-delay: 0.12s; }
+.sheet:nth-child(4), .split:nth-child(4) { animation-delay: 0.2s; }
+.sheet:nth-child(5), .split:nth-child(5) { animation-delay: 0.28s; }
+
+@keyframes ring-out { 0% { transform: scale(0.92); opacity: 0.2; } 50% { opacity: 1; } 100% { transform: scale(1.08); opacity: 0.2; } }
+.mic-rings circle { transform-box: fill-box; transform-origin: center; animation: ring-out 3.2s ease-in-out infinite; }
+.mic-rings circle + circle { animation-delay: 0.5s; }
+.breathe { animation: prixes-breathe 3.2s ease-in-out infinite; }
+
+@keyframes draw { from { stroke-dashoffset: 22; } to { stroke-dashoffset: 0; } }
+.draw path { stroke-dasharray: 22; animation: draw 0.5s var(--ease-out) 0.35s backwards; }
+.tick[data-on="true"] { animation: check-pop 0.35s var(--ease-spring); }
+.row-alert .material-symbols-outlined { animation: mascot-shake 0.45s ease-in-out 0.5s 2; }
+
+@keyframes price-pop { from { transform: scale(0.82); opacity: 0; } }
+.price-pop { transform-origin: left bottom; animation: price-pop 0.7s var(--ease-spring) 0.15s backwards; }
+
+/* ── Le site web (souris et clavier) ─────────────────────────────────────────
+   On a computer nothing is reached with a thumb: the panels stuck to the bottom
+   of the phone become rounded cards, side by side when there is room, that
+   lift under the mouse and carry a thick focus ring for the keyboard. Same
+   colours, same sizes of text. Unlayered, so it wins over the utilities. */
+@media (hover: hover) and (pointer: fine) and (min-width: 700px) {
+  html:not(.native) .screen { min-height: 0; margin: 0; padding-bottom: 32px; }
+  html:not(.native) .screen-top { flex: none; padding: 0 0 6px; }
+  html:not(.native) .screen-home { display: grid; grid-template-columns: 1fr 1fr; column-gap: 16px; align-content: start; }
+  html:not(.native) .screen-home > :nth-child(-n + 2) { grid-column: 1 / -1; }
+  html:not(.native) .screen-home > .sheet:nth-child(2) { min-height: 300px; }
+
+  html:not(.native) .sheet,
+  html:not(.native) .split { margin-top: 16px; }
+  html:not(.native) .sheet {
+    flex: none;
+    min-height: 104px;
+    padding: 22px 26px;
+    border-radius: 28px;
+    cursor: pointer;
+    transition: transform 0.2s var(--ease-out), box-shadow 0.2s, filter 0.15s;
+  }
+  html:not(.native) .sheet:last-child { padding-bottom: 22px; }
+  html:not(.native) form.sheet { cursor: default; }
+  html:not(.native) .sheet.tone-gold { box-shadow: 0 0 0 2px rgb(var(--gold-line)), inset 0 1.5px 0 rgb(255 255 255 / 0.45); }
+  html:not(.native) .sheet.tone-n1,
+  html:not(.native) .sheet.tone-n2 { box-shadow: 0 0 0 1.5px #e3bd45; }
+  html:not(.native) .sheet:not(form):hover { transform: translateY(-3px); filter: brightness(1.04); }
+  html:not(.native) .sheet:not(form):hover.tone-gold { box-shadow: 0 0 0 2px rgb(var(--gold-line)), 0 14px 28px rgb(20 33 61 / 0.22); }
+  html:not(.native) .sheet:not(form):hover:is(.tone-n1, .tone-n2) { box-shadow: 0 0 0 1.5px #e3bd45, 0 14px 28px rgb(20 33 61 / 0.22); }
+
+  html:not(.native) .split { gap: 16px; overflow: visible; border-radius: 0; box-shadow: none; }
+  html:not(.native) .split > * {
+    min-height: 112px;
+    padding: 20px 12px;
+    border-radius: 28px;
+    cursor: pointer;
+    transition: transform 0.2s var(--ease-out), filter 0.15s;
+  }
+  html:not(.native) .split > .tone-gold { box-shadow: 0 0 0 2px rgb(var(--gold-line)); }
+  html:not(.native) .split > :is(.tone-n1, .tone-n2) { box-shadow: 0 0 0 1.5px #e3bd45; }
+  html:not(.native) .split > *:hover { transform: translateY(-3px); filter: brightness(1.04); }
+
+  /* The keyboard ring sits outside the card, in the page's ink, so it shows on
+  html:not(.native) gold,
+  html:not(.native) on navy and on ivory alike. */
+  .sheet:focus-visible,
+  html:not(.native) .split > :focus-visible,
+  html:not(.native) .hair-row:focus-visible,
+  html:not(.native) .size-tile:focus-visible,
+  html:not(.native) .pill-check:focus-visible,
+  html:not(.native) .round-btn:focus-visible {
+    outline: 4px solid rgb(var(--color-on-surface));
+    outline-offset: 4px;
+  }
+  html:not(.native) .sheet:focus-visible,
+  html:not(.native) .split > :focus-visible { border-radius: 28px; }
+
+  html:not(.native) .hair-row { cursor: pointer; border-radius: 0; transition: background-color 0.15s; }
+  html:not(.native) .hair-row:hover:not(.row-alert):not(:disabled) { background: rgb(var(--color-on-surface) / 0.06); }
+  html:not(.native) .round-btn:hover,
+  html:not(.native) .size-tile:hover,
+  html:not(.native) .pill-check:hover { background-color: rgb(var(--color-on-surface) / 0.06); }
+  html:not(.native) .size-tile[aria-checked="true"]:hover { background: var(--gold-fill); }
+  html:not(.native) .pill-check[aria-checked="true"]:hover { background: rgb(var(--tick)); }
+
+  /* Full-screen moments (guidance in the shop, the assistant): a centred column. */
+  html:not(.native) .guide { align-items: center; padding: 24px 16px; }
+  html:not(.native) .guide > * { width: 100%; max-width: 640px; flex: none; }
+  html:not(.native) .guide > div > .screen-top { padding-top: 0; }
+}

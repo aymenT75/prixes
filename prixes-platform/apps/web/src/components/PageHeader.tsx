@@ -26,17 +26,17 @@ export function PageHeader({
   }
 
   return (
-    <header className="mb-5 flex min-h-16 items-center gap-3">
+    <header className="mb-5 flex min-h-16 items-center gap-3.5">
       {showBack && (
         <button
           onClick={goBack}
           aria-label="Retour"
-          className="grid h-16 w-16 flex-shrink-0 place-items-center rounded-full border-[3px] border-[rgb(var(--color-btn-line))] text-on-surface active:scale-95"
+          className="round-btn"
         >
-          <Icon name="arrow_back" className="text-[36px]" />
+          <Icon name="arrow_back" className="text-[32px]" />
         </button>
       )}
-      <h1 className="min-w-0 flex-1 break-words text-[32px] font-bold leading-tight text-on-surface">{title}</h1>
+      <h1 className="min-w-0 flex-1 break-words text-[34px] font-bold leading-[1.05] text-on-surface">{title}</h1>
       {action}
     </header>
   );

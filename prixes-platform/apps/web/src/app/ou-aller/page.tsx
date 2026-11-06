@@ -3,7 +3,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 
-import { Icon } from "@/components/Icon";
+import { Arrow, Icon } from "@/components/Icon";
 import { InStoreGuide } from "@/components/InStoreGuide";
 import { PageHeader } from "@/components/PageHeader";
 import { api } from "@/lib/api";
@@ -197,16 +197,15 @@ export default function WherePage() {
 
   if (!user) {
     return (
-      <div className="flex flex-col gap-4">
-        <PageHeader title="Où aller" />
-        <p className="text-[24px] leading-snug text-on-surface">
-          Connectez-vous pour que je compare les magasins pour votre liste.
-        </p>
-        <button
-          onClick={() => openLogin(true)}
-          className="big-btn big-btn-main"
-        >
-          <Icon name="login" className="text-[44px]" /> Se connecter
+      <div className="screen">
+        <div className="screen-top flex-1">
+          <PageHeader title="Où aller" />
+          <p className="text-[24px] leading-snug text-on-surface">
+            Connectez-vous pour que je compare les magasins pour votre liste.
+          </p>
+        </div>
+        <button onClick={() => openLogin(true)} className="sheet tone-gold">
+          <Icon name="login" className="text-[46px]" /> Se connecter
         </button>
       </div>
     );
@@ -228,126 +227,127 @@ export default function WherePage() {
     );
   }
 
-  return (
-    <div className="flex flex-col gap-4">
-      <PageHeader title="Où aller" />
+  const mapsUrl = shown
+    ? shown.branch
+      ? `https://maps.apple.com/?daddr=${shown.branch.lat},${shown.branch.lon}&dirflg=w`
+      : `https://maps.apple.com/?q=${encodeURIComponent(shown.store)}${here ? `&sll=${here.lat},${here.lon}` : ""}`
+    : "";
+  // The amount big, the euro sign smaller beside it.
+  const amount = shown ? eur(shown.total).replace(/\s*€$/, "") : "";
 
-      {list && !left && (
-        <>
+  return (
+    <div className="screen">
+      <div className="screen-top flex-1">
+        <PageHeader title="Où aller" />
+
+        {list && !left && (
           <p className="text-[24px] leading-snug text-on-surface">
             Votre liste est vide. Ajoutez d&apos;abord des produits.
           </p>
-          <button
-            onClick={() => setVoiceOpen(true)}
-            className="big-btn big-btn-main"
-          >
-            <Icon name="mic" className="text-[44px]" /> Ajouter
-          </button>
-        </>
-      )}
+        )}
 
-      {!!left && !lost && !rows && (
-        <p role="status" className="text-[24px] leading-snug text-on-surface">
-          Je cherche les magasins autour de vous…
-        </p>
-      )}
-
-      {!!left && lost && (
-        <>
-          <p role="alert" className="text-[24px] leading-snug text-on-surface">
-            Je n&apos;ai pas pu vous localiser. Votre position n&apos;est jamais
-            enregistrée.
+        {!!left && !lost && !rows && (
+          <p role="status" className="text-[24px] leading-snug text-on-surface">
+            Je cherche les magasins autour de vous…
           </p>
-          <AddressPicker onPick={setManual} />
-          <button onClick={() => setAttempt((n) => n + 1)} className="big-btn">
-            <Icon name="my_location" className="text-[44px]" /> Réessayer
-          </button>
-        </>
-      )}
+        )}
 
-      {!!left && !lost && rows && !shown && (
-        <>
-          <p role="alert" className="text-[24px] leading-snug text-on-surface">
-            Je ne trouve pas de magasin près de vous pour cette liste.
-          </p>
-          <AddressPicker onPick={setManual} />
-        </>
-      )}
+        {!!left && lost && (
+          <div className="flex flex-col gap-4">
+            <p role="alert" className="text-[24px] leading-snug text-on-surface">
+              Je n&apos;ai pas pu vous localiser. Votre position n&apos;est jamais enregistrée.
+            </p>
+            <AddressPicker onPick={setManual} />
+          </div>
+        )}
 
-      {shown && (
-        <>
-          <section
-            aria-live="polite"
-            className="flex flex-col gap-1 text-on-surface"
-          >
-            <p className="text-[24px]">
+        {!!left && !lost && rows && !shown && (
+          <div className="flex flex-col gap-4">
+            <p role="alert" className="text-[24px] leading-snug text-on-surface">
+              Je ne trouve pas de magasin près de vous pour cette liste.
+            </p>
+            <AddressPicker onPick={setManual} />
+          </div>
+        )}
+
+        {shown && (
+          <section key={shown.store} aria-live="polite" className="prixes-rise text-on-surface">
+            <p className="text-[22px] text-on-surface-variant">
               {wantNearest && other
                 ? "Le plus proche de vous"
                 : shown.branch
                 ? "Le moins cher près de vous"
                 : "Le moins cher"}
             </p>
-            <h2 className="text-[34px] font-bold leading-tight">
+            <h2
+              className={`mt-1.5 break-words font-bold leading-none ${
+                shown.store.length > 9 ? "text-[48px]" : "text-[68px]"
+              }`}
+            >
               {shown.store}
-              {shown.branch && `, à ${distance(shown.km)}`}
             </h2>
-            <p className="text-[56px] font-bold leading-none tabular-nums">
-              {eur(shown.total)}
+            {shown.branch && <p className="mt-1 text-[30px]">à {distance(shown.km)}</p>}
+            <p className="price-pop mt-[18px] text-[96px] font-bold leading-none tracking-[-0.02em] tabular-nums">
+              {amount}
+              <span className="ml-1.5 text-[50px] tracking-normal">€</span>
             </p>
-            <p className="text-[24px]">{howMany}</p>
+            <p className="mt-1.5 text-[22px] text-on-surface-variant">{howMany}</p>
             {!shown.branch && (
-              <p className="text-[24px]">
-                Je ne peux pas vérifier la distance pour l&apos;instant.
-              </p>
+              <p className="mt-2 text-[22px]">Je ne peux pas vérifier la distance pour l&apos;instant.</p>
             )}
           </section>
+        )}
+      </div>
 
-          <div className="mt-2 flex flex-col gap-3">
-            <a
-              href={
-                shown.branch
-                  ? `https://maps.apple.com/?daddr=${shown.branch.lat},${shown.branch.lon}&dirflg=w`
-                  : `https://maps.apple.com/?q=${encodeURIComponent(
-                      shown.store
-                    )}${here ? `&sll=${here.lat},${here.lon}` : ""}`
-              }
-              target="_blank"
-              rel="noreferrer"
-              onClick={goThere}
-              className="big-btn big-btn-main"
-            >
-              <Icon name="directions_walk" className="text-[44px]" />{" "}
-              {shown.branch ? "Y aller" : "Voir sur le plan"}
-            </a>
-            {other && (
-              <button
-                onClick={() => setWantNearest((v) => !v)}
-                className="big-btn"
-              >
-                <Icon name="swap_horiz" className="text-[44px]" />
-                {wantNearest && cheapest ? (
-                  <span>
-                    Le moins cher
-                    <small>
-                      {cheapest.store}, {distance(cheapest.km)},{" "}
-                      {eur(cheapest.total)}
-                    </small>
-                  </span>
-                ) : (
-                  <span>
-                    Le plus proche
-                    <small>
-                      {other.store}, {distance(other.km)}, {eur(other.total)}
-                    </small>
-                  </span>
-                )}
-              </button>
-            )}
-            <button onClick={startGuide} className="big-btn">
-              <Icon name="storefront" className="text-[44px]" /> Je suis au
-              magasin
+      {list && !left && (
+        <button onClick={() => setVoiceOpen(true)} className="sheet tone-gold">
+          <Icon name="mic" fill className="text-[46px]" /> Ajouter
+        </button>
+      )}
+
+      {!!left && lost && (
+        <button onClick={() => setAttempt((n) => n + 1)} className="sheet tone-n1">
+          <Icon name="my_location" className="text-[46px]" /> Réessayer
+        </button>
+      )}
+
+      {shown && (
+        <>
+          <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={goThere}
+            className="sheet tone-gold text-[38px]"
+          >
+            <Icon name="directions_walk" fill className="text-[50px]" />
+            <span className="grow-text">{shown.branch ? "Y aller" : "Voir sur le plan"}</span>
+            <Arrow />
+          </a>
+          {other && (
+            <button onClick={() => setWantNearest((v) => !v)} className="sheet tone-n1 text-[28px]">
+              <Icon name="swap_horiz" className="text-[46px]" />
+              {wantNearest && cheapest ? (
+                <span className="grow-text">
+                  Le moins cher
+                  <small>
+                    {cheapest.store}, {distance(cheapest.km)}, {eur(cheapest.total)}
+                  </small>
+                </span>
+              ) : (
+                <span className="grow-text">
+                  Le plus proche
+                  <small>
+                    {other.store}, {distance(other.km)}, {eur(other.total)}
+                  </small>
+                </span>
+              )}
             </button>
-          </div>
+          )}
+          <button onClick={startGuide} className="sheet tone-n2 text-[28px]">
+            <Icon name="storefront" className="text-[46px]" />
+            <span className="grow-text">Je suis au magasin</span>
+          </button>
         </>
       )}
     </div>
@@ -387,14 +387,14 @@ function AddressPicker({
         id="where"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        className="min-h-[72px] w-full rounded-[18px] border-[3px] border-[rgb(var(--color-btn-line))] bg-surface-container-lowest px-4 text-[24px] text-on-surface"
+        className="min-h-[72px] w-full rounded-[20px] border-2 border-[rgb(var(--hair))] bg-surface-container-lowest px-4 text-[24px] text-on-surface"
         autoComplete="street-address"
       />
       {hits.map((h) => (
         <button
           key={`${h.lat},${h.lon}`}
           onClick={() => onPick({ lat: h.lat, lon: h.lon })}
-          className="min-h-[72px] w-full rounded-[18px] border-2 border-[rgb(var(--color-btn-line))] bg-surface-container-lowest p-3 text-left text-[22px] text-on-surface"
+          className="min-h-[72px] w-full rounded-[20px] border-2 border-[rgb(var(--hair))] bg-surface-container-lowest p-3 text-left text-[22px] text-on-surface"
         >
           {h.label.split(",").slice(0, 3).join(",")}
         </button>
